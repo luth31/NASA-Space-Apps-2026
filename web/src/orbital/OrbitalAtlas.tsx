@@ -216,8 +216,10 @@ function Experience({
       back();
     }
   }
-  const choices = available.filter((a) =>
-    a.name.toLowerCase().includes(search.toLowerCase()),
+  const choices = available.filter((a, index) =>
+    `${region ? `Area ${index + 1} ` : ""}${a.name}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
   );
   const contextual = hover ?? active;
   const title = isEarth ? (
@@ -371,7 +373,9 @@ function Experience({
                 ? "Drag to turn Earth"
                 : sector
                   ? "Each small square is one detection"
-                  : "Larger groups contain more detections"}
+                  : isWorld
+                    ? "Flames group nearby detections"
+                    : "Brighter squares contain more detections"}
             </span>
             {isEarth && (
               <button
@@ -652,8 +656,9 @@ function Experience({
                 ))}
                 {!choices.length && (
                   <p>
-                    No places match that name. Try a region, such as Western
-                    Europe.
+                    {region
+                      ? "No areas match. Try an area number or coordinates."
+                      : "No places match that name. Try a region, such as Western Europe."}
                   </p>
                 )}
               </div>
