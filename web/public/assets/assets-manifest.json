@@ -1,0 +1,134 @@
+{
+  "bboxOrder": [
+    "west",
+    "south",
+    "east",
+    "north"
+  ],
+  "georeferencing": "Bounds describe the outer edges of each north-up raster in EPSG:4326. The top-left corner is west, north. Use in longitude-latitude maps directly or reproject for Web Mercator.",
+  "assets": [
+    {
+      "filename": "earth-blue-marble.jpg",
+      "title": "Blue Marble: Next Generation with Topography",
+      "role": "globe_texture",
+      "acquisitionMonth": "2004-08",
+      "credit": "NASA Earth Observatory (Reto Stöckli, NASA GSFC)",
+      "sourceUrl": "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/bmng-topography/august/world.topo.200408.3x5400x2700.jpg",
+      "contextUrl": "https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-topography/",
+      "pixelSize": [
+        4096,
+        2048
+      ],
+      "crs": "EPSG:4326",
+      "bbox": [
+        -180,
+        -90,
+        180,
+        90
+      ],
+      "note": "Monthly composite, resized from 5400×2700. Equirectangular texture with the seam at the antimeridian."
+    },
+    {
+      "filename": "evros-2023-08-22.jpg",
+      "title": "Evros, Greece",
+      "role": "regional_scene",
+      "acquisitionDate": "2023-08-22",
+      "credit": "NASA EOSDIS GIBS / Aqua MODIS",
+      "sourceUrl": "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&LAYERS=MODIS_Aqua_CorrectedReflectance_TrueColor&SRS=EPSG%3A4326&STYLES=&WIDTH=1920&HEIGHT=960&BBOX=23.0%2C39.8%2C27.8%2C42.2&TIME=2023-08-22",
+      "contextUrl": "https://atmosphere.copernicus.eu/august-wildfires-ravage-northern-central-greece",
+      "layer": "MODIS_Aqua_CorrectedReflectance_TrueColor",
+      "pixelSize": [
+        1920,
+        960
+      ],
+      "crs": "EPSG:4326",
+      "bbox": [
+        23.0,
+        39.8,
+        27.8,
+        42.2
+      ],
+      "note": "True-color browse imagery for the requested UTC day. The daily layer may mosaic passes and does not identify an exact hotspot acquisition time."
+    },
+    {
+      "filename": "evia-2021-08-07.jpg",
+      "title": "Evia, Greece",
+      "role": "regional_scene",
+      "acquisitionDate": "2021-08-07",
+      "credit": "NASA EOSDIS GIBS / Aqua MODIS",
+      "sourceUrl": "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&LAYERS=MODIS_Aqua_CorrectedReflectance_TrueColor&SRS=EPSG%3A4326&STYLES=&WIDTH=1600&HEIGHT=978&BBOX=21.65%2C37.65%2C25.25%2C39.85&TIME=2021-08-07",
+      "contextUrl": "https://science.nasa.gov/earth/earth-observatory/fire-consumes-large-swaths-of-greece-148682/",
+      "layer": "MODIS_Aqua_CorrectedReflectance_TrueColor",
+      "pixelSize": [
+        1600,
+        978
+      ],
+      "crs": "EPSG:4326",
+      "bbox": [
+        21.65,
+        37.65,
+        25.25,
+        39.85
+      ],
+      "note": "True-color browse imagery for the requested UTC day. The daily layer may mosaic passes and does not identify an exact hotspot acquisition time."
+    },
+    {
+      "filename": "evia-2021-08-10.jpg",
+      "title": "Evia, Greece",
+      "role": "regional_scene",
+      "acquisitionDate": "2021-08-10",
+      "credit": "NASA EOSDIS GIBS / Aqua MODIS",
+      "sourceUrl": "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&LAYERS=MODIS_Aqua_CorrectedReflectance_TrueColor&SRS=EPSG%3A4326&STYLES=&WIDTH=1600&HEIGHT=978&BBOX=21.65%2C37.65%2C25.25%2C39.85&TIME=2021-08-10",
+      "contextUrl": "https://science.nasa.gov/earth/earth-observatory/fire-consumes-large-swaths-of-greece-148682/",
+      "layer": "MODIS_Aqua_CorrectedReflectance_TrueColor",
+      "pixelSize": [
+        1600,
+        978
+      ],
+      "crs": "EPSG:4326",
+      "bbox": [
+        21.65,
+        37.65,
+        25.25,
+        39.85
+      ],
+      "note": "True-color browse imagery for the requested UTC day. The daily layer may mosaic passes and does not identify an exact hotspot acquisition time."
+    },
+    {
+      "filename": "gran-chaco-2020-05-10.jpg",
+      "title": "Gran Chaco, Argentina and Paraguay",
+      "role": "regional_scene",
+      "acquisitionDate": "2020-05-10",
+      "credit": "NASA EOSDIS GIBS / Aqua MODIS",
+      "sourceUrl": "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&LAYERS=MODIS_Aqua_CorrectedReflectance_TrueColor&SRS=EPSG%3A4326&STYLES=&WIDTH=1920&HEIGHT=1646&BBOX=-63.6%2C-27.8%2C-56.6%2C-21.8&TIME=2020-05-10",
+      "contextUrl": "https://modis.gsfc.nasa.gov/gallery/individual.php?db_date=2020-05-12",
+      "layer": "MODIS_Aqua_CorrectedReflectance_TrueColor",
+      "pixelSize": [
+        1920,
+        1646
+      ],
+      "crs": "EPSG:4326",
+      "bbox": [
+        -63.6,
+        -27.8,
+        -56.6,
+        -21.8
+      ],
+      "note": "True-color browse imagery for the requested UTC day. The daily layer may mosaic passes and does not identify an exact hotspot acquisition time."
+    },
+    {
+      "filename": "evia-detail-2021-08-10.jpg",
+      "title": "Northern Evia in Landsat false color",
+      "role": "case_card",
+      "acquisitionDate": "2021-08-10",
+      "credit": "NASA Earth Observatory / Landsat 8 OLI (USGS)",
+      "sourceUrl": "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/imagerecords/148000/148682/greecefires654_oli_2021222_lrg.jpg",
+      "contextUrl": "https://science.nasa.gov/earth/earth-observatory/fire-consumes-large-swaths-of-greece-148682/",
+      "pixelSize": [
+        1000,
+        724
+      ],
+      "note": "Shortwave infrared, near infrared and red (bands 6, 5 and 4). Resized from the publication image. Approximate location only, for the case card."
+    }
+  ]
+}
