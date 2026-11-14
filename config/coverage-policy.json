@@ -1,0 +1,16 @@
+{
+  "version": "paired-daytime-v1",
+  "status": "feasibility_only",
+  "grid_step_km": 0.5,
+  "cell_degrees": 0.25,
+  "maximum_scan_gap_seconds": 300,
+  "maximum_view_zenith_degrees": 65,
+  "maximum_solar_zenith_degrees": 85,
+  "minimum_common_land_fraction": 0.65,
+  "minimum_common_area_km2": 20,
+  "nearest_distance_km": {"MODIS": 2.5, "VIIRS": 1.0},
+  "sensitivity_distance_km": {"MODIS": 1.25, "VIIRS": 0.5},
+  "sensitivity_scan_gap_seconds": 600,
+  "monthly_release": false,
+  "reason": "Selected swaths do not establish complete monthly observing effort or representative geographic transfer. This policy cannot certify a historical calendar."
+}

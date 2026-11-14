@@ -1,0 +1,16 @@
+{
+  "version": "monthly-release-v1",
+  "definedAfter": "paired-pass feasibility pilot",
+  "scope": "Conservative engineering release requirements, to be frozen with the monthly protocol before its final holdout. They do not certify the present selected-pass experiment.",
+  "unit": "VIIRS-equivalent hotspot pixels per region-month at declared reference observing effort",
+  "minimum_independent_regions": 3,
+  "minimum_held_out_region_months": 24,
+  "minimum_eligible_historical_years": 3,
+  "main_minimum_mae_improvement": 0.10,
+  "maximum_mae_fraction_of_mean_count": 0.25,
+  "maximum_absolute_bias_fraction_of_mean_count": 0.10,
+  "maximum_high_activity_mae_fraction_of_mean_count": 0.35,
+  "required_source_collection": "MYD14.061",
+  "reference_effort_must_be_validated": true,
+  "intervals_require_independent_coverage_test": true
+}
