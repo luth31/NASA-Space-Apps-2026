@@ -1,8 +1,8 @@
-# PyroBridge v0.1
+# PyroBridge v0.2 · Orbital Atlas
 
 A NASA Space Apps fire observatory with a separate, reproducible MODIS-to-VIIRS modeling pipeline.
 
-The first version includes a 3D global hotspot globe, three dated investigations, a satellite comparison slider, observation dossiers, time playback, monthly raw-count calendars, a guided interactive tour, measured model diagnostics, source manifests, and an offline rehearsal bundle.
+Orbital Atlas is the main experience: a photographic NASA globe, direct region selection, shaded area exploration, and individual satellite readings. Flame symbols group nearby heat detections. A short optional introduction uses the same interactive views. The menu opens three dated investigations, satellite comparisons, raw-count calendars, measured model diagnostics, and source manifests. The design comparison has been retired.
 
 **Scientific release status:** observations are available; harmonized historical estimates and investigation exports are gated off. Ten candidate satellite-pass pairs produced 48 eligible cell-pass examples across Evia and Evros. That selected sample cannot validate a monthly historical calendar. The app makes this limitation explicit and never publishes a generic accuracy percentage.
 
@@ -23,7 +23,9 @@ npm run build
 npm run preview -- --port 4173
 ```
 
-Open http://127.0.0.1:4173/ while online and wait for **OFFLINE BUNDLE READY**. The approximately 20 MB rehearsal cache includes the global snapshot, featured month for all three cases, complete calendar summaries, imagery, and science reports. Other monthly point partitions are cached after viewing them online. A browser hard reload deliberately bypasses its offline cache; use normal navigation/reload when rehearsing offline.
+Open http://127.0.0.1:4173/ while online. The menu reports **Ready to explore offline** once the rehearsal cache is saved. It includes the global snapshot, atlas geography, featured month for all three cases, complete calendar summaries, imagery, and science reports; the build prints its measured size. Other monthly point partitions are cached after viewing them online. A browser hard reload deliberately bypasses its offline cache; use normal navigation/reload when rehearsing offline.
+
+The application stays local. A private Tailscale Serve endpoint may proxy the production build to devices on the same tailnet; this does not require public hosting or Funnel.
 
 ## Reproduce the data and models
 
@@ -49,7 +51,13 @@ uv run python -m pipeline.train
 uv run python -m pipeline.release
 ```
 
-`pipeline.run --refresh` deliberately updates the public-source lock and creates a new observation snapshot. Protected standard swaths remain pinned by URL and SHA256. Rebuild the web app after changing the published bundle.
+`pipeline.run --refresh` deliberately updates the public-source lock and creates a new observation snapshot. Protected standard swaths remain pinned by URL and SHA256. After updating the global snapshot, regenerate atlas assignments before rebuilding the app:
+
+```sh
+uv run --no-project --with shapely python web/scripts/build-geography.py
+```
+
+The generator pins Natural Earth v5.1.2, assigns observations using full map-unit polygons, and simplifies geometry only for display. The frontend build rejects geography generated for a different snapshot. Points outside mapped land remain available and counted.
 
 ## Checks
 
@@ -67,7 +75,8 @@ Use Chrome DevTools MCP for browser interactions and app testing, as requested f
 - `pipeline/`: public ingestion, authenticated swath acquisition, mask coverage, training, saved-model inference, release decisions, and batch measurements.
 - `config/`: pinned NASA inputs and explicit coverage/release policies.
 - `models/`: reproducible candidate artifacts, held-out predictions, scorecard, and release assessment.
-- `web/src/`: React dashboard. Three.js globe; SVG regional maps; sensor-preserving clusters; local fonts and animations.
+- `web/src/orbital/`: selected release experience, Three.js photographic globe, canvas atlas, precomputed geography, and accessible place selection.
+- `web/src/`: React dashboard and scientific views; sensor-preserving clusters, local fonts, and animations.
 - `web/public/data/`: versioned, precomputed dashboard inputs. `schema.json` defines compact observation tuples.
 - `web/public/assets/`: dated NASA imagery and attribution manifest.
 - `tests/`: scientific invariants, source-independent inference, and release/fallback behavior.

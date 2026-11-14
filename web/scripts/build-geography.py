@@ -1,10 +1,11 @@
-"""Generate local prototype geography and point assignments.
+"""Generate atlas geography and point assignments.
 
 Run from the repository root:
-    uv run --no-project --with shapely python web/scripts/build-prototype-geography.py
+    uv run --no-project --with shapely python web/scripts/build-geography.py
 """
 
 import json
+from hashlib import sha256
 from pathlib import Path
 from urllib.request import urlopen
 
@@ -61,7 +62,8 @@ def main():
             }
         )
 
-    observations = json.loads((ROOT / "public/data/global.json").read_text())
+    observation_bytes = (ROOT / "public/data/global.json").read_bytes()
+    observations = json.loads(observation_bytes)
     points = shapely.points([row[1:3] for row in observations])
     tree = shapely.STRtree(geometries)
     point_hits, geometry_hits = tree.query(points, predicate="covered_by")
@@ -84,8 +86,9 @@ def main():
         "features": units,
         "assignments": assignments,
         "observationCount": len(observations),
+        "observationSha256": sha256(observation_bytes).hexdigest(),
     }
-    target = ROOT / "src/prototype/map-units.json"
+    target = ROOT / "src/orbital/map-units.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(payload, separators=(",", ":")) + "\n")
     print(f"{len(assignments):,} of {len(observations):,} detections matched a map unit")

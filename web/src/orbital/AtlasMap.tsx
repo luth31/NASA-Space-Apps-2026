@@ -4,6 +4,7 @@ import type { GeoPermissibleObjects } from "d3-geo";
 import type { MultiPolygon } from "geojson";
 import { useLayoutEffect, useRef } from "react";
 import { useReducedMotion } from "motion/react";
+import { drawFire } from "./fireSymbol";
 import { integer, number } from "../data";
 import type { Observation } from "../data";
 import { cellOutline } from "./geography";
@@ -147,7 +148,7 @@ type Hit = {
 };
 type PointHit = { row: Observation; x: number; y: number };
 
-export default function PrototypeMap(props: Props) {
+export default function AtlasMap(props: Props) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const latest = useRef(props);
   latest.current = props;
@@ -321,11 +322,7 @@ export default function PrototypeMap(props: Props) {
         const max = areas[0]?.rows.length || 1;
         if (stage !== "globe" || style === "grid") {
           for (const area of [...areas].reverse()) {
-            if (
-              area.kind === "region" &&
-              (!area.geometry || area.id !== hovered?.id)
-            )
-              continue;
+            if (area.kind === "region" && !area.geometry) continue;
             const shape = area.bounds
               ? cellOutline(area.bounds)
               : area.geometry;
@@ -355,7 +352,7 @@ export default function PrototypeMap(props: Props) {
             ctx!.lineWidth = selected ? 1.5 : 0.65;
             ctx!.stroke(shapePath);
             ctx!.globalAlpha = 1;
-            if (area.kind !== "region") hits.push({ area, path: shapePath });
+            hits.push({ area, path: shapePath });
           }
         }
       }
@@ -373,17 +370,8 @@ export default function PrototypeMap(props: Props) {
             6.2,
             1.5 + Math.log2(area.rows.length + 1) * 0.45,
           );
-          ctx!.fillStyle = style === "grid" ? "#d4b9ff" : "#ff985f";
-          ctx!.globalAlpha = (stage === "detail" ? 0.24 : 0.3) * surfaceAlpha;
-          ctx!.beginPath();
-          ctx!.arc(x, y, radius, 0, Math.PI * 2);
-          ctx!.fill();
-          ctx!.globalAlpha = 0.92 * surfaceAlpha;
-          ctx!.beginPath();
-          if (style === "grid") ctx!.rect(x - 1, y - 1, 2, 2);
-          else ctx!.arc(x, y, Math.max(0.8, radius * 0.35), 0, Math.PI * 2);
-          ctx!.fill();
-          ctx!.globalAlpha = 1;
+          if (stage !== "detail")
+            drawFire(ctx!, x - 5, y, Math.min(15, 8 + radius));
         }
       } else {
         if (sector && !transitioning) {
@@ -411,8 +399,13 @@ export default function PrototypeMap(props: Props) {
           const [x, y] = p;
           const selected = selectedPoint?.id === row.id;
           ctx!.beginPath();
-          ctx!.arc(x, y, selected ? 5 : 1.55, 0, Math.PI * 2);
-          ctx!.fillStyle = selected ? "#ffffff" : color.accent;
+          ctx!.rect(
+            x - (selected ? 4 : 1.8),
+            y - (selected ? 4 : 1.8),
+            selected ? 8 : 3.6,
+            selected ? 8 : 3.6,
+          );
+          ctx!.fillStyle = selected ? "#fff3dc" : "#e7774c";
           ctx!.globalAlpha = selected ? 1 : 0.68;
           ctx!.fill();
           ctx!.globalAlpha = 1;
@@ -440,28 +433,18 @@ export default function PrototypeMap(props: Props) {
           !selected &&
           labels.some(
             ([lx, ly]) =>
-              Math.hypot(x - lx, y - ly) < (stage === "globe" ? 75 : 30),
+              Math.hypot(x - lx, y - ly) < (stage === "globe" ? 75 : 48),
           )
         )
           continue;
         labels.push([x, y]);
-        ctx!.beginPath();
-        ctx!.arc(x, y, radius, 0, Math.PI * 2);
-        ctx!.fillStyle = selected ? color.accent : "#101818";
-        ctx!.strokeStyle = color.accent;
-        ctx!.lineWidth = selected ? 2 : 1;
-        ctx!.fill();
-        ctx!.stroke();
-        ctx!.beginPath();
-        ctx!.arc(x, y, selected ? 3.2 : 2.1, 0, Math.PI * 2);
-        ctx!.fillStyle = selected ? "#101818" : color.accent;
-        ctx!.fill();
+        if (area.kind !== "sector") drawFire(ctx!, x - 7, y, 18, selected);
         if (
           stage === "globe" ||
           selected ||
           (width > 610 && labels.length < 7 && area.kind !== "sector")
         ) {
-          ctx!.font = '600 11px "DM Sans", sans-serif';
+          ctx!.font = '600 14px "DM Sans", sans-serif';
           ctx!.fillStyle = "#f4ead8";
           ctx!.textAlign = "center";
           ctx!.lineWidth = 3;
@@ -469,7 +452,7 @@ export default function PrototypeMap(props: Props) {
           ctx!.strokeText(area.name, x, y + radius + 13, 132);
           ctx!.fillText(area.name, x, y + radius + 13, 132);
         }
-        hits.push({ area, x, y, radius: radius + 5 });
+        hits.push({ area, x, y, radius: Math.max(23, radius + 5) });
       }
       ctx!.restore();
       if (globe || oval) {
@@ -487,9 +470,9 @@ export default function PrototypeMap(props: Props) {
       }
 
       if (!transitioning && hoverPosition && (lastHover || lastPoint)) {
-        const label = lastHover?.name ?? "Satellite hotspot";
+        const label = lastHover?.name ?? "Heat seen from space";
         const detail = lastHover
-          ? `${integer(lastHover.rows.length)} detections`
+          ? `${integer(lastHover.rows.length)} heat detections`
           : lastPoint?.frp == null
             ? "FRP unavailable"
             : `${number(lastPoint.frp)} MW`;
@@ -707,7 +690,7 @@ export default function PrototypeMap(props: Props) {
       ref={canvas}
       role="img"
       aria-label={description}
-      className="prototype-map-canvas"
+      className="orb-map-canvas"
     />
   );
 }
