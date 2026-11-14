@@ -47,6 +47,17 @@ import Sources from "./Sources";
 import { exportInvestigation } from "./exports";
 
 const Globe = lazy(() => import("./Globe"));
+const GlobePrototype = import.meta.env.DEV
+  ? lazy(() => import("./prototype/GlobePrototype"))
+  : null;
+type GlobeVariant = "orbital" | "atlas" | "grid";
+function globeVariantFromLocation(): GlobeVariant | null {
+  if (!import.meta.env.DEV) return null;
+  const value = new URLSearchParams(window.location.search).get("variant");
+  return value === "orbital" || value === "atlas" || value === "grid"
+    ? value
+    : null;
+}
 type View = "explore" | "calendar" | "methods" | "sources";
 const demoSteps = [
   "A global perspective",
@@ -87,6 +98,7 @@ export default function App() {
     [error, setError] = useState("");
   const [coverage, setCoverage] = useState<CoverageReport | null>(null);
   const [browseGlobal, setBrowseGlobal] = useState(false);
+  const [globeVariant, setGlobeVariant] = useState(globeVariantFromLocation);
   const [view, setView] = useState<View>("explore"),
     [study, setStudy] = useState<CaseStudy | null>(null),
     [selected, setSelected] = useState<Observation | null>(null);
@@ -265,9 +277,18 @@ export default function App() {
     setSearch("");
     setReset((v) => v + 1);
   }
+  function changeGlobeVariant(variant: GlobeVariant | null) {
+    const url = new URL(window.location.href);
+    if (variant) url.searchParams.set("variant", variant);
+    else url.searchParams.delete("variant");
+    window.history.replaceState(null, "", url);
+    setGlobeVariant(variant);
+    setSelected(null);
+    setBrowseGlobal(false);
+  }
   function openCase(c: CaseStudy) {
     cancelFlight();
-    if (!study && view === "explore" && !reduced) {
+    if (!study && view === "explore" && !reduced && !globeVariant) {
       setSelected(null);
       setDestination(c);
       loadObservations(
@@ -615,211 +636,253 @@ export default function App() {
                 </div>
               )}
             </div>
-            <div
-              className={`exploration-stage ${study ? "regional" : "global"} ${(selected || browseGlobal) && !study ? "has-selection" : ""}`}
-            >
-              <div className="map-space">
-                {study ? (
-                  <RegionalMap
-                    key={study.id}
-                    study={study}
-                    observations={observations}
-                    selected={selected}
-                    onSelect={selectObservation}
-                    compare={compare}
-                    onCompare={() => {
-                      setCompare((v) => !v);
-                      setSensor("all");
-                    }}
-                    period={day ?? month}
-                    reset={reset}
-                    wide={wide}
-                  />
-                ) : (
-                  <>
-                    <div
-                      className={`global-intro ${destination ? "departing" : ""}`}
+            {!study && globeVariant && GlobePrototype ? (
+              <Suspense
+                fallback={
+                  <div className="globe-loading">
+                    Loading the globe prototype…
+                  </div>
+                }
+              >
+                <GlobePrototype
+                  manifest={manifest}
+                  observations={observations}
+                  variant={globeVariant}
+                  onVariant={changeGlobeVariant}
+                  reset={reset}
+                  onSelect={selectObservation}
+                />
+                {selected && (
+                  <div
+                    className="prototype-dossier"
+                    ref={(el) => el?.scrollIntoView({ block: "nearest" })}
+                  >
+                    <Dossier
+                      study={null}
+                      observation={selected}
+                      observations={displayRows}
+                      onSelect={selectObservation}
+                      onClose={() => setSelected(null)}
+                      onCalendar={() => navigate("calendar")}
+                      onSources={() => navigate("sources")}
+                      onExport={handleExport}
+                      wide={false}
+                      onWide={() => {}}
+                    />
+                  </div>
+                )}
+              </Suspense>
+            ) : (
+              <div
+                className={`exploration-stage ${study ? "regional" : "global"} ${(selected || browseGlobal) && !study ? "has-selection" : ""}`}
+              >
+                <div className="map-space">
+                  {study ? (
+                    <RegionalMap
+                      key={study.id}
+                      study={study}
+                      observations={observations}
+                      selected={selected}
+                      onSelect={selectObservation}
+                      compare={compare}
+                      onCompare={() => {
+                        setCompare((v) => !v);
+                        setSensor("all");
+                      }}
+                      period={day ?? month}
+                      reset={reset}
+                      wide={wide}
+                    />
+                  ) : (
+                    <>
+                      <div
+                        className={`global-intro ${destination ? "departing" : ""}`}
+                      >
+                        <span className="eyebrow">
+                          <span className="tiny-cross">+</span> THE FIRE
+                          OBSERVATORY
+                        </span>
+                        <h1>
+                          A changing planet.
+                          <br />
+                          <em>A continuous record.</em>
+                        </h1>
+                        <p>
+                          Find the signal.
+                          <br />
+                          Understand the season.
+                        </p>
+                        <div className="global-metric">
+                          <span>{integer(observations.length)}</span>
+                          <div>
+                            reported hotspots
+                            <small>
+                              {dateLabel(manifest.snapshotStart, {
+                                day: "numeric",
+                                month: "short",
+                              })}{" "}
+                              —{" "}
+                              {dateLabel(manifest.snapshotEnd, {
+                                day: "numeric",
+                                month: "short",
+                              })}
+                            </small>
+                          </div>
+                        </div>
+                        <div className="global-source">
+                          <i className="dot fire" />
+                          NOAA-20 VIIRS <span>375 m at nadir</span>
+                        </div>
+                      </div>
+                      <Suspense
+                        fallback={
+                          <div className="globe-loading">
+                            <LoaderCircle className="spin" />
+                            Preparing Earth
+                          </div>
+                        }
+                      >
+                        <Globe
+                          observations={observations}
+                          onSelect={selectObservation}
+                          onCase={() => openCase(manifest.cases[0])}
+                          focus={selected}
+                          destination={destination?.center}
+                          zoom={zoom}
+                          reset={reset}
+                        />
+                      </Suspense>
+                      <div className="globe-map-tools">
+                        <button
+                          className="icon-button"
+                          aria-label="Zoom globe in"
+                          onClick={() => setZoom((z) => z + 1)}
+                        >
+                          <Plus size={17} />
+                        </button>
+                        <button
+                          className="icon-button"
+                          aria-label="Zoom globe out"
+                          onClick={() => setZoom((z) => z - 1)}
+                        >
+                          <Minus size={17} />
+                        </button>
+                        <button
+                          className="icon-button"
+                          aria-label="Reset globe"
+                          onClick={() => {
+                            setSelected(null);
+                            setReset((v) => v + 1);
+                          }}
+                        >
+                          <LocateFixed size={17} />
+                        </button>
+                      </div>
+                      <div className="globe-instructions mono">
+                        <Compass size={14} />
+                        DRAG TO EXPLORE <span>·</span> SCROLL TO ZOOM
+                      </div>
+                    </>
+                  )}
+                  {destination && (
+                    <motion.div
+                      className="flight-label"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
                     >
                       <span className="eyebrow">
-                        <span className="tiny-cross">+</span> THE FIRE
-                        OBSERVATORY
+                        ENTERING THE INVESTIGATION
                       </span>
-                      <h1>
-                        A changing planet.
-                        <br />
-                        <em>A continuous record.</em>
-                      </h1>
+                      <strong>
+                        {destination.name}, {destination.country}
+                      </strong>
+                      <span className="mono">
+                        {dateLabel(destination.date)} · NASA AQUA MODIS
+                      </span>
+                    </motion.div>
+                  )}
+                  {loading && (
+                    <div className="map-loading">
+                      <LoaderCircle className="spin" size={18} />
+                      Loading observations
+                    </div>
+                  )}
+                </div>
+                {study || selected || browseGlobal ? (
+                  <Dossier
+                    study={study}
+                    observation={selected}
+                    observations={displayRows}
+                    onSelect={selectObservation}
+                    onClose={() => {
+                      setSelected(null);
+                      setBrowseGlobal(false);
+                    }}
+                    onCalendar={() => navigate("calendar")}
+                    onSources={() => navigate("sources")}
+                    onExport={handleExport}
+                    wide={wide}
+                    onWide={() => {
+                      setWide((v) => !v);
+                      setToast(
+                        wide
+                          ? "Case boundary restored."
+                          : "Counting the wider scene area. The selected observation stays pinned.",
+                      );
+                    }}
+                  />
+                ) : (
+                  <aside className="global-aside">
+                    <div className="panel-title">
+                      <span className="eyebrow">IN THE CURRENT SNAPSHOT</span>
+                      <span className="mono">01—04</span>
+                    </div>
+                    <p className="list-description">
+                      High radiative-power observations
+                      <br />
+                      across the planet.
+                    </p>
+                    <div className="global-observation-list">
+                      {displayRows.slice(0, 4).map((o, i) => (
+                        <button key={o.id} onClick={() => selectObservation(o)}>
+                          <span className="observation-index mono">
+                            0{i + 1}
+                          </span>
+                          <div>
+                            <strong>{coordinates(o.lon, o.lat)}</strong>
+                            <small>
+                              {dateLabel(o.time, {
+                                day: "numeric",
+                                month: "short",
+                              })}{" "}
+                              · {timeLabel(o.time)}
+                            </small>
+                          </div>
+                          <span className="global-frp">
+                            {number(o.frp)}
+                            <small>MW</small>
+                          </span>
+                          <ArrowUpRight size={14} />
+                        </button>
+                      ))}
+                    </div>
+                    <div className="snapshot-note">
+                      <span className="eyebrow">FOLLOW THE OBSERVATION</span>
                       <p>
-                        Find the signal.
-                        <br />
-                        Understand the season.
+                        A hotspot is a satellite detection. Open an observation
+                        to see its source, time, confidence and context.
                       </p>
-                      <div className="global-metric">
-                        <span>{integer(observations.length)}</span>
-                        <div>
-                          reported hotspots
-                          <small>
-                            {dateLabel(manifest.snapshotStart, {
-                              day: "numeric",
-                              month: "short",
-                            })}{" "}
-                            —{" "}
-                            {dateLabel(manifest.snapshotEnd, {
-                              day: "numeric",
-                              month: "short",
-                            })}
-                          </small>
-                        </div>
-                      </div>
-                      <div className="global-source">
-                        <i className="dot fire" />
-                        NOAA-20 VIIRS <span>375 m at nadir</span>
-                      </div>
-                    </div>
-                    <Suspense
-                      fallback={
-                        <div className="globe-loading">
-                          <LoaderCircle className="spin" />
-                          Preparing Earth
-                        </div>
-                      }
-                    >
-                      <Globe
-                        observations={observations}
-                        onSelect={selectObservation}
-                        onCase={() => openCase(manifest.cases[0])}
-                        focus={selected}
-                        destination={destination?.center}
-                        zoom={zoom}
-                        reset={reset}
-                      />
-                    </Suspense>
-                    <div className="globe-map-tools">
                       <button
-                        className="icon-button"
-                        aria-label="Zoom globe in"
-                        onClick={() => setZoom((z) => z + 1)}
+                        className="text-button"
+                        onClick={() => setBrowseGlobal(true)}
                       >
-                        <Plus size={17} />
-                      </button>
-                      <button
-                        className="icon-button"
-                        aria-label="Zoom globe out"
-                        onClick={() => setZoom((z) => z - 1)}
-                      >
-                        <Minus size={17} />
-                      </button>
-                      <button
-                        className="icon-button"
-                        aria-label="Reset globe"
-                        onClick={() => {
-                          setSelected(null);
-                          setReset((v) => v + 1);
-                        }}
-                      >
-                        <LocateFixed size={17} />
+                        Browse all observations <ArrowUpRight size={13} />
                       </button>
                     </div>
-                    <div className="globe-instructions mono">
-                      <Compass size={14} />
-                      DRAG TO EXPLORE <span>·</span> SCROLL TO ZOOM
-                    </div>
-                  </>
-                )}
-                {destination && (
-                  <motion.div
-                    className="flight-label"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    <span className="eyebrow">ENTERING THE INVESTIGATION</span>
-                    <strong>
-                      {destination.name}, {destination.country}
-                    </strong>
-                    <span className="mono">
-                      {dateLabel(destination.date)} · NASA AQUA MODIS
-                    </span>
-                  </motion.div>
-                )}
-                {loading && (
-                  <div className="map-loading">
-                    <LoaderCircle className="spin" size={18} />
-                    Loading observations
-                  </div>
+                  </aside>
                 )}
               </div>
-              {study || selected || browseGlobal ? (
-                <Dossier
-                  study={study}
-                  observation={selected}
-                  observations={displayRows}
-                  onSelect={selectObservation}
-                  onClose={() => {
-                    setSelected(null);
-                    setBrowseGlobal(false);
-                  }}
-                  onCalendar={() => navigate("calendar")}
-                  onSources={() => navigate("sources")}
-                  onExport={handleExport}
-                  wide={wide}
-                  onWide={() => {
-                    setWide((v) => !v);
-                    setToast(
-                      wide
-                        ? "Case boundary restored."
-                        : "Counting the wider scene area. The selected observation stays pinned.",
-                    );
-                  }}
-                />
-              ) : (
-                <aside className="global-aside">
-                  <div className="panel-title">
-                    <span className="eyebrow">IN THE CURRENT SNAPSHOT</span>
-                    <span className="mono">01—04</span>
-                  </div>
-                  <p className="list-description">
-                    High radiative-power observations
-                    <br />
-                    across the planet.
-                  </p>
-                  <div className="global-observation-list">
-                    {displayRows.slice(0, 4).map((o, i) => (
-                      <button key={o.id} onClick={() => selectObservation(o)}>
-                        <span className="observation-index mono">0{i + 1}</span>
-                        <div>
-                          <strong>{coordinates(o.lon, o.lat)}</strong>
-                          <small>
-                            {dateLabel(o.time, {
-                              day: "numeric",
-                              month: "short",
-                            })}{" "}
-                            · {timeLabel(o.time)}
-                          </small>
-                        </div>
-                        <span className="global-frp">
-                          {number(o.frp)}
-                          <small>MW</small>
-                        </span>
-                        <ArrowUpRight size={14} />
-                      </button>
-                    ))}
-                  </div>
-                  <div className="snapshot-note">
-                    <span className="eyebrow">FOLLOW THE OBSERVATION</span>
-                    <p>
-                      A hotspot is a satellite detection. Open an observation to
-                      see its source, time, confidence and context.
-                    </p>
-                    <button
-                      className="text-button"
-                      onClick={() => setBrowseGlobal(true)}
-                    >
-                      Browse all observations <ArrowUpRight size={13} />
-                    </button>
-                  </div>
-                </aside>
-              )}
-            </div>
+            )}
             {study ? (
               <div className="timeline">
                 <button
