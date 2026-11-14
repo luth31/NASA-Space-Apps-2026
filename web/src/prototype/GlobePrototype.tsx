@@ -12,6 +12,9 @@ import {
   Layers3,
   MapPinned,
   Orbit,
+  Pause,
+  Play,
+  RotateCcw,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -152,6 +155,10 @@ function Explorer({
   reset,
   onSelect,
 }: Props & { geography: Geography }) {
+  const demoRequested =
+    new URLSearchParams(window.location.search).get("tour") === "1";
+  const [demoStep, setDemoStep] = useState(demoRequested ? 0 : null);
+  const [playing, setPlaying] = useState(demoRequested);
   const [level, setLevel] = useState(0);
   const [selection, setSelection] = useState<string[]>([]);
   const [hovered, setHovered] = useState<Area | null>(null);
@@ -171,13 +178,16 @@ function Explorer({
   const zones = useMemo(() => grid(observations, 15), [observations]);
   const isOrbital = variant === "orbital";
   const isAtlas = variant === "atlas";
-  const first = (
-    isOrbital
-      ? groups.regions
-      : isAtlas
-        ? [...groups.continents, groups.unmatched]
-        : zones
-  ).filter((area) => area.rows.length);
+  const first = useMemo(
+    () =>
+      (isOrbital
+        ? groups.regions
+        : isAtlas
+          ? [...groups.continents, groups.unmatched]
+          : zones
+      ).filter((area) => area.rows.length),
+    [groups, zones, isOrbital, isAtlas],
+  );
   const primary = first.find((area) => area.id === selection[0]) ?? null;
   const countryLevel = useMemo(
     () =>
@@ -224,6 +234,100 @@ function Explorer({
         : [],
     [sector],
   );
+  const demoFrames = useMemo(() => {
+    const region = isOrbital
+      ? (first.find((item) => item.id === "Eastern Africa") ?? first[0])
+      : isAtlas
+        ? (first.find((item) => item.id === "Africa") ?? first[0])
+        : first[0];
+    if (!region) return [];
+    const localCountry = isAtlas
+      ? groups.countries.find(
+          (item) => item.parent === region.id && item.rows.length,
+        )
+      : null;
+    const frames: {
+      level: number;
+      path: string[];
+      caption: string;
+      point?: Observation | null;
+    }[] = [
+      { level: 0, path: [], caption: "Start with the global VIIRS snapshot." },
+      {
+        level: 1,
+        path: [],
+        caption: isOrbital
+          ? "Unfold the globe into an oval atlas."
+          : isAtlas
+            ? "Open the map of continents."
+            : "Compare activity across 15° zones.",
+      },
+      {
+        level: 2,
+        path: [region.id],
+        caption: isOrbital
+          ? `Zoom into ${region.name}.`
+          : isAtlas
+            ? `Open ${region.name} and compare countries.`
+            : "Zoom into the zone with the most detections.",
+      },
+    ];
+    if (localCountry) {
+      frames.push({
+        level: 3,
+        path: [region.id, localCountry.id],
+        caption: `See the 1° sectors across ${localCountry.name}.`,
+      });
+    }
+    const cell = grid((localCountry ?? region).rows, cellSize)[0];
+    if (cell) {
+      const path = localCountry
+        ? [region.id, localCountry.id, cell.id]
+        : [region.id, cell.id];
+      frames.push({
+        level: localCountry ? 4 : 3,
+        path,
+        caption: `Inspect the original detections in a ${cellSize}° sector.`,
+      });
+      frames.push({
+        level: localCountry ? 4 : 3,
+        path,
+        caption: "Select one detection to see its time, location, and FRP.",
+        point: cell.peak,
+      });
+    }
+    return frames;
+  }, [first, groups, isOrbital, isAtlas, cellSize]);
+  const demoFrame = demoStep == null ? null : demoFrames[demoStep];
+  const demoFinished = demoStep === demoFrames.length - 1;
+  useEffect(() => {
+    if (!playing || !demoFrame || demoStep === null) return;
+    const timer = window.setTimeout(
+      () => {
+        const next = demoFrames[demoStep + 1];
+        if (!next) {
+          setPlaying(false);
+          return;
+        }
+        goTo(next.level, next.path);
+        setPoint(next.point ?? null);
+        setDemoStep(demoStep + 1);
+      },
+      demoStep === 0 ? 2100 : 2900,
+    );
+    return () => clearTimeout(timer);
+  }, [playing, demoStep, demoFrame, demoFrames]);
+
+  function replay() {
+    goTo(0, []);
+    setDemoStep(0);
+    setPlaying(true);
+  }
+  function stopDemo() {
+    setPlaying(false);
+    setDemoStep(null);
+  }
+
   const isWorld = stage === "world" || stage === "globe";
   const cardArea =
     (hovered && available.find((area) => area.id === hovered.id)) || active;
@@ -274,6 +378,7 @@ function Explorer({
     list.current?.scrollTo(0, 0);
   }
   function open(area: Area) {
+    stopDemo();
     if (!area.rows.length) return;
     if (level === 0 && isOrbital) {
       goTo(1, []);
@@ -284,9 +389,11 @@ function Explorer({
     else if (!sector) goTo(hasCountries ? 4 : 3, [...selection, area.id]);
   }
   function openPoint(row: Observation) {
+    stopDemo();
     setPoint(row);
   }
   function back() {
+    stopDemo();
     if (point) setPoint(null);
     else if (selection.length)
       goTo(Math.max(1, level - 1), selection.slice(0, -1));
@@ -542,6 +649,14 @@ function Explorer({
       data-stage={stage}
       data-level={level}
       onKeyDown={keyDown}
+      onPointerDownCapture={(event) => {
+        if (
+          demoFrame &&
+          event.target instanceof Element &&
+          !event.target.closest(".prototype-demo")
+        )
+          stopDemo();
+      }}
     >
       <div className="prototype-top">
         {navigation}
@@ -549,6 +664,44 @@ function Explorer({
           NOAA-20 VIIRS <i /> {dataRange}
         </span>
       </div>
+      {(demoFrame || __GLOBE_DEMO_BUILD__) && (
+        <div className="prototype-demo">
+          <div className="prototype-demo-copy" aria-live="polite">
+            <span className="prototype-kicker">
+              {demoFrame
+                ? `Step ${demoStep! + 1} of ${demoFrames.length}`
+                : "Walkthrough"}
+            </span>
+            <p>
+              {demoFrame?.caption ??
+                "Watch this design go from globe to hotspot."}
+            </p>
+          </div>
+          <div className="prototype-demo-controls">
+            {demoFrame && (
+              <button
+                aria-label={
+                  playing ? "Pause walkthrough" : "Resume walkthrough"
+                }
+                onClick={() =>
+                  demoFinished && !playing ? replay() : setPlaying(!playing)
+                }
+              >
+                {playing ? <Pause size={14} /> : <Play size={14} />}
+              </button>
+            )}
+            <button onClick={replay}>
+              {demoFrame ? <RotateCcw size={14} /> : <Play size={14} />}{" "}
+              {demoFrame ? "Replay" : "Play demo"}
+            </button>
+            {demoFrame && (
+              <button aria-label="Close walkthrough" onClick={stopDemo}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       <div className="prototype-body">
         <div className="prototype-visual">
           {map}

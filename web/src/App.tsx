@@ -47,12 +47,14 @@ import Sources from "./Sources";
 import { exportInvestigation } from "./exports";
 
 const Globe = lazy(() => import("./Globe"));
-const GlobePrototype = import.meta.env.DEV
-  ? lazy(() => import("./prototype/GlobePrototype"))
-  : null;
+const globeDemoBuild = __GLOBE_DEMO_BUILD__;
+const GlobePrototype =
+  __GLOBE_DEMO_BUILD__ || import.meta.env.DEV
+    ? lazy(() => import("./prototype/GlobePrototype"))
+    : null;
 type GlobeVariant = "orbital" | "atlas" | "grid";
 function globeVariantFromLocation(): GlobeVariant | null {
-  if (!import.meta.env.DEV) return null;
+  if (!import.meta.env.DEV && !globeDemoBuild) return null;
   const value = new URLSearchParams(window.location.search).get("variant");
   return value === "orbital" || value === "atlas" || value === "grid"
     ? value
@@ -184,7 +186,11 @@ export default function App() {
     };
     window.addEventListener("online", update);
     window.addEventListener("offline", update);
-    if ("serviceWorker" in navigator && import.meta.env.PROD) {
+    if (
+      "serviceWorker" in navigator &&
+      import.meta.env.PROD &&
+      !globeDemoBuild
+    ) {
       navigator.serviceWorker.addEventListener("message", status);
       navigator.serviceWorker
         .register("/service-worker.js")
@@ -280,7 +286,10 @@ export default function App() {
   function changeGlobeVariant(variant: GlobeVariant | null) {
     const url = new URL(window.location.href);
     if (variant) url.searchParams.set("variant", variant);
-    else url.searchParams.delete("variant");
+    else if (globeDemoBuild) {
+      window.location.assign("/");
+      return;
+    } else url.searchParams.delete("variant");
     window.history.replaceState(null, "", url);
     setGlobeVariant(variant);
     setSelected(null);
