@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   CalendarDays,
+  ChartNoAxesCombined,
   Check,
   ChevronDown,
   ChevronRight,
@@ -47,7 +48,8 @@ import Sources from "./Sources";
 import { exportInvestigation } from "./exports";
 
 const Globe = lazy(() => import("./Globe"));
-type View = "explore" | "calendar" | "methods" | "sources";
+const Report = lazy(() => import("./Report"));
+type View = "explore" | "report" | "calendar" | "methods" | "sources";
 const demoSteps = [
   "A global perspective",
   "An event, up close",
@@ -87,7 +89,7 @@ export default function App() {
     [error, setError] = useState("");
   const [coverage, setCoverage] = useState<CoverageReport | null>(null);
   const [browseGlobal, setBrowseGlobal] = useState(false);
-  const [view, setView] = useState<View>("explore"),
+  const [view, setView] = useState<View>(() => new URLSearchParams(location.search).get("tab") === "report" ? "report" : "explore"),
     [study, setStudy] = useState<CaseStudy | null>(null),
     [selected, setSelected] = useState<Observation | null>(null);
   const [month, setMonth] = useState("2023-08"),
@@ -111,6 +113,15 @@ export default function App() {
   const reduced = useReducedMotion();
   const [destination, setDestination] = useState<CaseStudy | null>(null);
   const flightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const url = new URL(location.href);
+    if (view === "report") url.searchParams.set("tab", "report");
+    else if (url.searchParams.get("tab") === "report") {
+      url.searchParams.delete("tab");
+      url.searchParams.delete("concept");
+    }
+    history.replaceState(null, "", url);
+  }, [view]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -445,6 +456,7 @@ export default function App() {
         <div className="rail-nav">
           {[
             { id: "explore" as View, icon: Globe2, label: "Explore Earth" },
+            { id: "report" as View, icon: ChartNoAxesCombined, label: "Report" },
             {
               id: "calendar" as View,
               icon: CalendarDays,
@@ -499,6 +511,13 @@ export default function App() {
               onClick={() => navigate("explore")}
             >
               Explore
+            </button>
+            <button
+              className={view === "report" ? "active" : ""}
+              onClick={() => navigate("report")}
+              aria-current={view === "report" ? "page" : undefined}
+            >
+              Report
             </button>
             <button
               className={view === "calendar" ? "active" : ""}
@@ -961,6 +980,11 @@ export default function App() {
           </div>
         )}
         <AnimatePresence mode="wait">
+          {view === "report" && (
+            <Suspense key="report" fallback={<div className="boot" role="status">Opening the report…</div>}>
+              <Report manifest={manifest} />
+            </Suspense>
+          )}
           {view === "calendar" && study && (
             <Calendar
               key={"calendar" + study.id}

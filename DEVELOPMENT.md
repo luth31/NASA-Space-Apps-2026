@@ -50,6 +50,28 @@ Optional hurdle and active-cell-day experiments remain planned. The latter has a
 
 ## Rehearsal and acceptance
 
+### Report concept previews
+
+The Report tab now opens a gallery of **nine independently previewable experiments**. Start the existing Vite app and open `http://127.0.0.1:5173/?tab=report&concept=gallery`. Each card has a same-tab preview, a new-tab link, strengths/tradeoffs, and a picker for the whole idea or individual parts (visuals, layout, motion, storytelling), with private browser-local notes. Picks synchronize between same-origin tabs through storage events. Nothing applies a final choice automatically. The concept switcher preserves the current time, geography, and satellite selection; separate preview tabs start with the same 2023 annual overview.
+
+| `concept` parameter | Experience | Distinct interaction |
+| --- | --- | --- |
+| `story` | The Spark | Particle season dial; guided peak-to-hour discoveries |
+| `dashboard` | The Observatory | The same weighted particles morph between columns, orbit, and river |
+| `timeline` | Time Machine | Glowing waveform with scrubbing, replay, and temporal depth |
+| `mosaic` | Signal Mosaic | Proportional treemap tiles; drill through time or place |
+| `tapestry` | The Fire Loom | 23-year/month heat tapestry unfolds into days and acquisition hours |
+| `sculpture` | Data Landscape | Orbit and enter a 3D count skyline, using WebGL or CSS 3D |
+| `split` | Two Ways of Seeing | Reveal slider and shared-scale satellite comparison |
+| `dispatch` | The Fire Dispatch | Light editorial layout with draggable, animated magazine pages |
+| `sequencer` | Signal Symphony | Period pads, visual replay, and explicitly enabled Web Audio sonification |
+
+Report implementation is isolated in `web/src/Report.tsx` and `web/src/report/`. `use-report.ts` owns shared selection, loading, and aggregation. `concepts.ts` is the experiment registry; `ReportGallery.tsx` and `use-idea-picks.ts` provide discovery and browser-local shortlisting. `Experiments.tsx` contains the six additional directions, with `DataLandscape.tsx` loaded separately. The landscape uses the existing Three.js dependency where WebGL2 is available and a fully interactive CSS 3D renderer otherwise. Its accessible period buttons remain available in either renderer. `FireField.tsx` uses Canvas, requestAnimationFrame, ResizeObserver, and IntersectionObserver; a deterministic weighted layout caps scenes at 1,500 illustrative particles and preserves period weights across shapes. It pauses offscreen, on hidden pages, with ambient pause, and with reduced motion. Native view transitions enhance switching where available. Sound is off by default, enabled only by a user action, normalized to the current chart maximum, and stopped on leaving the sequencer. No additional dependencies, credentials, or remote services are required. `App.tsx` only adds the lazy route, navigation entries, and report preview URL handling. Map, globe, calendar, data generation, and shared observation types are unchanged. The report uses monthly case summaries and lazily loads the original case-boundary observation partitions for days/hours. Uncached historical partitions still need a connection.
+
+The geographic hierarchy describes the bundled study areas. Europe → Greece study group → Evros/Evia is not an administrative count: the rectangular study boundaries can include border pixels. South America → Gran Chaco skips country attribution, which is absent in the bundle. Missing areas and sensor-months remain visible, and incomplete or zero-baseline comparisons have no percentage change. Raw percentage changes are explicitly unadjusted for observing effort. Burned area, unique events, predictions, and calibrated intervals remain unavailable.
+
+Run `cd web && npm test` for real-data aggregation integrity, missing versus zero, partial geography, previous periods, leap days, weighted particle layouts, treemap area conservation, independent MODIS/VIIRS series, preview route coverage, and shortlist parsing. The production build includes the report in the existing offline bundle. Browser checks should include all nine routes, real time drilldown, geographic filters, reset/breadcrumbs, keyboard navigation, mobile overflow, persisted picks, 3D controls, satellite reveal, magazine page turns, and sequencer replay/sound opt-in. Reduced motion follows MotionConfig and scoped CSS; autoplay is disabled with that preference while manual controls remain available.
+
 Open the production preview online, wait for the offline-ready indicator, and disable networking. Run the tour, switch cases, open the calendar, select an observation, change boundaries, and inspect methods. Confirm unsupported estimates and exports stay disabled. Re-enable networking for uncached months and external official reports.
 
 The recorded submission and live pitch remain separate from the app tour. Choose the team owners, final data cut, and presentation recording after the multi-developer setup.
