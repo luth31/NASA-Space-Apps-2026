@@ -4,7 +4,7 @@
 
 Orbital Atlas is the single product direction. It opens as a photographic NASA Earth; selecting a region opens that region directly. Region → 2° area → satellite reading is the primary exploration path. Plain-language explanations and larger controls lead the interface; technical metadata is expandable. The menu retains calendars, methods, credits, historical investigations, and offline status. Respect reduced motion and provide the place picker alongside canvas interactions.
 
-The three prototype alternatives are preserved in Git history, not in the release UI. Local preview and explicitly requested private Tailscale access are supported. Public hosting remains outside the authorized scope.
+The three prototype alternatives are preserved in Git history. Use the local URL for everyday development and keep a private phone preview available through the per-developer setup in the [README](README.md#phone-preview-on-tailscale).
 
 Regenerate `web/src/orbital/map-units.json` after replacing the global snapshot (see README). Its SHA256 guard prevents silently reusing stale spatial assignments. Flame symbols aggregate observations; they do not identify unique fires or incident perimeters. Region cells are degrees, not equal-area density estimates.
 
@@ -19,6 +19,8 @@ The frontend reads generated JSON and local imagery. It never authenticates to E
 | Build and verification | `web/scripts/`, build configuration, browser QA, documentation | Offline cache scope, data-bundle generation |
 
 Use separate branches/worktrees once the team setup is chosen. Assign one integrator to shared schema and release changes. Do not have multiple developers regenerate `web/public/data/` concurrently. Commit generated artifacts with the configuration and model changes that produced them.
+
+Push the branch and open a pull request for review. Merge only when explicitly requested for that pull request. In app handoffs, share the verified localhost URL first and the verified private Tailscale URL second. Each developer chooses the ports and hostname for their own machine.
 
 ## What is ready in v0.1
 

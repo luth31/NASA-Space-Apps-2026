@@ -25,7 +25,30 @@ npm run preview -- --port 4173
 
 Open http://127.0.0.1:4173/ while online. The menu reports **Ready to explore offline** once the rehearsal cache is saved. It includes the global snapshot, atlas geography, featured month for all three cases, complete calendar summaries, imagery, and science reports; the build prints its measured size. Other monthly point partitions are cached after viewing them online. A browser hard reload deliberately bypasses its offline cache; use normal navigation/reload when rehearsing offline.
 
-The application stays local. A private Tailscale Serve endpoint may proxy the production build to devices on the same tailnet; this does not require public hosting or Funnel.
+### Phone preview on Tailscale
+
+Keep a private Serve mapping on your development machine so the production preview is also available from your phone. Find your hostname in `Self.DNSName` from `tailscale status --json` and drop the trailing dot. Use `tailscale serve status` to check existing mappings, then choose an unused local preview port and an unused Serve HTTPS port. The ports below are examples. [Tailscale Serve reference](https://tailscale.com/docs/reference/tailscale-cli/serve)
+
+From `web/`, build and start the preview with your device's full DNS name as the allowed host. Use the hostname alone, without a scheme or port. [Vite host settings](https://vite.dev/config/server-options.html#server-allowedhosts)
+
+```sh
+npm run build
+PYROBRIDGE_PREVIEW_PORT=4173
+PYROBRIDGE_TAILSCALE_HOST=your-device.your-tailnet.ts.net
+__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS="$PYROBRIDGE_TAILSCALE_HOST" \
+  npm run preview -- --port "$PYROBRIDGE_PREVIEW_PORT" --strictPort
+```
+
+In another terminal, use the same local preview port and your chosen HTTPS port.
+
+```sh
+PYROBRIDGE_PREVIEW_PORT=4173
+PYROBRIDGE_SERVE_PORT=8443
+tailscale serve --bg --https="$PYROBRIDGE_SERVE_PORT" "http://127.0.0.1:$PYROBRIDGE_PREVIEW_PORT"
+tailscale serve status
+```
+
+Use the local URL printed by Vite on your computer and the HTTPS URL printed by Serve on your phone. The background mapping persists. The preview server must be running and the host must be awake and connected to Tailscale. Keep your hostname, ports, and any login-time service settings local to your machine.
 
 ## Reproduce the data and models
 
