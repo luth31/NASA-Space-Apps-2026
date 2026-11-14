@@ -1,0 +1,918 @@
+.orb-app,
+.orb-boot {
+  --orb-paper: #f2efdf;
+  --orb-muted: #b4beb7;
+  --orb-accent: #efb581;
+  --orb-line: #34443e;
+  background: #0b1414;
+  color: var(--orb-paper);
+  min-height: 100dvh;
+  overflow-x: clip;
+  font-family: "DM Sans", sans-serif;
+}
+.orb-app * {
+  box-sizing: border-box;
+}
+.orb-app button {
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.orb-app button:focus-visible,
+.orb-app a:focus-visible,
+.orb-app summary:focus-visible {
+  outline: 2px solid #f4cfa4;
+  outline-offset: 5px;
+}
+.orb-app button:disabled {
+  opacity: 0.5;
+}
+.orb-header {
+  height: 86px;
+  width: min(1380px, calc(100% - 88px));
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #ffffff14;
+}
+.orb-brand {
+  min-height: 44px;
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  font-size: 28px !important;
+  letter-spacing: -1px;
+  font-weight: 600 !important;
+}
+.orb-brand > svg {
+  color: var(--orb-accent);
+}
+.orb-header-actions {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.orb-header-actions button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+  font-size: 15px;
+}
+.orb-scene {
+  position: relative;
+  width: min(1440px, 100%);
+  margin: auto;
+  min-height: 670px;
+}
+.orb-scene.is-earth {
+  height: calc(100dvh - 218px);
+  max-height: 850px;
+}
+.orb-intro {
+  position: relative;
+  z-index: 2;
+  padding: 42px 44px 0;
+  pointer-events: none;
+  max-width: 720px;
+}
+.orb-intro button {
+  pointer-events: auto;
+}
+.orb-date {
+  font-size: 13px;
+  color: var(--orb-muted);
+  letter-spacing: 0.02em;
+  margin: 0 0 24px;
+}
+.orb-intro h1 {
+  font-size: clamp(43px, 4.6vw, 68px);
+  line-height: 1.05;
+  letter-spacing: -0.055em;
+  font-weight: 400;
+  margin: 0;
+}
+.orb-intro h1 em {
+  font-style: normal;
+  color: #b8c9ba;
+}
+.orb-description {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--orb-muted);
+  max-width: 370px;
+  margin: 23px 0 0;
+}
+.orb-start {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 31px;
+}
+.orb-primary {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 12px 20px;
+  border-radius: 9px;
+  background: var(--orb-accent);
+  color: #22261f !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  transition:
+    transform 0.2s,
+    background 0.2s;
+}
+.orb-primary:hover {
+  transform: translateY(-2px);
+  background: #ffcd9d;
+}
+.orb-tour-link {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+  font-size: 15px !important;
+}
+.orb-visual {
+  position: relative;
+  min-width: 0;
+  isolation: isolate;
+  overflow: hidden;
+}
+.is-earth .orb-visual {
+  position: absolute;
+  inset: 0 -24px 42px 320px;
+  background: radial-gradient(ellipse at 50% 50%, #1d384952, transparent 64%);
+}
+.orb-earth-layer,
+.orb-atlas-layer,
+.orb-earth {
+  position: absolute;
+  inset: 0;
+}
+.orb-earth {
+  bottom: 40px;
+}
+.orb-earth canvas {
+  display: block;
+  touch-action: none;
+}
+.orb-earth-tip {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  background: #112120f5;
+  border: 1px solid #6a8278;
+  border-radius: 10px;
+  padding: 11px 15px;
+  box-shadow: 0 10px 30px #0004;
+}
+.orb-earth-tip strong,
+.orb-earth-tip span {
+  display: block;
+}
+.orb-earth-tip strong {
+  font-size: 17px;
+}
+.orb-earth-tip span {
+  font-size: 13px;
+  color: #c8d1c7;
+  margin-top: 4px;
+}
+.orb-earth-fallback {
+  padding: 120px 40px;
+  font-size: 18px;
+  line-height: 1.6;
+}
+.orb-map-bottom {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  z-index: 2;
+  pointer-events: none;
+  color: #bbc9c9;
+  font-size: 13px;
+}
+.orb-map-bottom button {
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #67848266;
+  border-radius: 50%;
+}
+.orb-texture-credit {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  color: #8caaaa;
+}
+.orb-action-strip {
+  position: absolute;
+  bottom: 0;
+  left: 44px;
+  right: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  z-index: 3;
+}
+.orb-place-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  background: #1e3029;
+  border: 1px solid #70867870;
+  border-radius: 9px;
+  padding: 10px 16px;
+  font-size: 16px !important;
+}
+.orb-legend {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #c9cec1 !important;
+  font-size: 14px !important;
+  min-height: 46px;
+}
+.orb-legend svg:first-child {
+  color: #ee8353;
+  fill: #c34f2c55;
+}
+.orb-invitation {
+  width: min(1352px, calc(100% - 88px));
+  margin: 34px auto 0;
+  display: flex;
+  align-items: center;
+  gap: 19px;
+  padding: 24px 0;
+  border-top: 1px solid var(--orb-line);
+}
+.orb-invitation-icon {
+  display: grid;
+  place-items: center;
+  background: #b16a3430;
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  color: var(--orb-accent);
+  flex-shrink: 0;
+}
+.orb-invitation p {
+  margin: 0;
+  line-height: 1.6;
+  font-size: 15px;
+  color: var(--orb-muted);
+}
+.orb-invitation strong {
+  font-weight: 500;
+  color: var(--orb-paper);
+}
+.orb-invitation button {
+  margin-left: auto;
+  min-width: 44px;
+  min-height: 44px;
+}
+.orb-footer {
+  width: min(1352px, calc(100% - 88px));
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0 23px;
+  color: #9bada5;
+  font-size: 12px;
+  align-items: center;
+}
+.orb-footer button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+.orb-back {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 14px;
+  font-size: 15px !important;
+  color: #ccd5c7 !important;
+}
+.is-world .orb-intro,
+.is-place .orb-intro {
+  padding-top: 15px;
+}
+.is-world .orb-date,
+.is-place .orb-date {
+  margin: 0 0 12px;
+}
+.is-world .orb-intro h1,
+.is-place .orb-intro h1 {
+  font-size: 45px;
+}
+.is-world .orb-description,
+.is-place .orb-description {
+  margin: 12px 0 0;
+  max-width: 600px;
+  font-size: 17px;
+}
+.is-world .orb-visual,
+.is-place .orb-visual {
+  height: clamp(340px, 52vh, 610px);
+  margin: 12px 25px 65px;
+}
+.orb-map-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.orb-atlas-layer {
+  bottom: 28px;
+}
+.orb-scene.is-world,
+.orb-scene.is-place {
+  min-height: 0;
+}
+.is-world .orb-map-bottom,
+.is-place .orb-map-bottom {
+  bottom: 0;
+}
+.orb-guide {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #e1ddc9;
+  color: #19251d;
+  margin: 24px 44px 0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 12px 30px #0004;
+}
+.is-earth .orb-guide {
+  position: absolute;
+  bottom: 70px;
+  left: 0;
+  right: 0;
+}
+.orb-guide p {
+  font-size: 17px;
+  line-height: 1.45;
+  margin: 0;
+  flex: 1;
+  color: inherit;
+}
+.orb-guide button {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 44px;
+}
+.orb-guide-progress {
+  font-size: 12px;
+  border: 1px solid #59745b7a;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+}
+.orb-detail {
+  width: min(1100px, calc(100% - 88px));
+  margin: 30px auto 40px;
+}
+.orb-region-fact {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: #192a25;
+  border-radius: 14px;
+  padding: 23px;
+}
+.orb-region-fact > svg {
+  color: var(--orb-accent);
+  flex-shrink: 0;
+}
+.orb-region-fact p {
+  font-size: 20px;
+  margin: 0;
+  color: #e7e6d6;
+  line-height: 1.5;
+}
+.orb-region-fact strong {
+  font-weight: 600;
+}
+.orb-region-fact span {
+  display: block;
+  font-size: 14px;
+  color: #b4c3b8;
+  margin-top: 4px;
+}
+.orb-area-shortcuts h2 {
+  font-size: 23px;
+  letter-spacing: -0.4px;
+  font-weight: 500;
+  margin: 28px 0 15px;
+}
+.orb-area-shortcuts > div {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.orb-area-shortcuts > div > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--orb-line);
+  border-radius: 10px;
+  padding: 14px 17px;
+  text-align: left;
+  min-height: 68px;
+  background: #14211d;
+}
+.orb-area-shortcuts > div > button:hover {
+  background: #24372b;
+}
+.orb-area-shortcuts > div > button > span {
+  font-size: 17px;
+}
+.orb-area-shortcuts strong {
+  margin-left: auto;
+  font-size: 19px;
+  font-weight: 500;
+}
+.orb-area-shortcuts small {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--orb-muted);
+  margin-top: 3px;
+}
+.orb-text-button {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 46px;
+  margin-top: 12px;
+  font-size: 15px !important;
+}
+.orb-detail > .orb-primary {
+  margin: 20px 0;
+}
+.orb-observation {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  background: #1b2b24;
+  border: 1px solid #50664c;
+  border-radius: 14px;
+  padding: 25px;
+}
+.orb-detail-icon {
+  color: var(--orb-accent);
+  flex-shrink: 0;
+}
+.orb-observation > div:nth-child(2) {
+  flex: 1;
+}
+.orb-observation h2 {
+  font-size: 23px;
+  font-weight: 500;
+  line-height: 1.2;
+  margin: 0 0 10px;
+}
+.orb-observation p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--orb-muted);
+  margin: 0;
+}
+.orb-observation > button {
+  min-height: 44px;
+  min-width: 44px;
+}
+.orb-observation details {
+  margin-top: 18px;
+}
+.orb-app summary {
+  cursor: pointer;
+  min-height: 44px;
+  color: var(--orb-paper);
+  font-size: 16px;
+  padding: 8px 0;
+}
+.orb-observation dl {
+  margin: 10px 0 20px;
+}
+.orb-observation dl > div {
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid #40503f;
+}
+.orb-observation dt {
+  color: var(--orb-muted);
+}
+.orb-observation dd {
+  margin: 0;
+  text-align: right;
+}
+.orb-dialog {
+  border: 1px solid #627465;
+  background: #14231e;
+  color: var(--orb-paper);
+  border-radius: 20px;
+  width: min(610px, calc(100vw - 26px));
+  padding: 0;
+  max-height: 85dvh;
+  box-shadow: 0 30px 100px #0007;
+}
+.orb-dialog::backdrop {
+  background: #030c0dbd;
+  backdrop-filter: blur(8px);
+}
+.orb-dialog-inner {
+  padding: 26px;
+}
+.orb-dialog-inner > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 19px;
+}
+.orb-dialog h2 {
+  font-size: 27px;
+  letter-spacing: -0.7px;
+  line-height: 1.2;
+  font-weight: 500;
+  margin: 6px 0 0;
+}
+.orb-dialog header button {
+  min-width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+}
+.orb-search {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #627266;
+  background: #0d1915;
+  border-radius: 8px;
+  padding: 0 13px;
+}
+.orb-search input {
+  font: inherit;
+  font-size: 17px;
+  color: #e7eada;
+  width: 100%;
+  min-width: 0;
+  background: none;
+  border: 0;
+  min-height: 50px;
+  outline: none;
+}
+.orb-choices {
+  margin-top: 16px;
+}
+.orb-choices > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  min-height: 62px;
+  border-bottom: 1px solid #41503e;
+  padding: 10px 4px;
+}
+.orb-choices > button > span {
+  flex: 1;
+  font-size: 17px;
+}
+.orb-choices > button > small {
+  color: var(--orb-muted);
+  font-size: 13px;
+  max-width: 110px;
+}
+.orb-choices > button > span > small {
+  display: block;
+  color: var(--orb-muted);
+  font-size: 12px;
+}
+.orb-learning > div {
+  position: relative;
+  padding: 0 0 20px 42px;
+}
+.orb-learning > div > svg {
+  position: absolute;
+  left: 0;
+  top: 1px;
+  color: var(--orb-accent);
+}
+.orb-learning h3 {
+  font-size: 21px;
+  font-weight: 500;
+  margin: 0 0 8px;
+}
+.orb-learning p {
+  font-size: 17px;
+  line-height: 1.6;
+  color: #bac8bc;
+  margin: 0;
+}
+.orb-learning .orb-source-note {
+  font-size: 14px;
+  padding-top: 20px;
+  border-top: 1px solid var(--orb-line);
+}
+.orb-learning > .orb-primary {
+  margin-top: 23px;
+}
+.orb-menu > button {
+  width: 100%;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  min-height: 64px;
+  border-bottom: 1px solid #3a4a3d;
+  font-size: 17px;
+}
+.orb-menu > button > svg:last-child {
+  margin-left: auto;
+  width: 18px;
+}
+.orb-menu > button > span {
+  text-align: left;
+}
+.orb-menu small {
+  display: block;
+  font-size: 13px;
+  color: var(--orb-muted);
+  margin-top: 3px;
+}
+.orb-menu h3 {
+  font-size: 14px;
+  color: var(--orb-muted);
+  margin: 25px 0 9px;
+}
+.orb-boot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 30px;
+  text-align: center;
+}
+.orb-boot h1 {
+  font-size: 24px;
+  font-weight: 400;
+}
+@media (min-width: 1500px) {
+  .orb-intro {
+    padding-top: 80px;
+  }
+  .is-earth .orb-visual {
+    left: 360px;
+    right: -50px;
+  }
+}
+@media (max-width: 950px) {
+  .is-earth .orb-visual {
+    left: 240px;
+    right: -60px;
+  }
+  .orb-intro h1 {
+    font-size: 48px;
+  }
+  .orb-description {
+    max-width: 300px;
+  }
+  .orb-scene.is-earth {
+    min-height: 650px;
+  }
+  .orb-header,
+  .orb-footer,
+  .orb-invitation {
+    width: calc(100% - 48px);
+  }
+  .orb-intro {
+    padding-left: 24px;
+  }
+  .orb-action-strip {
+    left: 24px;
+    right: 24px;
+  }
+}
+@media (max-width: 650px) {
+  .orb-header {
+    height: 69px;
+    width: calc(100% - 36px);
+  }
+  .orb-brand {
+    font-size: 24px !important;
+  }
+  .orb-header-actions {
+    gap: 7px;
+  }
+  .orb-header-actions button span {
+    display: none;
+  }
+  .orb-scene.is-earth {
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .orb-intro {
+    padding: 27px 22px 0;
+    max-width: 100%;
+  }
+  .orb-date {
+    font-size: 12px;
+    margin: 0 0 17px;
+  }
+  .orb-intro h1 {
+    font-size: 42px;
+  }
+  .orb-description {
+    font-size: 16px;
+    max-width: 330px;
+    line-height: 1.5;
+    margin-top: 15px;
+  }
+  .orb-start {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+  .orb-primary {
+    font-size: 15px !important;
+    min-height: 48px;
+    padding: 10px 15px;
+    gap: 8px;
+  }
+  .orb-tour-link {
+    font-size: 13px !important;
+    gap: 5px;
+    padding: 0 5px;
+  }
+  .is-earth .orb-visual {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: 360px;
+    margin: -4px 0 8px;
+  }
+  .orb-map-bottom {
+    bottom: 20px;
+    font-size: 12px;
+  }
+  .orb-texture-credit {
+    font-size: 9px;
+    bottom: 1px;
+  }
+  .orb-action-strip {
+    position: relative;
+    inset: auto;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 0 22px;
+    gap: 5px;
+  }
+  .orb-place-button {
+    justify-content: center;
+    min-height: 48px;
+  }
+  .orb-legend {
+    justify-content: center;
+    font-size: 13px !important;
+  }
+  .orb-invitation {
+    width: calc(100% - 44px);
+    margin-top: 12px;
+    padding: 20px 0;
+    gap: 11px;
+  }
+  .orb-invitation-icon {
+    width: 39px;
+    height: 43px;
+    border-radius: 11px;
+  }
+  .orb-invitation p {
+    font-size: 14px;
+  }
+  .orb-invitation button {
+    display: none;
+  }
+  .orb-footer {
+    width: calc(100% - 44px);
+    font-size: 10px;
+    padding-bottom: 10px;
+  }
+  .is-world .orb-intro,
+  .is-place .orb-intro {
+    padding: 8px 22px 0;
+  }
+  .is-world .orb-intro h1,
+  .is-place .orb-intro h1 {
+    font-size: 34px;
+  }
+  .is-world .orb-description,
+  .is-place .orb-description {
+    font-size: 16px;
+  }
+  .is-world .orb-visual,
+  .is-place .orb-visual {
+    height: 335px;
+    margin: 5px 0 10px;
+  }
+  .orb-atlas-layer {
+    bottom: 25px;
+  }
+  .orb-detail {
+    width: calc(100% - 36px);
+    margin: 18px auto 20px;
+  }
+  .orb-region-fact {
+    padding: 17px;
+    gap: 12px;
+  }
+  .orb-region-fact p {
+    font-size: 18px;
+  }
+  .orb-area-shortcuts > div {
+    grid-template-columns: 1fr;
+  }
+  .orb-observation {
+    gap: 10px;
+    padding: 18px;
+  }
+  .orb-detail-icon {
+    display: none;
+  }
+  .orb-observation h2 {
+    font-size: 21px;
+  }
+  .orb-observation > button {
+    min-width: 44px;
+  }
+  .orb-observation dl > div {
+    flex-direction: column;
+    gap: 3px;
+  }
+  .orb-observation dd {
+    text-align: left;
+  }
+  .orb-guide,
+  .is-earth .orb-guide {
+    position: relative;
+    inset: auto;
+    margin: 14px 18px 0;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .orb-guide p {
+    font-size: 15px;
+  }
+  .orb-guide-progress {
+    display: none;
+  }
+  .orb-guide button {
+    min-width: 44px;
+  }
+  .orb-dialog-inner {
+    padding: 20px;
+  }
+  .orb-dialog h2 {
+    font-size: 25px;
+  }
+  .orb-dialog {
+    max-height: 90dvh;
+  }
+}

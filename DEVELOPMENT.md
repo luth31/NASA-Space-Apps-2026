@@ -1,4 +1,12 @@
-# First-version handoff
+# Orbital Atlas release handoff
+
+## v0.2 experience
+
+Orbital Atlas is the single product direction. It opens as a photographic NASA Earth; selecting a region opens that region directly. Region → 2° area → satellite reading is the primary exploration path. Plain-language explanations and larger controls lead the interface; technical metadata is expandable. The menu retains calendars, methods, credits, historical investigations, and offline status. Respect reduced motion and provide the place picker alongside canvas interactions.
+
+The three prototype alternatives are preserved in Git history, not in the release UI. Local preview and explicitly requested private Tailscale access are supported. Public hosting remains outside the authorized scope.
+
+Regenerate `web/src/orbital/map-units.json` after replacing the global snapshot (see README). Its SHA256 guard prevents silently reusing stale spatial assignments. Flame symbols aggregate observations; they do not identify unique fires or incident perimeters. Region cells are degrees, not equal-area density estimates.
 
 ## Stable boundary for parallel development
 

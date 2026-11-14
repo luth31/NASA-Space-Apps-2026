@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
-  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   CalendarDays,
@@ -18,7 +17,6 @@ import {
   Pause,
   Play,
   Plus,
-  RotateCcw,
   Search,
   X,
 } from "lucide-react";
@@ -47,14 +45,8 @@ import Sources from "./Sources";
 import { exportInvestigation } from "./exports";
 
 const Globe = lazy(() => import("./Globe"));
+const OrbitalAtlas = lazy(() => import("./orbital/OrbitalAtlas"));
 type View = "explore" | "calendar" | "methods" | "sources";
-const demoSteps = [
-  "A global perspective",
-  "An event, up close",
-  "Two ways of seeing",
-  "The longer record",
-  "Behind the estimate",
-];
 
 function Brand() {
   return (
@@ -104,9 +96,7 @@ export default function App() {
     [searchFocused, setSearchFocused] = useState(false),
     [playing, setPlaying] = useState(false),
     [toast, setToast] = useState("");
-  const [demo, setDemo] = useState<number | null>(null),
-    [demoPlaying, setDemoPlaying] = useState(false),
-    [online, setOnline] = useState(navigator.onLine),
+  const [online, setOnline] = useState(navigator.onLine),
     [offlineReady, setOfflineReady] = useState(false);
   const reduced = useReducedMotion();
   const [destination, setDestination] = useState<CaseStudy | null>(null);
@@ -307,39 +297,6 @@ export default function App() {
       setDay(null);
     }
   }
-  function demoAction(step: number) {
-    if (!manifest) return;
-    setDemo(step);
-    if (step === 0) {
-      toGlobal();
-    }
-    if (step === 1) openCase(manifest.cases[0]);
-    if (step === 2) {
-      commitCase(manifest.cases[0]);
-      setView("explore");
-      setCompare(true);
-      setSensor("all");
-    }
-    if (step === 3) {
-      commitCase(manifest.cases[0]);
-      navigate("calendar");
-      setDay(null);
-    }
-    if (step === 4) {
-      navigate("methods");
-    }
-  }
-  useEffect(() => {
-    if (!demoPlaying || demo === null) return;
-    const timer = setTimeout(
-      () => {
-        if (demo < 4) demoAction(demo + 1);
-        else setDemoPlaying(false);
-      },
-      demo === 0 ? 5000 : demo === 1 ? 6500 : 6000,
-    );
-    return () => clearTimeout(timer);
-  }, [demo, demoPlaying, manifest]);
   function selectObservation(o: Observation) {
     setSelected(o);
     setPlaying(false);
@@ -421,14 +378,23 @@ export default function App() {
         <p>Loading the NASA observation snapshot</p>
       </div>
     );
+  if (view === "explore" && !study)
+    return (
+      <Suspense fallback={<div className="boot">Opening Earth…</div>}>
+        <OrbitalAtlas
+          observations={global}
+          manifest={manifest}
+          offlineReady={offlineReady}
+          onNavigate={navigate}
+          onCase={commitCase}
+        />
+      </Suspense>
+    );
   return (
     <div
       className="app-shell"
-      onPointerDownCapture={(e) => {
-        if (!(e.target as Element).closest(".demo-controller, .demo-button")) {
-          setDemoPlaying(false);
-          if (destination) cancelFlight();
-        }
+      onPointerDownCapture={() => {
+        if (destination) cancelFlight();
       }}
     >
       <a className="skip-link" href="#main-content">
@@ -518,16 +484,6 @@ export default function App() {
               <i />
               {online ? "OBSERVATION SNAPSHOT" : "OFFLINE SNAPSHOT"}
             </span>
-            <button
-              className="demo-button"
-              onClick={() => {
-                demoAction(0);
-                setDemoPlaying(true);
-              }}
-            >
-              <Play size={12} fill="currentColor" />
-              Take a tour
-            </button>
           </div>
         </header>
         {view === "explore" && (
@@ -1010,80 +966,7 @@ export default function App() {
           </span>
         </footer>
       </main>
-      <AnimatePresence>
-        {demo !== null && (
-          <motion.div
-            className="demo-controller"
-            initial={{ y: 90, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 90, opacity: 0 }}
-            transition={{ type: "spring", bounce: 0.2 }}
-          >
-            <button
-              className="demo-toggle"
-              aria-label={
-                demoPlaying ? "Pause guided tour" : "Resume guided tour"
-              }
-              onClick={() => setDemoPlaying((v) => !v)}
-            >
-              {demoPlaying ? <Pause size={16} /> : <Play size={16} />}
-            </button>
-            <div>
-              <span className="eyebrow">
-                A GUIDED EXPLORATION · {demo + 1} / 5
-              </span>
-              <strong>{demoSteps[demo]}</strong>
-              <div className="demo-progress">
-                {demoSteps.map((s, i) => (
-                  <button
-                    key={s}
-                    title={s}
-                    aria-label={`Tour step ${i + 1}: ${s}`}
-                    className={i === demo ? "active" : i < demo ? "done" : ""}
-                    onClick={() => demoAction(i)}
-                  />
-                ))}
-              </div>
-            </div>
-            <button
-              className="icon-button"
-              aria-label="Previous tour step"
-              onClick={() => demoAction(Math.max(0, demo - 1))}
-              disabled={demo === 0}
-            >
-              <ArrowLeft size={16} />
-            </button>
-            <button
-              className="icon-button"
-              aria-label="Next tour step"
-              onClick={() => demoAction(Math.min(4, demo + 1))}
-              disabled={demo === 4}
-            >
-              <ArrowRight size={16} />
-            </button>
-            <button
-              className="icon-button"
-              aria-label="Replay tour"
-              onClick={() => {
-                demoAction(0);
-                setDemoPlaying(true);
-              }}
-            >
-              <RotateCcw size={15} />
-            </button>
-            <button
-              className="icon-button"
-              aria-label="Close guided tour"
-              onClick={() => {
-                setDemo(null);
-                setDemoPlaying(false);
-              }}
-            >
-              <X size={17} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
       <AnimatePresence>
         {toast && (
           <motion.div
