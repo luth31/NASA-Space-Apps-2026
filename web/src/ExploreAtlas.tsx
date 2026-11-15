@@ -1,52 +1,81 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
   ArrowUpRight,
   ChevronRight,
-  Globe2,
-  Map,
   Minus,
-  Pause,
-  Play,
   Plus,
   RotateCcw,
+  ScanLine,
 } from "lucide-react";
 import type { CaseStudy, Observation } from "./data";
 import { integer } from "./data";
-import AtlasSurface from "./explore/AtlasSurface";
 import {
-  areaKm2,
   contains,
   continents,
   countryBounds,
-  inBounds,
-  localWindow,
-  observationsInScope,
   sectors,
   WORLD,
 } from "./explore/geography";
-import type { Bounds, Country, GeoData, Sector } from "./explore/geography";
-import "./explore/atlas.css";
+import type { Bounds, Country, GeoData } from "./explore/geography";
+import {
+  contourPath,
+  countFill,
+  countThresholds,
+  fitProjection,
+  labelPoint,
+  partitionRegions,
+  redScale,
+} from "./explore/contour-data";
+import type { CountRegion } from "./explore/contour-data";
+import "./explore/contours.css";
 
 interface Props {
   observations: Observation[];
   cases: CaseStudy[];
-  onSelect: (observation: Observation) => void;
+  onSelect: (o: Observation) => void;
   onCase: (study: CaseStudy) => void;
   snapshotStart: string;
   snapshotEnd: string;
   focus?: Observation | null;
   zoom?: number;
   reset?: number;
+  initialOpen?: boolean;
+  initialContinent?: string;
+  onBackToGlobe?: () => void;
 }
-interface Place {
+interface Selection {
+  kind: CountRegion["kind"];
+  id: string;
   name: string;
-  bounds: Bounds;
-  kind: "world" | "continent" | "country" | "sector";
-  country?: Country;
-  sector?: Sector;
-  sourceBounds?: Bounds;
+  bounds?: Bounds;
+}
+const worldBounds: Bounds = [-180, -60, 180, 85];
+const regionBox = (bounds: Bounds): Country => ({
+  type: "Feature",
+  properties: { NAME_EN: "Analytical sector", CONTINENT: "", ISO_A3: "" },
+  geometry: {
+    type: "Polygon",
+    coordinates: [
+      [
+        [bounds[0], bounds[1]],
+        [bounds[2], bounds[1]],
+        [bounds[2], bounds[3]],
+        [bounds[0], bounds[3]],
+        [bounds[0], bounds[1]],
+      ],
+    ],
+  },
+});
+function combinedBounds(features: Country[]): Bounds {
+  const boxes = features.map(countryBounds);
+  return [
+    Math.min(...boxes.map((b) => b[0])),
+    Math.min(...boxes.map((b) => b[1])),
+    Math.max(...boxes.map((b) => b[2])),
+    Math.max(...boxes.map((b) => b[3])),
+  ];
 }
 export default function ExploreAtlas({
   observations,
@@ -58,347 +87,423 @@ export default function ExploreAtlas({
   focus,
   zoom = 0,
   reset = 0,
+  initialContinent,
+  onBackToGlobe,
 }: Props) {
-  const [path, setPath] = useState<Place[]>([]);
-  const [data, setData] = useState<GeoData | null>(null),
-    [error, setError] = useState(false),
-    [attempt, setAttempt] = useState(0);
-  const [paused, setPaused] = useState(false),
-    [hover, setHover] = useState<Country | null>(null),
-    [page, setPage] = useState(0);
-  const [hoveredSector, setHoveredSector] = useState<Sector | null>(null);
+  const [countries, setCountries] = useState<Country[]>([]),
+    [admin, setAdmin] = useState<Country[]>([]);
+  const [loading, setLoading] = useState(true),
+    [error, setError] = useState(""),
+    [retry, setRetry] = useState(0);
+  const [path, setPath] = useState<Selection[]>(
+    initialContinent
+      ? [{ kind: "continent", id: initialContinent, name: initialContinent }]
+      : [],
+  );
+  const [hover, setHover] = useState<string | null>(null),
+    [scale, setScale] = useState(1),
+    [pan, setPan] = useState({ x: 0, y: 0 });
+  const [page, setPage] = useState(0);
   const reduced = !!useReducedMotion();
-  const variant =
-    new URLSearchParams(location.search).get("atlasMotion") === "ellipsoid"
-      ? "ellipsoid"
-      : "unwrap";
-  const current = path.at(-1),
-    open = path.length > 0,
-    bounds = current?.bounds || WORLD;
+  const svg = useRef<SVGSVGElement>(null);
+  const drag = useRef<{
+      x: number;
+      y: number;
+      startX: number;
+      startY: number;
+    } | null>(null),
+    moved = useRef(false);
+  const touches = useRef(new Map<number, { x: number; y: number }>()),
+    pinch = useRef(0);
+  const current = path.at(-1);
   useEffect(() => {
-    const abort = new AbortController();
-    setError(false);
-    fetch("/assets/geography/countries-110m.json", { signal: abort.signal })
-      .then((r) => {
-        if (!r.ok) throw Error("Boundaries unavailable");
-        return r.json();
-      })
-      .then(setData)
-      .catch((e) => {
-        if (e.name !== "AbortError") setError(true);
-      });
-    return () => abort.abort();
-  }, [attempt]);
-  const resetView = useCallback(() => {
-    setPath([]);
-    setHover(null);
-    setPage(0);
-  }, []);
-  const unfold = useCallback(
-    () => setPath([{ name: "World atlas", bounds: WORLD, kind: "world" }]),
-    [],
-  );
-  const back = useCallback(() => {
-    setPath((p) => p.slice(0, -1));
-    setPage(0);
-  }, []);
-  const chooseContinent = useCallback((name: string) => {
-    const c = continents.find((c) => c.name === name);
-    if (c)
-      setPath([
-        { name: "World atlas", bounds: WORLD, kind: "world" },
-        { name: c.name, bounds: c.bounds, kind: "continent" },
-      ]);
-    setPage(0);
-  }, []);
-  const chooseCountry = useCallback((country: Country) => {
-    const b = countryBounds(country);
-    const w = Math.max(1, b[2] - b[0]),
-      h = Math.max(1, b[3] - b[1]);
-    const padded: Bounds = [
-      b[0] - w * 0.12,
-      b[1] - h * 0.12,
-      b[2] + w * 0.12,
-      b[3] + h * 0.12,
-    ];
-    const c = continents.find((c) => c.name === country.properties.CONTINENT);
-    setPath([
-      { name: "World atlas", bounds: WORLD, kind: "world" },
-      ...(c
-        ? [{ name: c.name, bounds: c.bounds, kind: "continent" as const }]
-        : []),
-      {
-        name: country.properties.NAME_EN,
-        bounds: padded,
-        kind: "country",
-        country,
-      },
-    ]);
-    setPage(0);
-  }, []);
-  const chooseWindow = useCallback((lon: number, lat: number) => {
-    const window = localWindow(lon, lat);
-    setPath((p) => [
-      ...p.filter(
-        (place) => place.kind === "world" || place.kind === "continent",
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+    Promise.all(
+      ["countries-110m.json", "greece-admin1.json"].map((file) =>
+        fetch(`/assets/geography/${file}`, { signal: controller.signal }).then(
+          (r) => {
+            if (!r.ok) throw Error("Geographic contours could not load.");
+            return r.json() as Promise<GeoData>;
+          },
+        ),
       ),
-      {
-        name: `Map window · ${((window[1] + window[3]) / 2).toFixed(1)}° / ${((window[0] + window[2]) / 2).toFixed(1)}°`,
-        bounds: window,
-        kind: "country",
-      },
-    ]);
-    setPage(0);
-  }, []);
-  useEffect(() => {
-    setHoveredSector(null);
-    setHover(null);
-  }, [current]);
-  const rows = useMemo(() => {
-    if (!current || current.kind === "world") return observations;
-    return observationsInScope(
-      observations,
-      bounds,
-      current.country,
-      current.sourceBounds,
-    );
-  }, [observations, current, bounds]);
-  const binSize =
-    current?.kind === "country" ? 0.5 : current?.kind === "continent" ? 2 : 5;
-  const bins = useMemo(() => sectors(rows, binSize), [rows, binSize]);
-  const topBins = useMemo(
-    () => [...bins].sort((a, b) => b.count - a.count).slice(0, 4),
-    [bins],
-  );
-  const chooseSector = useCallback((sector: Sector) => {
-    setPath((p) => [
-      ...p.filter((x) => x.kind !== "sector"),
-      {
-        name: `${sector.lat.toFixed(2)}° / ${sector.lon.toFixed(2)}°`,
-        bounds: sector.bounds,
-        kind: "sector",
-        sector,
-        country: p.at(-1)?.country,
-        sourceBounds: p.at(-1)?.bounds,
-      },
-    ]);
-    setPage(0);
-  }, []);
-  const countryItems = useMemo(
-    () =>
-      data?.features
-        .filter((f) => f.properties.CONTINENT === current?.name)
-        .sort((a, b) =>
-          a.properties.NAME_EN.localeCompare(b.properties.NAME_EN),
-        ) || [],
-    [data, current],
-  );
-  const indexedCountries = useMemo(
-    () =>
-      data?.features.map((country) => ({
-        country,
-        bounds: countryBounds(country),
-      })) || [],
-    [data],
-  );
-  const countryAt = useCallback(
-    (lon: number, lat: number) =>
-      indexedCountries.find(
-        (f) =>
-          inBounds({ lon, lat }, f.bounds) && contains(f.country, lon, lat),
-      )?.country,
-    [indexedCountries],
-  );
-  const onZoom = useCallback(
-    (direction: number, at?: [number, number]) => {
-      if (direction < 0) {
-        back();
-        return;
-      }
-      if (!open) {
-        unfold();
-        return;
-      }
-      if (current?.kind === "world") {
-        const country = at ? countryAt(...at) : hover;
-        if (
-          country &&
-          continents.some((c) => c.name === country.properties.CONTINENT)
-        )
-          chooseContinent(country.properties.CONTINENT);
-        else if (country) chooseCountry(country);
-        else
-          chooseWindow(
-            ...(at || [
-              (bounds[0] + bounds[2]) / 2,
-              (bounds[1] + bounds[3]) / 2,
-            ]),
-          );
-        return;
-      }
-      if (current?.kind === "continent") {
-        if (at && !countryAt(...at)) {
-          chooseWindow(...at);
-          return;
+    )
+      .then(([world, greece]) => {
+        setCountries(world.features);
+        setAdmin(greece.features);
+        setLoading(false);
+      })
+      .catch((e) => {
+        if (e.name !== "AbortError") {
+          setError(e.message);
+          setLoading(false);
         }
-        const country =
-          (at ? countryAt(...at) : undefined) ||
-          hover ||
-          countryItems.find((c) => c.properties.NAME_EN === "Greece") ||
-          countryItems[0];
-        if (country) chooseCountry(country);
+      });
+    return () => controller.abort();
+  }, [retry]);
+  const assignment = useMemo(
+    () => partitionRegions(observations, countries),
+    [observations, countries],
+  );
+  const continental = useMemo(() => {
+    const groups = new Map<string, CountRegion>();
+    for (const c of countries) {
+      const name =
+        c.properties.CONTINENT === "Seven seas (open ocean)"
+          ? "Ocean islands"
+          : c.properties.CONTINENT;
+      if (name === "Antarctica") continue;
+      const group = groups.get(name) || {
+        id: name,
+        name,
+        kind: "continent" as const,
+        features: [],
+        rows: [],
+        center: continents.find((r) => r.name === name)?.center,
+      };
+      group.features.push(c);
+      group.rows.push(...(assignment.groups.get(c) || []));
+      groups.set(name, group);
+    }
+    return [...groups.values()];
+  }, [countries, assignment]);
+  const selectedContinent = continental.find(
+    (c) => c.id === path.find((p) => p.kind === "continent")?.id,
+  );
+  const subregional = useMemo(() => {
+    const groups = new Map<string, CountRegion>();
+    for (const country of selectedContinent?.features || []) {
+      const name = country.properties.SUBREGION || "Other source geography";
+      const group = groups.get(name) || {
+        id: name,
+        name,
+        kind: "subregion" as const,
+        features: [],
+        rows: [],
+      };
+      group.features.push(country);
+      group.rows.push(...(assignment.groups.get(country) || []));
+      groups.set(name, group);
+    }
+    return [...groups.values()];
+  }, [selectedContinent, assignment]);
+  const countrySelection = path.find((p) => p.kind === "country"),
+    adminSelection = path.find((p) => p.kind === "admin");
+  const selectedCountry = countries.find(
+    (c) => c.properties.NAME_EN === countrySelection?.id,
+  );
+  const countryRows = selectedCountry
+    ? assignment.groups.get(selectedCountry) || []
+    : observations;
+  const adminPartition = useMemo(
+    () =>
+      partitionRegions(
+        countryRows,
+        selectedCountry?.properties.NAME_EN === "Greece" ? admin : [],
+      ),
+    [countryRows, selectedCountry, admin],
+  );
+  const selectedAdmin = admin.find(
+    (a) => a.properties.NAME_EN === adminSelection?.id,
+  );
+  const parentRows = selectedAdmin
+    ? adminPartition.groups.get(selectedAdmin) || []
+    : countryRows;
+  const bins = useMemo(() => sectors(parentRows, 0.25), [parentRows]);
+  const selectedBin =
+    current?.kind === "sector"
+      ? bins.find((b) => b.key === current.id)
+      : undefined;
+  const visibleRows =
+    current?.kind === "sector" ? selectedBin?.rows || [] : parentRows;
+  const scene = useMemo<CountRegion[]>(() => {
+    if (!current) return continental;
+    if (current.kind === "continent") return subregional;
+    if (current.kind === "subregion") {
+      const features =
+        subregional.find((r) => r.id === current.id)?.features || [];
+      return features.map((c) => ({
+        id: c.properties.NAME_EN,
+        name: c.properties.NAME_EN,
+        features: [c],
+        rows: assignment.groups.get(c) || [],
+        kind: "country",
+      }));
+    }
+    if (
+      current.kind === "country" &&
+      selectedCountry?.properties.NAME_EN === "Greece"
+    )
+      return admin.map((a) => ({
+        id: a.properties.NAME_EN,
+        name: a.properties.NAME_EN,
+        features: [a],
+        rows: adminPartition.groups.get(a) || [],
+        kind: "admin",
+      }));
+    if (current.kind === "sector") return [];
+    return bins.map((b, i) => ({
+      id: b.key,
+      name: `Sector ${i + 1}`,
+      features: [regionBox(b.bounds)],
+      rows: b.rows,
+      kind: "sector",
+      bounds: b.bounds,
+      center: [b.lon, b.lat],
+    }));
+  }, [
+    current,
+    continental,
+    subregional,
+    assignment,
+    selectedCountry,
+    admin,
+    adminPartition,
+    bins,
+  ]);
+  const bounds = useMemo<Bounds>(() => {
+    if (!current) return worldBounds;
+    if (current.kind === "sector") return current.bounds || WORLD;
+    if (current.kind === "continent")
+      return (
+        continents.find((c) => c.name === current.id)?.bounds ||
+        combinedBounds(
+          continental.find((c) => c.id === current.id)?.features || countries,
+        )
+      );
+    if (current.kind === "subregion") {
+      const features =
+        subregional.find((r) => r.id === current.id)?.features || [];
+      if (!features.length) return WORLD;
+      const b = combinedBounds(features),
+        c = continents.find((c) => c.name === selectedContinent?.name)?.bounds;
+      if (c) {
+        const clipped: Bounds = [
+          Math.max(b[0], c[0]),
+          Math.max(b[1], c[1]),
+          Math.min(b[2], c[2]),
+          Math.min(b[3], c[3]),
+        ];
+        if (clipped[2] > clipped[0] && clipped[3] > clipped[1]) return clipped;
+      }
+      return b;
+    }
+    if (current.kind === "admin" && selectedAdmin)
+      return countryBounds(selectedAdmin);
+    return selectedCountry ? countryBounds(selectedCountry) : WORLD;
+  }, [
+    current,
+    selectedCountry,
+    selectedAdmin,
+    continental,
+    countries,
+    subregional,
+    selectedContinent,
+  ]);
+  const projection = useMemo(() => fitProjection(bounds), [bounds]);
+  const thresholds = useMemo(
+    () => countThresholds(Math.max(0, ...scene.map((r) => r.rows.length))),
+    [scene],
+  );
+  const mapShapes = useMemo(
+    () =>
+      scene.map((region) => ({
+        region,
+        d: contourPath(region.features, projection.project),
+        point: projection.project(
+          ...(region.center || labelPoint(region.features)),
+        ),
+      })),
+    [scene, projection],
+  );
+  const background = useMemo(
+    () => contourPath(countries, projection.project),
+    [countries, projection],
+  );
+  const labels = useMemo(() => {
+    const occupied: { x: number; y: number; w: number; h: number }[] = [];
+    return [...mapShapes]
+      .sort((a, b) => b.region.rows.length - a.region.rows.length)
+      .flatMap((item) => {
+        const [x, y] = item.point;
+        if (x < 20 || x > 980 || y < 20 || y > 550) return [];
+        const w = Math.min(170, Math.max(75, item.region.name.length * 6)),
+          h = 35;
+        const collision = occupied.some(
+          (b) =>
+            Math.abs(b.x - x) < (b.w + w) / 2 + 4 &&
+            Math.abs(b.y - y) < (b.h + h) / 2 + 4,
+        );
+        if (collision && hover !== item.region.id) return [];
+        occupied.push({ x, y, w, h });
+        return [item];
+      });
+  }, [mapShapes, hover]);
+  const enter = (region: CountRegion) => {
+    setPath((p) => [
+      ...p,
+      {
+        kind: region.kind,
+        id: region.id,
+        name: region.name,
+        bounds: region.bounds,
+      },
+    ]);
+    setPage(0);
+  };
+  const back = () => {
+    if (path.length) setPath((p) => p.slice(0, -1));
+    else onBackToGlobe?.();
+  };
+  const resetAll = () => {
+    setPath([]);
+    setPan({ x: 0, y: 0 });
+    setScale(1);
+    onBackToGlobe?.();
+  };
+  useEffect(() => {
+    setPan({ x: 0, y: 0 });
+    setScale(1);
+    setHover(null);
+    setPage(0);
+  }, [current]);
+  const lastReset = useRef(reset),
+    lastZoom = useRef(zoom);
+  useEffect(() => {
+    if (lastReset.current !== reset) {
+      lastReset.current = reset;
+      setPath([]);
+      setPan({ x: 0, y: 0 });
+      setScale(1);
+    }
+  }, [reset]);
+  useEffect(() => {
+    if (lastZoom.current !== zoom) {
+      const direction = zoom > lastZoom.current ? 1 : -1;
+      lastZoom.current = zoom;
+      if (direction < 0) back();
+      else if (scene[0]) enter(scene.find((s) => s.id === hover) || scene[0]);
+    }
+  }, [zoom]);
+  const latest = useRef({ back, enter, scene, hover, current, scale, pan });
+  latest.current = { back, enter, scene, hover, current, scale, pan };
+  useEffect(() => {
+    const el = svg.current;
+    if (!el) return;
+    let last = 0;
+    const wheel = (event: WheelEvent) => {
+      event.preventDefault();
+      if (performance.now() - last < 360) return;
+      last = performance.now();
+      const s = latest.current;
+      if (event.deltaY > 0) {
+        if (s.scale > 1.05) setScale(Math.max(1, s.scale / 1.5));
+        else s.back();
         return;
       }
-      if (current?.kind === "country" && topBins[0])
-        chooseSector(
-          (at
-            ? bins.find((b) => inBounds({ lon: at[0], lat: at[1] }, b.bounds))
-            : undefined) ||
-            hoveredSector ||
-            topBins[0],
-        );
-    },
-    [
-      back,
-      open,
-      unfold,
-      current,
-      chooseContinent,
-      hover,
-      countryItems,
-      chooseCountry,
-      topBins,
-      chooseSector,
-      countryAt,
-      bins,
-      hoveredSector,
-      chooseWindow,
-      bounds,
-    ],
-  );
-  const lastZoom = useRef(zoom),
-    lastReset = useRef(reset);
-  useEffect(() => {
-    if (zoom !== lastZoom.current) {
-      onZoom(zoom > lastZoom.current ? 1 : -1);
-      lastZoom.current = zoom;
-    }
-  }, [zoom, onZoom]);
-  useEffect(() => {
-    if (reset !== lastReset.current) {
-      resetView();
-      lastReset.current = reset;
-    }
-  }, [reset, resetView]);
-  const lastFocus = useRef("");
-  useEffect(() => {
-    if (focus && focus.id !== lastFocus.current) {
-      lastFocus.current = focus.id;
-      if (current?.kind === "sector" && rows.some((o) => o.id === focus.id))
-        return;
-      const selectedBin = sectors([focus], 0.5)[0];
-      const sector =
-        sectors(
-          observations.filter((o) => inBounds(o, selectedBin.bounds)),
-          0.5,
-        )[0] || selectedBin;
-      setPath([
-        { name: "World atlas", bounds: WORLD, kind: "world" },
-        {
-          name: "Selected location",
-          bounds: sector.bounds,
-          kind: "sector",
-          sector,
-        },
-      ]);
-    }
-  }, [focus, current, rows, observations]);
-  const onPick = (lon: number, lat: number) => {
-    if (!open) {
-      unfold();
-      return;
-    }
-    if (current?.kind === "sector") {
-      const nearest = rows.reduce<Observation | null>(
-        (a, o) =>
-          !a ||
-          Math.hypot(o.lon - lon, o.lat - lat) <
-            Math.hypot(a.lon - lon, a.lat - lat)
-            ? o
-            : a,
-        null,
-      );
-      if (nearest) onSelect(nearest);
-      return;
-    }
-    if (current?.kind === "country") {
-      const sector = bins.find((b) => inBounds({ lon, lat }, b.bounds));
-      if (sector) chooseSector(sector);
-      return;
-    }
-    const c = countryAt(lon, lat);
-    if (c) {
-      if (
-        current?.kind === "world" &&
-        continents.some((region) => region.name === c.properties.CONTINENT)
-      )
-        chooseContinent(c.properties.CONTINENT);
-      else chooseCountry(c);
-    } else chooseWindow(lon, lat);
+      const region = s.scene.find((r) => r.id === s.hover);
+      if (region) s.enter(region);
+      else setScale(Math.min(5, s.scale * 1.5));
+    };
+    el.addEventListener("wheel", wheel, { passive: false });
+    return () => el.removeEventListener("wheel", wheel);
+  }, [loading, error]);
+  const coordinateFromEvent = (e: { clientX: number; clientY: number }) => {
+    const r = svg.current!.getBoundingClientRect();
+    return {
+      x: ((e.clientX - r.left) * 1000) / r.width,
+      y: ((e.clientY - r.top) * 570) / r.height,
+    };
   };
-  const onHover = (lon: number, lat: number) => {
-    if (!open || current?.kind === "sector") return;
-    if (current?.kind === "country") {
-      setHoveredSector(
-        bins.find((b) => inBounds({ lon, lat }, b.bounds)) || null,
-      );
+  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    const p = coordinateFromEvent(e);
+    touches.current.set(e.pointerId, p);
+    if (touches.current.size === 2) {
+      const [a, b] = [...touches.current.values()];
+      pinch.current = Math.hypot(a.x - b.x, a.y - b.y);
+      moved.current = true;
+    } else moved.current = false;
+    drag.current = { ...p, startX: p.x, startY: p.y };
+  };
+  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!drag.current) return;
+    const p = coordinateFromEvent(e);
+    touches.current.set(e.pointerId, p);
+    if (touches.current.size === 2) {
+      const [a, b] = [...touches.current.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (Math.abs(d - pinch.current) > 65) {
+        if (d < pinch.current) back();
+        else setScale((s) => Math.min(5, s * 1.35));
+        pinch.current = d;
+      }
       return;
     }
-    const c = countryAt(lon, lat);
-    setHover(c || null);
+    if (Math.hypot(p.x - drag.current.startX, p.y - drag.current.startY) > 5) {
+      moved.current = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+    const dx = p.x - drag.current.x,
+      dy = p.y - drag.current.y;
+    const limitX = 500 * (scale - 1) + 180,
+      limitY = 285 * (scale - 1) + 120;
+    setPan((previous) => ({
+      x: Math.max(-limitX, Math.min(limitX, previous.x + dx)),
+      y: Math.max(-limitY, Math.min(limitY, previous.y + dy)),
+    }));
+    drag.current = { ...drag.current, x: p.x, y: p.y };
   };
-  const anchors = useMemo(() => {
-    if (!open || current?.kind === "world")
-      return continents.map((c) => ({
-        key: c.name,
-        label: c.name,
-        lon: c.center[0],
-        lat: c.center[1],
-        kind: "continent" as const,
-      }));
-    return cases
-      .filter((c) => inBounds({ lon: c.center[0], lat: c.center[1] }, bounds))
-      .map((c) => ({
-        key: c.id,
-        label: c.name + " · historical study",
-        lon: c.center[0],
-        lat: c.center[1],
-        kind: "study" as const,
-      }));
-  }, [open, current, cases, bounds]);
-  const points = useMemo(
-    () => (current?.kind === "sector" ? rows.slice(0, 4000) : undefined),
-    [current, rows],
+  const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
+    touches.current.delete(e.pointerId);
+    if (touches.current.size === 0) drag.current = null;
+  };
+  const selectedRowsCount =
+    current?.kind === "continent"
+      ? continental.find((c) => c.id === current.id)?.rows.length || 0
+      : current?.kind === "subregion"
+        ? subregional.find((r) => r.id === current.id)?.rows.length || 0
+        : current?.kind === "sector"
+          ? visibleRows.length
+          : current
+            ? parentRows.length
+            : observations.length;
+  const historical = cases.filter((c) =>
+    selectedAdmin
+      ? contains(selectedAdmin, ...c.center)
+      : selectedCountry
+        ? contains(selectedCountry, ...c.center)
+        : false,
   );
+  const pointMode = current?.kind === "sector";
+  const unassigned =
+    current?.kind === "country" &&
+    selectedCountry?.properties.NAME_EN === "Greece"
+      ? adminPartition.unassigned.length
+      : !current
+        ? assignment.unassigned.length
+        : 0;
   return (
     <section
-      className={`explore-atlas ${open ? "is-open" : "is-globe"}`}
-      aria-label="Unfolding Earth atlas"
+      className="contour-atlas"
+      aria-label="Geographic contours and satellite detections"
     >
-      <div className="atlas-toolbar">
-        <nav aria-label="Atlas geographic path">
-          <button onClick={resetView}>
-            <Globe2 size={14} />
-            Earth
+      <header className="contour-header">
+        <nav aria-label="Geographic path">
+          <button onClick={resetAll}>Earth</button>
+          <ChevronRight size={12} />
+          <button
+            onClick={() => setPath([])}
+            aria-current={!current ? "location" : undefined}
+          >
+            Continents
           </button>
           {path.map((p, i) => (
-            <span key={p.name}>
+            <span key={p.kind + p.id}>
               <ChevronRight size={12} />
               <button
-                onClick={() => {
-                  setPath(path.slice(0, i + 1));
-                  setPage(0);
-                }}
+                onClick={() => setPath(path.slice(0, i + 1))}
                 aria-current={i === path.length - 1 ? "location" : undefined}
               >
                 {p.name}
@@ -406,330 +511,355 @@ export default function ExploreAtlas({
             </span>
           ))}
         </nav>
-        <div className="atlas-controls">
-          <button aria-label="Zoom atlas out" onClick={back} disabled={!open}>
-            <Minus size={16} />
+        <div className="contour-controls">
+          <button onClick={back} aria-label="Wider geographic view">
+            <Minus size={15} />
           </button>
           <button
-            aria-label="Zoom atlas in"
-            onClick={() => onZoom(1)}
-            disabled={current?.kind === "sector"}
+            onClick={() => {
+              const target =
+                scene.find((s) => s.id === hover) ||
+                scene.find((s) => s.rows.length > 0) ||
+                scene[0];
+              if (target) enter(target);
+            }}
+            disabled={pointMode || !scene.length}
+            aria-label="Open selected geographic level"
           >
-            <Plus size={16} />
+            <Plus size={15} />
           </button>
-          <button aria-label="Reset atlas to globe" onClick={resetView}>
+          <button
+            onClick={() => {
+              setPan({ x: 0, y: 0 });
+              setScale(1);
+            }}
+            aria-label="Fit current contours"
+          >
+            <ScanLine size={15} />
+          </button>
+          <button onClick={resetAll} aria-label="Return to original globe">
             <RotateCcw size={15} />
           </button>
-          <button
-            aria-label={paused ? "Resume globe motion" : "Pause globe motion"}
-            onClick={() => setPaused(!paused)}
-            aria-pressed={paused}
-          >
-            {paused ? <Play size={14} /> : <Pause size={14} />}
+        </div>
+      </header>
+      <div className="contour-heading">
+        <div>
+          <span className="mono">
+            {pointMode
+              ? "ORIGINAL OBSERVATIONS"
+              : current?.kind === "country" &&
+                  selectedCountry?.properties.NAME_EN === "Greece"
+                ? "ADMINISTRATIVE REGIONS"
+                : current?.kind === "admin" || current?.kind === "country"
+                  ? "ANALYTICAL SECTORS"
+                  : current?.kind === "continent"
+                    ? "REGIONS"
+                    : current
+                      ? "COUNTRIES"
+                      : "CONTINENTAL COUNTRY GROUPS"}
+          </span>
+          <h2>{current?.name || "A world of observations"}</h2>
+        </div>
+        <p>
+          <b>{integer(selectedRowsCount)}</b> detections{" "}
+          <small>
+            NOAA-20 VIIRS · {snapshotStart.slice(0, 10)} –{" "}
+            {snapshotEnd.slice(0, 10)} UTC
+          </small>
+        </p>
+      </div>
+      {loading ? (
+        <div className="contour-state" role="status">
+          Loading geographic contours…
+        </div>
+      ) : error ? (
+        <div className="contour-state" role="alert">
+          {error}
+          <button onClick={() => setRetry((r) => r + 1)}>
+            Retry geography
           </button>
         </div>
-      </div>
-      <div
-        className="atlas-stage"
-        tabIndex={0}
-        aria-label="Map controls: plus to zoom, minus or Escape to go back; Tab reaches geographic controls"
-        onKeyDown={(e) => {
-          if (e.target !== e.currentTarget) return;
-          if (e.key === "+" || e.key === "=" || e.key === "Enter") {
-            e.preventDefault();
-            onZoom(1);
-          }
-          if (e.key === "-" || e.key === "Escape") {
-            e.preventDefault();
-            back();
-          }
-          if (e.key === "Home") {
-            e.preventDefault();
-            resetView();
-          }
-        }}
-      >
-        <AtlasSurface
-          open={open}
-          paused={paused}
-          reduced={reduced}
-          bounds={bounds}
-          data={data}
-          bins={bins}
-          points={points}
-          anchors={anchors}
-          onAnchor={(key) => {
-            const c = cases.find((c) => c.id === key);
-            if (c) onCase(c);
-            else chooseContinent(key);
-          }}
-          onPick={onPick}
-          onZoom={onZoom}
-          onHover={onHover}
-          variant={variant}
-        />
-        {!open && (
-          <div className="atlas-invitation">
-            <p className="mono">ONE PLANET. MANY WAYS OF SEEING.</p>
-            <button onClick={unfold}>
-              <Map size={17} /> Unfold the Earth <span>↗</span>
-            </button>
-            <small>Drag to rotate · scroll or select to open</small>
-            <small className="atlas-globe-meaning">
-              Marker sizes: raw detections per 5° bin · NOAA-20 VIIRS
-              <br />
-              {snapshotStart.replace("T", " ").replace("Z", "")} –{" "}
-              {snapshotEnd.replace("T", " ").replace("Z", "")} UTC
-              <br />
-              Blue Marble is static geographic context.
-            </small>
-          </div>
-        )}
-        {open && (
-          <div className="atlas-map-caption">
-            <strong>
-              {hover &&
-              current?.kind !== "country" &&
-              current?.kind !== "sector"
-                ? hover.properties.NAME_EN
-                : current?.name}
-            </strong>
-            <span>
-              {current?.kind === "country" && hoveredSector
-                ? `${integer(hoveredSector.count)} detections in this 0.5° sector · select to inspect`
-                : current?.kind === "world"
-                  ? "Select a continent to reveal its countries"
-                  : current?.kind === "continent"
-                    ? "Select a country boundary or use the list below"
-                    : current?.kind === "country"
-                      ? "Select a glowing grid sector to inspect its detections"
-                      : "Select a point or an observation below"}
-            </span>
-          </div>
-        )}
-        {open && (
-          <button className="atlas-back" onClick={back}>
+      ) : (
+        <div className="contour-map-wrap">
+          <svg
+            ref={svg}
+            className="contour-map"
+            viewBox="0 0 1000 570"
+            aria-label={
+              pointMode
+                ? "Individual observation locations"
+                : "Filled geographic shapes. Each name has its detection count beneath it."
+            }
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={() => {
+              drag.current = null;
+              touches.current.clear();
+              moved.current = true;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                back();
+              }
+              if (e.key === "Home") {
+                e.preventDefault();
+                resetAll();
+              }
+            }}
+          >
+            <defs>
+              <pattern
+                id="atlas-missing"
+                width="6"
+                height="6"
+                patternUnits="userSpaceOnUse"
+              >
+                <path d="M0 6L6 0" stroke="#89968e" strokeWidth="1" />
+              </pattern>
+              <filter
+                id="continent-outline"
+                x="-5%"
+                y="-5%"
+                width="110%"
+                height="110%"
+              >
+                <feMorphology
+                  in="SourceAlpha"
+                  operator="dilate"
+                  radius=".65"
+                  result="outline"
+                />
+                <feFlood floodColor="#d0b9a8" />
+                <feComposite in2="outline" operator="in" />
+                <feComposite in="SourceGraphic" />
+              </filter>
+            </defs>
+            <g
+              className={`contour-camera ${reduced ? "is-reduced" : ""}`}
+              transform={`translate(${pan.x} ${pan.y}) translate(500 285) scale(${scale}) translate(-500 -285)`}
+            >
+              {current && (
+                <path
+                  d={background}
+                  className="contour-background"
+                  fillRule="evenodd"
+                />
+              )}
+              {mapShapes.map(({ region, d }) => (
+                <g
+                  key={region.id}
+                  className={`contour-place ${hover === region.id ? "is-hovered" : ""}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${region.name}: ${integer(region.rows.length)} recorded detections. Open details.`}
+                  onFocus={() => setHover(region.id)}
+                  onMouseEnter={() => setHover(region.id)}
+                  onMouseLeave={() => setHover(null)}
+                  onClick={() => {
+                    if (!moved.current) enter(region);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      enter(region);
+                    }
+                  }}
+                >
+                  <path
+                    d={d}
+                    fill={countFill(region.rows.length, thresholds)}
+                    fillRule="evenodd"
+                    className={
+                      region.kind === "continent" || region.kind === "subregion"
+                        ? "continent-fill"
+                        : "region-fill"
+                    }
+                    filter={
+                      region.kind === "continent" || region.kind === "subregion"
+                        ? "url(#continent-outline)"
+                        : undefined
+                    }
+                  >
+                    <title>
+                      {region.name}: {integer(region.rows.length)} detections
+                    </title>
+                  </path>
+                </g>
+              ))}
+              {!pointMode &&
+                labels.map(({ region, point }) => (
+                  <g
+                    className="contour-label"
+                    key={region.id}
+                    transform={`translate(${point[0]} ${point[1]})`}
+                    aria-hidden="true"
+                  >
+                    <text textAnchor="middle">{region.name}</text>
+                    <text textAnchor="middle" y="17" className="contour-count">
+                      {integer(region.rows.length)}
+                    </text>
+                  </g>
+                ))}
+              {pointMode &&
+                visibleRows.slice(0, 4000).map((o) => {
+                  const [x, y] = projection.project(o.lon, o.lat);
+                  return (
+                    <circle
+                      key={o.id}
+                      cx={x}
+                      cy={y}
+                      r={focus?.id === o.id ? 5 : 3.2}
+                      className="contour-observation"
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`${o.lat.toFixed(3)}, ${o.lon.toFixed(3)}, ${o.time} UTC`}
+                      onClick={() => {
+                        if (!moved.current) onSelect(o);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") onSelect(o);
+                      }}
+                    >
+                      <title>
+                        {o.time} · {o.frp ?? "—"} MW
+                      </title>
+                    </circle>
+                  );
+                })}
+            </g>
+          </svg>
+          <button className="contour-back" onClick={back}>
             <ArrowLeft size={13} /> Wider view
           </button>
-        )}
-      </div>
-      {open && (
-        <div className="atlas-context">
-          <div className="atlas-facts">
-            <strong>
-              {integer(rows.length)}
-              <small>
-                snapshot detections{" "}
-                {current?.country
-                  ? "within generalized boundaries"
-                  : current?.kind === "world"
-                    ? "globally"
-                    : "in this map window"}
-              </small>
-            </strong>
-            <p>
-              <b>NOAA-20 VIIRS</b>
-              <br />
-              {snapshotStart.slice(0, 10)} – {snapshotEnd.slice(0, 10)} UTC
-              <br />
-              <span>
-                Thermal pixels, not unique fires. No observation-effort
-                correction.
-              </span>
-            </p>
-          </div>
-          {current?.kind !== "sector" && (
-            <div className="atlas-legend">
-              <i />
-              Marker size shows detections in {binSize}° grid bins. Grids are
-              analytical sectors, not administrative regions.
-            </div>
-          )}
-          {current?.kind === "world" && (
-            <div className="atlas-place-list">
-              {continents.map((c) => (
-                <button key={c.name} onClick={() => chooseContinent(c.name)}>
-                  {c.name}
-                  <ChevronRight size={13} />
-                </button>
-              ))}
-            </div>
-          )}
-          {current?.kind === "continent" && (
-            <label className="atlas-country-select">
-              Country{" "}
-              <select
-                value=""
-                onChange={(e) => {
-                  const c = countryItems.find(
-                    (c) => c.properties.NAME_EN === e.target.value,
-                  );
-                  if (c) chooseCountry(c);
-                }}
-              >
-                <option value="">Choose a country…</option>
-                {countryItems.map((c) => (
-                  <option
-                    key={c.properties.NAME_EN}
-                    value={c.properties.NAME_EN}
-                  >
-                    {c.properties.NAME_EN}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {current?.kind === "country" && (
-            <div className="atlas-sector-list">
-              {bounds[2] - bounds[0] > 180 && (
-                <p>
-                  This boundary crosses the atlas seam. The full longitude range
-                  stays visible; choose a sector below to inspect it.
-                </p>
-              )}
-              <span className="mono">
-                SECTORS WITH THE MOST SNAPSHOT DETECTIONS
-              </span>
-              {topBins.map((b) => (
-                <button key={b.key} onClick={() => chooseSector(b)}>
-                  <span>
-                    {b.lat.toFixed(2)}° / {b.lon.toFixed(2)}°
-                  </span>
-                  <b>{integer(b.count)}</b>
-                  <ChevronRight size={13} />
-                </button>
-              ))}
-              {!bins.length && (
-                <p>
-                  No snapshot detections in{" "}
-                  {current.country
-                    ? "this generalized country boundary"
-                    : "this rectangular map window"}
-                  . This does not establish fire-free conditions.
-                </p>
-              )}
-            </div>
-          )}
-          {current?.kind === "sector" && (
-            <div className="atlas-observations">
-              <p>
-                Analytical rectangle · {integer(areaKm2(bounds))} km² rectangle
-                · {integer(rows.length)} detections{" "}
-                {current.country
-                  ? `within ${current.country.properties.NAME_EN}’s generalized boundary`
-                  : "across the whole rectangle"}
-                .{" "}
-                {rows.length > 4000
-                  ? "Map shows the first 4,000 points; browse the complete list below."
-                  : "Points are original satellite pixel centers."}
-              </p>
-              {!rows.length && (
-                <p>
-                  No detections in this sector; observing coverage is unknown.
-                </p>
-              )}
-              <div>
-                {rows.slice(page * 10, page * 10 + 10).map((o) => (
-                  <button key={o.id} onClick={() => onSelect(o)}>
-                    <span>
-                      {o.lat.toFixed(3)}°, {o.lon.toFixed(3)}°
-                    </span>
-                    <small>
-                      {o.time.slice(11, 16)} UTC ·{" "}
-                      {o.frp == null
-                        ? "FRP unavailable"
-                        : `${o.frp.toFixed(1)} MW`}
-                    </small>
-                    <ArrowUpRight size={13} />
-                  </button>
-                ))}
-              </div>
-              {rows.length > 10 && (
-                <nav aria-label="Sector observation pages">
-                  <button
-                    disabled={page === 0}
-                    onClick={() => setPage(page - 1)}
-                  >
-                    Previous
-                  </button>
-                  <span>
-                    {page + 1} / {Math.ceil(rows.length / 10)}
-                  </span>
-                  <button
-                    disabled={(page + 1) * 10 >= rows.length}
-                    onClick={() => setPage(page + 1)}
-                  >
-                    Next
-                  </button>
-                </nav>
-              )}
-            </div>
-          )}
-          {(current?.kind === "continent" || current?.kind === "country") &&
-            cases.some((c) =>
-              inBounds({ lon: c.center[0], lat: c.center[1] }, bounds),
-            ) && (
-              <div className="atlas-studies">
-                <p>
-                  Historical investigations{" "}
-                  <span>
-                    Separate datasets and dates · rectangular study areas
-                  </span>
-                </p>
-                {cases
-                  .filter((c) =>
-                    inBounds({ lon: c.center[0], lat: c.center[1] }, bounds),
-                  )
-                  .map((c) => (
-                    <button onClick={() => onCase(c)} key={c.id}>
-                      {c.name}
-                      <small>
-                        {c.date} ·{" "}
-                        {c.years.length > 1
-                          ? `${c.years[0]}–${c.years.at(-1)}`
-                          : c.years[0]}{" "}
-                        record
-                      </small>
-                      <ArrowUpRight size={15} />
-                    </button>
-                  ))}
-              </div>
-            )}
-          {error && (
-            <p className="atlas-data-state">
-              Country boundaries could not load.{" "}
-              <button onClick={() => setAttempt(attempt + 1)}>
-                Retry boundaries
-              </button>
-              . Snapshot points and geographic windows remain available.
-            </p>
-          )}
-          <details className="atlas-method">
-            <summary>Map meaning & sources</summary>
-            <p>
-              Natural Earth public-domain country boundaries at 1:110 million
-              are generalized; tiny islands and precise coastal attribution may
-              be omitted. Country counts use point-in-polygon matching.
-              Continental views are bounding windows and may include neighboring
-              areas. Orange circles encode raw counts, not density, risk,
-              probability, burned area, or unique incidents. Empty regions have
-              unknown observing coverage.
-            </p>
-            <a
-              href="https://www.naturalearthdata.com/about/terms-of-use/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Natural Earth terms ↗
-            </a>
-            <p>
-              NASA Blue Marble is a static context texture, not imagery from
-              this observation window. Choose a dated study to open the original
-              satellite comparison map.
-            </p>
-          </details>
+          <span className="contour-gesture">
+            Select a shape · scroll to enter · drag to pan
+          </span>
         </div>
       )}
+      {!pointMode && (
+        <div
+          className="contour-legend"
+          aria-label="Recorded detection count scale"
+        >
+          <span>Recorded detections</span>
+          <i style={{ background: "#34463f" }} />
+          <small>0</small>
+          {redScale.map((color, i) => (
+            <span key={color}>
+              <i style={{ background: color }} />
+              <small>
+                {i === 0 ? "1" : thresholds[i - 1] + 1}–{thresholds[i]}
+              </small>
+            </span>
+          ))}
+          <em>Counts, not severity or risk</em>
+        </div>
+      )}
+      {!pointMode && (
+        <details className="contour-places">
+          <summary>
+            All {scene.length}{" "}
+            {current?.kind === "country" &&
+            selectedCountry?.properties.NAME_EN === "Greece"
+              ? "regions"
+              : current?.kind === "continent"
+                ? "countries"
+                : "places"}
+          </summary>
+          <div>
+            {scene.map((r) => (
+              <button onClick={() => enter(r)} key={r.id}>
+                <span>{r.name}</span>
+                <b>{integer(r.rows.length)}</b>
+              </button>
+            ))}
+          </div>
+        </details>
+      )}
+      {pointMode && (
+        <div className="contour-point-list">
+          <p>
+            {visibleRows.length
+              ? "Satellite pixel centers · select a point or observation"
+              : "No detections in the selected source records. Observing coverage remains unknown."}
+          </p>
+          {visibleRows.slice(page * 8, page * 8 + 8).map((o) => (
+            <button key={o.id} onClick={() => onSelect(o)}>
+              <span>
+                {o.lat.toFixed(3)}°, {o.lon.toFixed(3)}°
+              </span>
+              <small>
+                {o.time.slice(11, 16)} UTC · {o.frp ?? "—"} MW
+              </small>
+              <ArrowUpRight size={13} />
+            </button>
+          ))}
+          {visibleRows.length > 8 && (
+            <nav>
+              <button onClick={() => setPage((p) => p - 1)} disabled={!page}>
+                Previous
+              </button>
+              <span>
+                {page + 1}/{Math.ceil(visibleRows.length / 8)}
+              </span>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={(page + 1) * 8 >= visibleRows.length}
+              >
+                Next
+              </button>
+            </nav>
+          )}
+        </div>
+      )}
+      {historical.length > 0 && (
+        <div className="contour-historical">
+          <span>Historical studies · separate dates</span>
+          {historical.map((c) => (
+            <button key={c.id} onClick={() => onCase(c)}>
+              {c.name} <small>{c.date}</small>
+              <ArrowUpRight size={12} />
+            </button>
+          ))}
+        </div>
+      )}
+      <details className="contour-notes">
+        <summary>Observation window & map meaning</summary>
+        <p>
+          {snapshotStart} – {snapshotEnd} UTC. Counts are detected thermal
+          pixels in this selected snapshot, not unique fires, burned area,
+          severity or risk. Zero means no recorded detections, not complete
+          observing coverage. Missing geographic data is shown as unavailable,
+          never zero.
+        </p>
+        <p>
+          Natural Earth public-domain boundaries: countries 1:110m, Greece’s 13
+          regions and Mount Athos 1:10m. Continental groups follow the source
+          country classification, including transcontinental countries; named
+          subregions use Natural Earth’s SUBREGION field; boundaries are
+          generalized. Region counts retain the parent country scope.{" "}
+          {unassigned > 0
+            ? `${integer(unassigned)} detections in this scope are outside the available generalized child boundaries and remain unassigned.`
+            : ""}{" "}
+          Red thresholds stay fixed across the visible sibling shapes. Grids are
+          analytical sectors, not administrative regions.
+        </p>
+        {pointMode && visibleRows.length > 4000 && (
+          <p>
+            The map renders the first 4,000 points; the list retains every
+            observation.
+          </p>
+        )}
+        <a
+          href="https://www.naturalearthdata.com/about/terms-of-use/"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Natural Earth source & license ↗
+        </a>
+      </details>
     </section>
   );
 }
