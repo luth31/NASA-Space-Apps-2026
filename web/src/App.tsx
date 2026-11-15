@@ -54,6 +54,7 @@ import type { ReportContext } from "./Report";
 
 const Globe = lazy(() => import("./Globe"));
 const ExploreAtlas = lazy(() => import("./ExploreAtlas"));
+const ExploreAtlasPrototype = lazy(() => import("./ExploreAtlasPrototype"));
 const Report = lazy(() => import("./Report"));
 const demoSteps = [
   "A global perspective",
@@ -96,8 +97,12 @@ export default function App() {
   const [coverage, setCoverage] = useState<CoverageReport | null>(null);
   const legacyExplore =
     new URLSearchParams(location.search).get("explore") === "legacy";
+  const atlasPrototype = new URLSearchParams(location.search).has(
+    "atlasMotion",
+  );
+  const CurrentAtlas = atlasPrototype ? ExploreAtlasPrototype : ExploreAtlas;
   const [atlasOpen, setAtlasOpen] = useState(
-    new URLSearchParams(location.search).get("atlas") === "1",
+    new URLSearchParams(location.search).get("atlas") === "1" || atlasPrototype,
   );
   const [globePaused, setGlobePaused] = useState(false);
   const [browseGlobal, setBrowseGlobal] = useState(false);
@@ -135,6 +140,9 @@ export default function App() {
   const offlineReloadRequested = useRef(false);
   const reduced = useReducedMotion();
   const [destination, setDestination] = useState<CaseStudy | null>(null);
+  useEffect(() => {
+    if (view === "calendar" && sensor === "all") setSensor("VIIRS");
+  }, [view, sensor]);
   useEffect(() => {
     const suspend = () => {
       if (document.hidden) {
@@ -809,28 +817,6 @@ export default function App() {
                 </div>
               )}
             </div>
-            {!study && !legacyExplore && atlasOpen && (
-              <div className="atlas-scene-intro">
-                <div>
-                  <span className="eyebrow">NASA FIRE OBSERVATIONS</span>
-                  <h1>
-                    Follow the shapes. <em>Find the activity.</em>
-                  </h1>
-                </div>
-                <div className="atlas-snapshot-summary">
-                  <strong>
-                    {integer(observations.length)} satellite detections
-                  </strong>
-                  <span>
-                    NOAA-20 VIIRS · {dateLabel(manifest.snapshotStart)} –{" "}
-                    {dateLabel(manifest.snapshotEnd)}
-                  </span>
-                  <button onClick={() => setBrowseGlobal(true)}>
-                    Browse original observations <ArrowUpRight size={12} />
-                  </button>
-                </div>
-              </div>
-            )}
             <div
               className={`exploration-stage ${study ? "regional" : "global"} ${(selected || browseGlobal) && !study ? "has-selection" : ""}`}
             >
@@ -945,7 +931,7 @@ export default function App() {
                           }
                         />
                       ) : (
-                        <ExploreAtlas
+                        <CurrentAtlas
                           observations={observations}
                           cases={manifest.cases}
                           onSelect={selectObservation}
@@ -1382,10 +1368,13 @@ export default function App() {
               cases={manifest.cases}
               onStudy={(c) => {
                 commitCase(c);
+                setSensor(sensor);
                 setView("calendar");
                 setDay(null);
               }}
               selectedMonth={month}
+              selectedSensor={sensor === "MODIS" ? "modis" : "viirs"}
+              onSensor={(s) => setSensor(s.toUpperCase())}
               onMonth={(m) => {
                 setMonth(m);
                 setDay(null);

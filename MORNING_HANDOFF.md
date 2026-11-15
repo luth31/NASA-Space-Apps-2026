@@ -1,6 +1,8 @@
-# Overnight handoff — 15 November 2026
+# Local handoff — 15 November 2026
 
-The integrated app is on **`overnight/integration`**. Explore now unfolds from a globe into a geographic atlas; Report supports a coherent annual→month→day→acquisition-hour investigation, recurring timing, sensor differences, raw period comparison and dated reading. The presentation and demonstration assets use the provisional **PyroBridge** identity. Everything remains local: no push, deployment, publication, organizer message or submission was performed.
+The latest app is on **`experience/contours-and-patterns`**. The original globe now opens filled, labelled geographic contours; Calendar uses an interactive seasonal wheel; Report adds visual year/place comparisons and a visible trail of dated evidence. The provisional identity remains **PyroBridge**. Everything remains local.
+
+The [current visual verification](docs/contours-and-patterns-verification.md) records the redesign, browser observations, captures and limits. The deck, PDF and video below were preserved from the earlier overnight revision; they do not depict this latest redesign.
 
 ## Open the working preview
 
@@ -23,7 +25,7 @@ npm run preview -- --host 0.0.0.0 --port 4173 --strictPort
 
 For development, use `npm run dev -- --host 0.0.0.0 --port 5174 --strictPort`. The pre-existing 5173 process was preserved. Do not start a second process on an occupied port. The public bundle is sufficient; no credentials or model rerun are required.
 
-On localhost, wait for **OFFLINE BUNDLE READY**. The107-file / ~20.5 MB core includes global observations, the three featured historical months, calendars, imagery, science, geography and the quiet review pages. Other point months cache after an online visit. Use **Update and reload** when offered after a new build. Offline readiness matches both app-build and data identities. LAN HTTP does not support service workers; use localhost for offline rehearsal. External articles need connectivity.
+On localhost, wait for **OFFLINE BUNDLE READY**. The 112-file / ~20.7 MB core includes global observations, the three featured historical months, calendars, imagery, science, geography and the quiet review pages. Other point months cache after an online visit. Use **Update and reload** when offered after a new build. Offline readiness matches both app-build and data identities. LAN HTTP does not support service workers; use localhost for offline rehearsal. External articles need connectivity.
 
 ## Reviewable deliverables
 
@@ -43,13 +45,16 @@ On localhost, wait for **OFFLINE BUNDLE READY**. The107-file / ~20.5 MB core inc
 | Competition evidence and unresolved rules | [Research](docs/competition-research.md) |
 | Technology and visualization references | [Design references](docs/technology-references.md) |
 | Numeric/scientific audit | [Evidence](docs/science-audit.md) |
-| Browser, automated and artifact evidence | [Verification](docs/verification.md) |
+| Current redesign evidence | [Verification](docs/contours-and-patterns-verification.md) |
+| Earlier overnight / artifact evidence | [Verification](docs/verification.md) |
 
 The MP4 is an explicitly labelled montage of actual still captures, with burned-in captions and an accompanying SRT. It is 1920×1080, 30 fps, 29.0 seconds, with no audio. It does not claim to be a continuous interaction recording. Six decoded scene-center frames were inspected. The separate storyboard supports recording the live interaction sequence later. The PPTX contains editable text, a native sensor table and a native four-control chart with an embedded workbook. Its PDF preserves the reviewed rendering but is raster-based. All seven slides and PDF pages were inspected; native Microsoft PowerPoint rendering was not tested.
 
 ## Design and evidence decisions
 
-Explore uses a continuous vertex morph into an equirectangular atlas so geography retains its anchors. `?atlasMotion=ellipsoid` keeps the alternate opening; `?explore=legacy` retains the original globe. Generalized Natural Earth boundaries distinguish countries from continent map windows, historical study rectangles and analytical grid sectors. Markers encode raw bin counts, not risk or density. Sector areas use spherical calculations. Points and GPU work are bounded; static/offscreen/hidden scenes stop rendering. See [Explore design](docs/explore-design.md).
+Explore starts with the original Globe and opens real filled geographic contours on zoom or **Explore by place**. Names and detection counts appear over continent country groups, named subregions, countries and Greece's administrative regions. Individual points appear after entering a local analytical sector in the contour atlas. Red shades represent counts, not severity or risk. Detailed administrative geography is currently bundled for Greece; other countries open analytical sectors. See [contour design](docs/contour-design.md). Earlier continuous unwrapping and ellipsoid transitions remain in the playground.
+
+Calendar's twelve-petal wheel reveals seasonal shape, with year scrubbing/playback and a selectable historical profile for the same month. Report's new **Compare** lens overlays monthly profiles by year or study area, with raw/share scales, timing and concentration insights. The visible evidence trail adds publication/context/imagery dates and attributed reported conditions. These historical records describe study rectangles; they are not national totals or a live news feed.
 
 Report's dominant ribbon uses one coherent envelope for the curve and illustrative light. The actual finding is **4,178 / 4,685 VIIRS detections in August 2023, 89% rounded**, across the Evros and Evia study rectangles. It is not a national total. Across years reports October as a busiest month in 10 of 14 complete monthly source-record years; this does not establish complete observing effort. Two satellites keeps sensors separate. Supported Explore↔Report transitions retain place, month and sensor; unsupported contexts explain the limitation and offer an explicit alternative.
 
@@ -57,12 +62,12 @@ The scientific bundle remains `20261114T172758Z`, observations-only. The global 
 
 ## Validation and known limits
 
-- **44 frontend tests passed**, 10 files; TypeScript and production build passed. Focused checks cover geographic aggregation, country/sector scope under filters, time/context semantics and stale offline-build IDs.
-- **12 scientific tests passed** using the existing bundled OpenMP library; pipeline, models and published observations were not regenerated. See the audit for the exact local command.
-- Native Firefox exercised globe→atlas→Europe→Greece (86) → sector (24)→observation, back/zoom-out, paused rotation, Report drilldown/reset/comparison/context, zero/missing distinctions, curated reading and its empty state, calendar, Sources and all nine experiment routes.
-- 390×844 Firefox emulation and touch simulation passed the observed mobile controls/layout. No physical Safari/pinch or screen-reader session was performed. Reduced-motion and hidden/offscreen guards were source-reviewed; no measured FPS/heap claim is made.
-- Cached routes survived stopping the owned production server. A subsequent frontend-only build displayed **Update and reload**, activated and reloaded successfully.
-- Country boundaries are generalized; small islands/coasts lose detail and dateline-spanning countries may use a wide view. Browser error/retry and fallback paths are not an exhaustive fault-injection suite. Spoken pitch timings still need the presenter's rehearsal.
+- **59 frontend tests passed**, 13 files; TypeScript and the final production build passed. The offline core contains 112 files / 20.7 MB.
+- Native Firefox checked the original globe, contour hierarchy, fitted Greece islands, Calendar playback/missing/zero/context, Report year/place comparison and dated evidence. The production preview displayed **OFFLINE BUNDLE READY** and was left on the globe.
+- At 390×844 phone emulation, fixed Report page overflow and verified calendar/map layouts. No physical iPhone, Safari, multi-touch pinch or screen-reader session is claimed.
+- Greece's generalized parent count is 86; the finer administrative polygons assign 83 of those observations, with 3 unmatched disclosed. Country borders and whole-country continent grouping are generalized.
+- Earlier overnight verification includes 12 scientific tests and cached-server-loss recovery. Scientific inputs, models and gates were unchanged; the outage rehearsal was not repeated for this UI pass. See both verification records for precise scope.
+- Presentation artifacts retain the earlier revision. Spoken pitch timings still need the presenter's rehearsal.
 
 ## Choices reserved for you
 
@@ -89,3 +94,8 @@ Original branch `reports` remains at `f191f3a`. `2457593` preserves the in-scope
 | `b1b72fb` | Verified 29-second MP4 and reproducible demo assets |
 
 The final documentation commit adds this handoff and the [brief acceptance audit](docs/brief-acceptance.md); `git log --oneline` gives its exact ID. The integrated tree was checked for whitespace/conflict markers and deliberately staged. No remote push occurred.
+
+
+## Latest redesign milestones
+
+The redesign builds on the preserved overnight checkout. Integrated commits include `467f1c7` (original globe), `3d5e819` (season wheel), `39e5c88` (Report comparisons/evidence), `98b69cb` (filled contours), and `8f0d10c` (phone calendar controls). The final local commit adds responsive map/report fixes, shared sensor context, retained atlas prototypes, current captures and this verification. Use `git log --oneline` for its ID. No remote push or publication occurred.

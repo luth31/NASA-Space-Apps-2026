@@ -4,7 +4,7 @@ The requested primary experience now keeps the original Three.js Globe (lead int
 
 ## Integration contract
 
-Existing `observations`, `cases`, `onSelect`, `onCase`, `snapshotStart`, `snapshotEnd`, `focus`, `zoom`, `reset` props remain accepted. Added `onBackToGlobe?: () => void`, called by root Back or Reset; `initialContinent?: string` optionally starts a named continent. `initialOpen?: boolean` remains accepted for compatibility but no globe is rendered by this component: mounting it opens the atlas. Lead mounts after the original globe's entry callback. No App, shared CSS, RegionalMap, Calendar or Report files are changed by this branch.
+Existing `observations`, `cases`, `onSelect`, `onCase`, `snapshotStart`, `snapshotEnd`, `focus`, `zoom`, `reset` props remain accepted. Added `onBackToGlobe?: () => void`, called by root Back or Reset; `initialContinent?: string` optionally starts a named continent. `initialOpen?: boolean` remains accepted for compatibility but no globe is rendered by this component: mounting it opens the atlas. Lead mounts after the original globe's entry callback. The original implementation was isolated to Explore; the integrated branch also connects App, Calendar and Report.
 
 Hierarchy: original Globe → continent country groups → named Natural Earth SUBREGION groups (such as Southern Europe) → country → Greece's administrative regions → 0.25° analytical sectors → original observation points. Countries without bundled administrative boundaries go directly to explicitly labelled analytical sectors. Historical dated study links remain separate from this NOAA-20 snapshot.
 
@@ -23,6 +23,8 @@ There is no ambient animation/render loop in the open atlas. SVG path geometry i
 
 ## Evidence
 
-Production build passes. Tests cover unique polygon assignment, unassigned-point conservation, input filter reapplication, fixed numeric red classes with distinct zero/unknown states, reversible projection coordinates, actual Greece administrative membership, and parent/child conservation using the bundled global snapshot. Existing geographic tests are retained. This replaces the default open atlas; the earlier continuous globe-unwrapping source remains in `explore/AtlasSurface.tsx` as a retained prototype, not the current primary flow.
+Production build passes. Tests cover unique polygon assignment, unassigned-point conservation, input filter reapplication, fixed numeric red classes with distinct zero/unknown states, reversible projection coordinates, actual Greece administrative membership, and parent/child conservation using the bundled global snapshot. Existing geographic tests are retained. This replaces the default open atlas; the earlier continuous globe-unwrapping source remains in `ExploreAtlasPrototype.tsx` and `explore/AtlasSurface.tsx`, loaded lazily by `?atlasMotion=unwrap` or `?atlasMotion=ellipsoid` and linked from the playground.
+
+Integrated responsive fitting, sensor/context fixes and native browser checks are recorded in [current verification](contours-and-patterns-verification.md).
 
 Primary sources checked 2026-11-15: https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/ and https://www.naturalearthdata.com/about/terms-of-use/ .

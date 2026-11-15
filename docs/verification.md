@@ -1,5 +1,7 @@
 # Verification evidence — 15 November 2026
 
+**Historical overnight revision.** For the later original-globe / contour / seasonal-calendar / Report redesign, see [the current verification](contours-and-patterns-verification.md). The observations below describe the previous app and retained presentation artifacts.
+
 This is the lead's record of observed checks, separate from planned acceptance. The reference specification is `OVERNIGHT_BRIEF.txt`.
 
 ## Environment

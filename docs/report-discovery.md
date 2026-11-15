@@ -18,6 +18,9 @@ The lead reverified those source URLs during this pass. Attributed **Reported co
 
 ## Integration and validation
 
-Only `web/src/report/**` and this document change. `YearInFire` uses the existing manifest, selection and exact-month Explore contract. The ribbon, Across years, Two satellites, temporal keyboard/touch controls, pause, reduced motion, retry and missing-source states remain in place. New comparison month controls support click/tap, arrows, Home and End. On small screens the profile scrolls horizontally while readouts and controls stack.
+The initial Report implementation changes `web/src/report/**` and this document; the integrated branch also contains the contour and calendar work. `YearInFire` uses the existing manifest, selection and exact-month Explore contract. The ribbon, Across years, Two satellites, temporal keyboard/touch controls, pause, reduced motion, retry and missing-source states remain in place. New comparison month controls support click/tap, arrows, Home and End. On small screens the profile scrolls horizontally while readouts and controls stack.
 
 `npm test -- src/report`: 31 tests across 7 files passed. New tests reconcile the 4,178/4,685 Greek VIIRS finding and regional contributions, compare Evros/Evia, retain unavailable Chaco/VIIRS years, mask partial aggregates, distinguish zero years, and preserve tied maxima. Production build passed, including the offline bundle (107 files, 20.5 MB in this branch). No browser or physical-device visual testing was performed by this agent; the lead owns rendered QA.
+
+
+Integrated rendered QA and phone overflow fixes are complete; see [current verification](contours-and-patterns-verification.md). The final integrated suite has 59 passing tests in 13 files; the production offline core is 112 files / 20.7 MB. Earlier branch-only counts above are retained as implementation history.

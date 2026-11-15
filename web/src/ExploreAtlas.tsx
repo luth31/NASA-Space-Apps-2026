@@ -106,6 +106,22 @@ export default function ExploreAtlas({
   const [page, setPage] = useState(0);
   const reduced = !!useReducedMotion();
   const svg = useRef<SVGSVGElement>(null);
+  const [labelFont, setLabelFont] = useState(16);
+  const [viewHeight, setViewHeight] = useState(570);
+  useEffect(() => {
+    if (!svg.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      const pixelScale = width / 1000;
+      if (width > 0) setViewHeight((height / width) * 1000);
+      if (pixelScale > 0)
+        setLabelFont(
+          Math.min(36, Math.max(8, (width < 700 ? 10.5 : 12) / pixelScale)),
+        );
+    });
+    observer.observe(svg.current);
+    return () => observer.disconnect();
+  }, [loading, error]);
   const drag = useRef<{
       x: number;
       y: number;
@@ -292,17 +308,23 @@ export default function ExploreAtlas({
     }
     if (current.kind === "admin" && selectedAdmin)
       return countryBounds(selectedAdmin);
+    if (selectedCountry?.properties.NAME_EN === "Greece" && admin.length)
+      return combinedBounds(admin);
     return selectedCountry ? countryBounds(selectedCountry) : WORLD;
   }, [
     current,
     selectedCountry,
     selectedAdmin,
+    admin,
     continental,
     countries,
     subregional,
     selectedContinent,
   ]);
-  const projection = useMemo(() => fitProjection(bounds), [bounds]);
+  const projection = useMemo(
+    () => fitProjection(bounds, 1000, viewHeight),
+    [bounds, viewHeight],
+  );
   const thresholds = useMemo(
     () => countThresholds(Math.max(0, ...scene.map((r) => r.rows.length))),
     [scene],
@@ -327,10 +349,21 @@ export default function ExploreAtlas({
     return [...mapShapes]
       .sort((a, b) => b.region.rows.length - a.region.rows.length)
       .flatMap((item) => {
-        const [x, y] = item.point;
-        if (x < 20 || x > 980 || y < 20 || y > 550) return [];
-        const w = Math.min(170, Math.max(75, item.region.name.length * 6)),
-          h = 35;
+        const [anchorX, anchorY] = item.point;
+        if (
+          anchorX < 0 ||
+          anchorX > 1000 ||
+          anchorY < 0 ||
+          anchorY > viewHeight
+        )
+          return [];
+        const w = Math.max(75, item.region.name.length * labelFont * 0.54),
+          h = labelFont * 2.6;
+        const x = Math.max(w / 2 + 12, Math.min(988 - w / 2, anchorX));
+        const y = Math.max(
+          labelFont + 12,
+          Math.min(viewHeight - h / 2 - 20, anchorY),
+        );
         const collision = occupied.some(
           (b) =>
             Math.abs(b.x - x) < (b.w + w) / 2 + 4 &&
@@ -338,9 +371,9 @@ export default function ExploreAtlas({
         );
         if (collision && hover !== item.region.id) return [];
         occupied.push({ x, y, w, h });
-        return [item];
+        return [{ ...item, point: [x, y] as [number, number] }];
       });
-  }, [mapShapes, hover]);
+  }, [mapShapes, hover, labelFont, viewHeight]);
   const enter = (region: CountRegion) => {
     setPath((p) => [
       ...p,
@@ -414,7 +447,7 @@ export default function ExploreAtlas({
     const r = svg.current!.getBoundingClientRect();
     return {
       x: ((e.clientX - r.left) * 1000) / r.width,
-      y: ((e.clientY - r.top) * 570) / r.height,
+      y: ((e.clientY - r.top) * viewHeight) / r.height,
     };
   };
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -448,7 +481,7 @@ export default function ExploreAtlas({
     const dx = p.x - drag.current.x,
       dy = p.y - drag.current.y;
     const limitX = 500 * (scale - 1) + 180,
-      limitY = 285 * (scale - 1) + 120;
+      limitY = (viewHeight / 2) * (scale - 1) + 120;
     setPan((previous) => ({
       x: Math.max(-limitX, Math.min(limitX, previous.x + dx)),
       y: Math.max(-limitY, Math.min(limitY, previous.y + dy)),
@@ -473,7 +506,7 @@ export default function ExploreAtlas({
     selectedAdmin
       ? contains(selectedAdmin, ...c.center)
       : selectedCountry
-        ? contains(selectedCountry, ...c.center)
+        ? c.country === selectedCountry.properties.NAME_EN
         : false,
   );
   const pointMode = current?.kind === "sector";
@@ -558,7 +591,7 @@ export default function ExploreAtlas({
                       ? "COUNTRIES"
                       : "CONTINENTAL COUNTRY GROUPS"}
           </span>
-          <h2>{current?.name || "A world of observations"}</h2>
+          <h1>{current?.name || "A world of observations"}</h1>
         </div>
         <p>
           <b>{integer(selectedRowsCount)}</b> detections{" "}
@@ -584,7 +617,7 @@ export default function ExploreAtlas({
           <svg
             ref={svg}
             className="contour-map"
-            viewBox="0 0 1000 570"
+            viewBox={`0 0 1000 ${viewHeight}`}
             aria-label={
               pointMode
                 ? "Individual observation locations"
@@ -638,7 +671,7 @@ export default function ExploreAtlas({
             </defs>
             <g
               className={`contour-camera ${reduced ? "is-reduced" : ""}`}
-              transform={`translate(${pan.x} ${pan.y}) translate(500 285) scale(${scale}) translate(-500 -285)`}
+              transform={`translate(${pan.x} ${pan.y}) translate(500 ${viewHeight / 2}) scale(${scale}) translate(-500 ${-viewHeight / 2})`}
             >
               {current && (
                 <path
@@ -696,8 +729,24 @@ export default function ExploreAtlas({
                     transform={`translate(${point[0]} ${point[1]})`}
                     aria-hidden="true"
                   >
-                    <text textAnchor="middle">{region.name}</text>
-                    <text textAnchor="middle" y="17" className="contour-count">
+                    <text
+                      textAnchor="middle"
+                      style={{
+                        fontSize: labelFont,
+                        strokeWidth: labelFont * 0.2,
+                      }}
+                    >
+                      {region.name}
+                    </text>
+                    <text
+                      textAnchor="middle"
+                      y={labelFont * 1.25}
+                      className="contour-count"
+                      style={{
+                        fontSize: labelFont * 1.15,
+                        strokeWidth: labelFont * 0.2,
+                      }}
+                    >
                       {integer(region.rows.length)}
                     </text>
                   </g>
@@ -765,8 +814,10 @@ export default function ExploreAtlas({
             selectedCountry?.properties.NAME_EN === "Greece"
               ? "regions"
               : current?.kind === "continent"
-                ? "countries"
-                : "places"}
+                ? "regions"
+                : current?.kind === "subregion"
+                  ? "countries"
+                  : "places"}
           </summary>
           <div>
             {scene.map((r) => (

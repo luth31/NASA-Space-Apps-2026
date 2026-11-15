@@ -28,6 +28,8 @@ interface Props {
   onStudy: (study: CaseStudy) => void;
   selectedMonth: string;
   onMonth: (m: string) => void;
+  selectedSensor: "modis" | "viirs";
+  onSensor: (sensor: "modis" | "viirs") => void;
   onExplore: () => void;
   onExport: (format: "csv" | "pdf") => void;
   onMethods: () => void;
@@ -39,19 +41,12 @@ export default function Calendar({
   onStudy,
   selectedMonth,
   onMonth,
+  selectedSensor: sensor,
+  onSensor: setSensor,
   onExplore,
   onExport,
   onMethods,
 }: Props) {
-  const [sensor, setSensor] = useState<"modis" | "viirs">(() => {
-    try {
-      return sessionStorage.getItem("pyrobridge-calendar-sensor") === "viirs"
-        ? "viirs"
-        : "modis";
-    } catch {
-      return "modis";
-    }
-  });
   const [harmonized, setHarmonized] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [recordScale, setRecordScale] = useState(false);
@@ -127,13 +122,6 @@ export default function Calendar({
     selectYear(next);
   };
 
-  useEffect(() => {
-    try {
-      sessionStorage.setItem("pyrobridge-calendar-sensor", sensor);
-    } catch {
-      /* In-memory selection works without storage. */
-    }
-  }, [sensor]);
   useEffect(() => {
     if (!playing || reducedMotion || years.length < 2) return;
     const timer = window.setTimeout(() => {
@@ -513,7 +501,11 @@ export default function Calendar({
           </div>
           <div className="sc-selection" aria-live={playing ? "off" : "polite"}>
             <span className="sc-kicker">
-              SELECTED / {dateLabel(selectedMonth).toUpperCase()}
+              SELECTED /{" "}
+              {dateLabel(selectedMonth, {
+                month: "long",
+                year: "numeric",
+              }).toUpperCase()}
             </span>
             <div className="sc-selected-value">
               {number(selectedValue)}

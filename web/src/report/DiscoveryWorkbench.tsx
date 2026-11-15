@@ -308,7 +308,7 @@ export default function DiscoveryWorkbench({
             <b>
               {p.months[inspected].value === null
                 ? "Source incomplete"
-                : `${integer(p.months[inspected].value!)} detections`}
+                : `${integer(p.months[inspected].value!)} ${p.months[inspected].value === 1 ? "detection" : "detections"}`}
             </b>
             <small>
               {p.months[inspected].share === null

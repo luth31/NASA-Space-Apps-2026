@@ -1,9 +1,12 @@
 .fire-journey.jy-discovery {
   height: auto;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
   min-height: calc(100dvh - 82px);
   grid-template-rows: auto auto auto auto;
 }
 .jy-discovery > .jy-scene {
+  min-width: 0;
   min-height: calc(100dvh - 220px);
 }
 .jy-discovery[data-pattern="compare"] > .jy-scene {
@@ -65,6 +68,7 @@
   padding: 24px 0 16px;
 }
 .rd-controls label {
+  min-width: 0;
   display: grid;
   gap: 9px;
   color: #b3beaa;
@@ -530,7 +534,7 @@
 }
 @media (max-width: 1000px) {
   .rd-controls {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
   .rd-evidence-grid {
     grid-template-columns: 1.5fr 1fr;
