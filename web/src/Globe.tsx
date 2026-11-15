@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { useReducedMotion } from "motion/react";
 import type { Observation } from "./data";
+import { fitProjection } from "./explore/contour-data";
 
 const location = (lon: number, lat: number, r = 1) =>
   new THREE.Vector3(
@@ -20,6 +21,9 @@ interface Props {
   reset: number;
   paused?: boolean;
   onAtlas?: () => void;
+  atlasOpen?: boolean;
+  atlasSurface?: SVGSVGElement | null;
+  continuous?: boolean;
 }
 export default function Globe({
   observations,
@@ -31,6 +35,9 @@ export default function Globe({
   reset,
   paused = false,
   onAtlas,
+  atlasOpen = false,
+  atlasSurface = null,
+  continuous = false,
 }: Props) {
   const [hover, setHover] = useState<{
     x: number;
@@ -49,6 +56,8 @@ export default function Globe({
     reset,
     paused,
     onAtlas,
+    atlasOpen,
+    atlasSurface,
   });
   const wakeRef = useRef<() => void>(() => {});
   latest.current = {
@@ -60,6 +69,8 @@ export default function Globe({
     reset,
     paused,
     onAtlas,
+    atlasOpen,
+    atlasSurface,
   };
   const reduced = useReducedMotion();
   useEffect(() => {
@@ -100,19 +111,50 @@ export default function Globe({
     controls.autoRotate = !reduced && !latest.current.paused;
     controls.autoRotateSpeed = 0.14;
     const texture = new THREE.TextureLoader().load(
-      "/assets/earth-blue-marble.jpg",
+      continuous
+        ? "/assets/geography/world-terrain.jpg"
+        : "/assets/earth-blue-marble.jpg",
       () => wake(),
     );
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    const surfaceGeometry = new THREE.SphereGeometry(1, 192, 128);
+    surfaceGeometry.setAttribute(
+      "atlasPosition",
+      surfaceGeometry.getAttribute("position").clone(),
+    );
+    const unfold = { value: atlasOpen ? 1 : 0 };
+    const planeNormal = { value: camera.position.clone().normalize() };
     const earth = new THREE.Mesh(
-      new THREE.SphereGeometry(1, 96, 64),
+      surfaceGeometry,
       new THREE.MeshPhongMaterial({
         map: texture,
         shininess: 3,
         color: 0x95a6a5,
       }),
     );
+    earth.frustumCulled = false;
+    earth.material.onBeforeCompile = (shader) => {
+      shader.uniforms.earthUnfold = unfold;
+      shader.uniforms.atlasNormal = planeNormal;
+      shader.vertexShader =
+        "uniform float earthUnfold; uniform vec3 atlasNormal; attribute vec3 atlasPosition;\n" +
+        shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace(
+        "#include <begin_vertex>",
+        "vec3 transformed = mix(position, atlasPosition, earthUnfold);",
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        "#include <beginnormal_vertex>",
+        "vec3 objectNormal = normalize(mix(normal, atlasNormal, earthUnfold));",
+      );
+      shader.fragmentShader =
+        "uniform float earthUnfold;\n" + shader.fragmentShader;
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <opaque_fragment>",
+        "outgoingLight = mix(outgoingLight, diffuseColor.rgb, earthUnfold);\n#include <opaque_fragment>",
+      );
+    };
     scene.add(earth);
     scene.add(new THREE.AmbientLight(0xc3d2de, 1.5));
     const sun = new THREE.DirectionalLight(0xfff2df, 2);
@@ -253,6 +295,7 @@ export default function Globe({
       wake();
     }
     function pick(e: PointerEvent) {
+      if (latest.current.atlasOpen) return null;
       const rect = el.getBoundingClientRect();
       pointer.set(
         ((e.clientX - rect.left) / rect.width) * 2 - 1,
@@ -312,11 +355,72 @@ export default function Globe({
     renderer.domElement.addEventListener("pointerup", pointerUp);
     renderer.domElement.addEventListener("pointermove", pointerMove);
     renderer.domElement.addEventListener("pointerleave", pointerLeave);
+    function fitFlatSurface() {
+      const map = latest.current.atlasSurface;
+      if (!continuous || !map) return;
+      const mapRect = map.getBoundingClientRect(),
+        rect = el.getBoundingClientRect();
+      if (!mapRect.width || !rect.width || !rect.height) return;
+      const projection = fitProjection(
+        [-180, -60, 180, 85],
+        1000,
+        (mapRect.height / mapRect.width) * 1000,
+      );
+      const uv = surfaceGeometry.getAttribute("uv");
+      const flat = surfaceGeometry.getAttribute(
+        "atlasPosition",
+      ) as THREE.BufferAttribute;
+      const normal = camera.position.clone().normalize();
+      planeNormal.value.copy(normal);
+      for (let i = 0; i < uv.count; i++) {
+        // Keep the same texture coordinates on the sphere and the map.
+        const u = Math.min(1, Math.max(0, uv.getX(i)));
+        const [mx, my] = projection.project(
+          u * 360 - 180,
+          uv.getY(i) * 180 - 90,
+        );
+        const px = mapRect.left - rect.left + (mx * mapRect.width) / 1000;
+        const py = mapRect.top - rect.top + (my * mapRect.width) / 1000;
+        const ray = new THREE.Vector3(
+          (px / rect.width) * 2 - 1,
+          1 - (py / rect.height) * 2,
+          0.5,
+        )
+          .unproject(camera)
+          .sub(camera.position)
+          .normalize();
+        const distance = -camera.position.dot(normal) / ray.dot(normal);
+        const point = camera.position.clone().addScaledVector(ray, distance);
+        flat.setXYZ(i, point.x, point.y, point.z);
+      }
+      flat.needsUpdate = true;
+    }
+    let compactViewport: boolean | null = null;
     const resize = new ResizeObserver(() => {
       const w = el.clientWidth,
         h = el.clientHeight;
+      if (!w || !h) return;
+      if (
+        continuous &&
+        compactViewport !== w < 760 &&
+        !latest.current.atlasOpen
+      ) {
+        camera.position.setLength(w < 760 ? 5.4 : 3.5);
+        controls.maxDistance = w < 760 ? 7 : 5;
+      }
+      compactViewport = w < 760;
       camera.aspect = w / h;
+      if (continuous)
+        camera.setViewOffset(
+          w,
+          h,
+          w > 700 ? -w * 0.12 : 0,
+          w > 700 ? 0 : -h * 0.12,
+          w,
+          h,
+        );
       camera.updateProjectionMatrix();
+      fitFlatSurface();
       renderer.setSize(w, h);
       wake();
     });
@@ -324,7 +428,13 @@ export default function Globe({
     let frame = 0;
     let inViewport = true;
     let lastPaused = latest.current.paused;
-    let atlasEntered = false;
+    let atlasEntered = atlasOpen;
+    let travel = atlasOpen ? 1 : 0;
+    let travelFrom = travel,
+      travelTo = travel,
+      travelStart = 0;
+    let lastSurface: SVGSVGElement | null = null;
+    const globeColor = new THREE.Color(0x95a6a5);
     let lastFocus = "";
     let lastZoom = zoom;
     let lastReset = reset;
@@ -341,6 +451,57 @@ export default function Globe({
       if (lastPaused !== latest.current.paused) {
         lastPaused = latest.current.paused;
         controls.autoRotate = !lastPaused && !reduced;
+      }
+      const requested = latest.current.atlasOpen ? 1 : 0;
+      if (requested) lastZoom = latest.current.zoom;
+      if (
+        continuous &&
+        (travelTo !== requested || lastSurface !== latest.current.atlasSurface)
+      ) {
+        const map = latest.current.atlasSurface;
+        if (map && el.parentElement) {
+          const stage = el.parentElement.parentElement!;
+          el.parentElement.style.height = `${map.getBoundingClientRect().bottom - stage.getBoundingClientRect().top}px`;
+        }
+        if (travelTo !== requested) {
+          travelFrom = travel;
+          travelTo = requested;
+          travelStart = performance.now();
+          target = null;
+          setHover(null);
+        }
+        lastSurface = map ?? null;
+        controls.enabled = requested === 0 && travel === 0;
+        controls.autoRotate = false;
+        camera.updateMatrixWorld();
+        fitFlatSurface();
+      }
+      if (continuous) {
+        const t = reduced
+          ? 1
+          : Math.min(1, (performance.now() - travelStart) / 1700);
+        const eased = t * t * t * (t * (t * 6 - 15) + 10);
+        travel = THREE.MathUtils.lerp(travelFrom, travelTo, eased);
+        if (Math.abs(travel - travelTo) < 0.0001) travel = travelTo;
+        unfold.value = travel;
+        earth.material.color
+          .copy(globeColor)
+          .lerp(new THREE.Color(0xffffff), travel);
+        const reveal = THREE.MathUtils.smoothstep(travel, 0.72, 1);
+        el.parentElement!.style.opacity = String(1 - reveal);
+        el.parentElement!.style.pointerEvents =
+          travel > 0.001 ? "none" : "auto";
+        el.closest<HTMLElement>(".continuous-earth")?.style.setProperty(
+          "--earth-map-reveal",
+          String(reveal),
+        );
+        if (travel === 0 && requested === 0) {
+          atlasEntered = false;
+          controls.enabled = true;
+          controls.autoRotate = !latest.current.paused && !reduced;
+        }
+        atmosphere.visible = travel < 0.2;
+        graticule.visible = travel < 0.2;
       }
       const f = latest.current.focus;
       const dest = latest.current.destination;
@@ -393,7 +554,7 @@ export default function Globe({
         ring.visible = false;
         lastFocus = "";
       }
-      if (lastZoom !== latest.current.zoom) {
+      if (lastZoom !== latest.current.zoom && !latest.current.atlasOpen) {
         target = camera.position
           .clone()
           .normalize()
@@ -416,18 +577,20 @@ export default function Globe({
         camera.position.lerp(target, reduced ? 1 : 0.065);
         if (camera.position.distanceTo(target) < 0.005) target = null;
       }
-      const moving = !dest && controls.update();
+      const moving =
+        !dest && travel === 0 && !latest.current.atlasOpen && controls.update();
       if (
         !dest &&
         !atlasEntered &&
+        !latest.current.atlasOpen &&
         latest.current.onAtlas &&
         camera.position.length() < 2.84
       ) {
         atlasEntered = true;
         latest.current.onAtlas();
       }
-      points.visible = camera.position.length() <= 2.6;
-      clusterPoints.visible = !points.visible;
+      points.visible = travel < 0.08 && camera.position.length() <= 2.6;
+      clusterPoints.visible = travel < 0.08 && !points.visible;
       const pos = location(26.05, 41.025, 1.03);
       const visible = pos.dot(camera.position) > 1.1;
       pos.project(camera);
@@ -435,11 +598,18 @@ export default function Globe({
         marker.current.style.transform = `translate(${((pos.x + 1) / 2) * el.clientWidth}px,${((1 - pos.y) / 2) * el.clientHeight}px)`;
         marker.current.style.opacity = visible ? "1" : "0";
         marker.current.style.visibility =
-          visible && !dest ? "visible" : "hidden";
+          visible && !dest && travel < 0.01 ? "visible" : "hidden";
         marker.current.style.pointerEvents = visible ? "auto" : "none";
       }
       renderer.render(scene, camera);
-      if (controls.autoRotate || target || flight || moving) wake();
+      if (
+        (controls.autoRotate && travel === 0) ||
+        target ||
+        flight ||
+        moving ||
+        travel !== travelTo
+      )
+        wake();
     }
     function wake() {
       if (!disposed && !frame && inViewport && !document.hidden)
@@ -489,10 +659,17 @@ export default function Globe({
       renderer.dispose();
       el.removeChild(renderer.domElement);
     };
-  }, [observations, reduced]);
-  useEffect(() => wakeRef.current(), [focus, destination, zoom, reset, paused]);
+  }, [observations, reduced, continuous]);
+  useEffect(
+    () => wakeRef.current(),
+    [focus, destination, zoom, reset, paused, atlasOpen, atlasSurface],
+  );
   return (
-    <div className="globe-wrap">
+    <div
+      className={`globe-wrap ${continuous ? "continuous-globe" : ""}`}
+      aria-hidden={atlasOpen}
+      inert={atlasOpen}
+    >
       <div className="globe-canvas" ref={host}>
         <div className="webgl-fallback">
           The interactive globe requires WebGL. All observations remain

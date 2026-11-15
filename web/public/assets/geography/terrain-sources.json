@@ -1,0 +1,52 @@
+{
+  "attribution": "NASA Earth Observatory / NASA GIBS Blue Marble shaded relief and bathymetry. Static geographic context, August 2004 composite; not current event imagery. Natural Earth 1:50m public-domain country outlines used only for display; detection assignment retains the documented 1:110m polygons.",
+  "regions": [
+    {
+      "file": "europe-terrain.jpg",
+      "bounds": [
+        -25,
+        30,
+        50,
+        75
+      ]
+    },
+    {
+      "file": "greece-terrain.jpg",
+      "bounds": [
+        18,
+        33,
+        31,
+        43
+      ]
+    }
+  ],
+  "files": [
+    {
+      "file": "countries-50m.json",
+      "source": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson",
+      "downloaded": "2026-11-15",
+      "originalSha256": "3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb",
+      "sha256": "c1dbaccef408ed19c904f2d1b1dd193f2ba073257228b2d825dd294e1e019af8"
+    },
+    {
+      "file": "europe-terrain.jpg",
+      "source": "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=BlueMarble_ShadedRelief_Bathymetry&STYLES=&SRS=EPSG%3A4326&BBOX=-25%2C30%2C50%2C75&WIDTH=2400&HEIGHT=1440&FORMAT=image%2Fjpeg",
+      "downloaded": "2026-11-15",
+      "originalSha256": "be0849b3e2c5046f921e9b77d217ce0388a6d28918010daa5fecc3a42d741ec7",
+      "sha256": "be0849b3e2c5046f921e9b77d217ce0388a6d28918010daa5fecc3a42d741ec7"
+    },
+    {
+      "file": "greece-terrain.jpg",
+      "source": "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=BlueMarble_ShadedRelief_Bathymetry&STYLES=&SRS=EPSG%3A4326&BBOX=18%2C33%2C31%2C43&WIDTH=2304&HEIGHT=1772&FORMAT=image%2Fjpeg",
+      "downloaded": "2026-11-15",
+      "originalSha256": "3c07d0f4556d5771fb9274b2d52084cc1b708e9bcfa2968a0b34b12d99651a92",
+      "sha256": "3c07d0f4556d5771fb9274b2d52084cc1b708e9bcfa2968a0b34b12d99651a92"
+    },
+    {
+      "file": "world-terrain.jpg",
+      "source": "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=BlueMarble_ShadedRelief_Bathymetry&STYLES=&SRS=EPSG%3A4326&BBOX=-180%2C-90%2C180%2C90&WIDTH=4096&HEIGHT=2048&FORMAT=image%2Fjpeg",
+      "downloaded": "2026-11-15",
+      "sha256": "ba0d25f05080acf378241a00bf6a96ed9b5d03d13f6018c3c59baf98ff6627a8"
+    }
+  ]
+}

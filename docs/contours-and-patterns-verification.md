@@ -1,5 +1,7 @@
 # Contours and patterns — integrated verification
 
+**Prior redesign revision.** The subsequent continuous satellite-terrain transition and seasonal ridgelines are documented in [current verification](continuous-earth-verification.md).
+
 Verified 15 November 2026 on local branch `experience/contours-and-patterns`. This supersedes the primary Explore, Calendar and Report experience described in the earlier overnight handoff. No publication or remote push was performed.
 
 ## Delivered experience

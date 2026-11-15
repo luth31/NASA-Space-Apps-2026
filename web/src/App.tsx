@@ -105,6 +105,7 @@ export default function App() {
     new URLSearchParams(location.search).get("atlas") === "1" || atlasPrototype,
   );
   const [globePaused, setGlobePaused] = useState(false);
+  const [atlasSurface, setAtlasSurface] = useState<SVGSVGElement | null>(null);
   const [browseGlobal, setBrowseGlobal] = useState(false);
   const initialRoute = useRef(readRoute(location.search));
   const [reportContext, setReportContext] = useState<
@@ -820,7 +821,9 @@ export default function App() {
             <div
               className={`exploration-stage ${study ? "regional" : "global"} ${(selected || browseGlobal) && !study ? "has-selection" : ""}`}
             >
-              <div className="map-space">
+              <div
+                className={`map-space ${!study && !legacyExplore && !atlasPrototype ? `continuous-earth ${atlasOpen ? "is-map" : "is-orbit"}` : ""}`}
+              >
                 {study ? (
                   <RegionalMap
                     key={study.id}
@@ -849,9 +852,11 @@ export default function App() {
                   />
                 ) : (
                   <>
-                    {(legacyExplore || !atlasOpen) && (
+                    {(legacyExplore || !atlasPrototype) && (
                       <div
-                        className={`global-intro ${destination ? "departing" : ""}`}
+                        aria-hidden={!legacyExplore && atlasOpen}
+                        inert={!legacyExplore && atlasOpen}
+                        className={`global-intro ${destination || (!legacyExplore && atlasOpen) ? "departing" : ""}`}
                       >
                         <span className="eyebrow">
                           <span className="tiny-cross">+</span> THE FIRE
@@ -910,7 +915,32 @@ export default function App() {
                         </div>
                       }
                     >
-                      {legacyExplore || !atlasOpen ? (
+                      {!legacyExplore && (
+                        <div
+                          className="earth-atlas-layer"
+                          inert={!atlasOpen}
+                          aria-hidden={!atlasOpen}
+                        >
+                          <CurrentAtlas
+                            observations={observations}
+                            cases={manifest.cases}
+                            onSelect={selectObservation}
+                            onCase={commitCase}
+                            snapshotStart={manifest.snapshotStart}
+                            snapshotEnd={manifest.snapshotEnd}
+                            focus={selected}
+                            zoom={atlasOpen ? zoom : 0}
+                            reset={reset}
+                            onSurfaceReady={setAtlasSurface}
+                            onBackToGlobe={() => {
+                              setAtlasOpen(false);
+                              setSelected(null);
+                              setBrowseGlobal(false);
+                            }}
+                          />
+                        </div>
+                      )}
+                      {!atlasPrototype && (
                         <Globe
                           observations={observations}
                           onSelect={selectObservation}
@@ -920,6 +950,9 @@ export default function App() {
                           zoom={zoom}
                           reset={reset}
                           paused={globePaused}
+                          continuous={!legacyExplore}
+                          atlasOpen={atlasOpen && !legacyExplore}
+                          atlasSurface={atlasSurface}
                           onAtlas={
                             legacyExplore
                               ? undefined
@@ -929,24 +962,6 @@ export default function App() {
                                   setAtlasOpen(true);
                                 }
                           }
-                        />
-                      ) : (
-                        <CurrentAtlas
-                          observations={observations}
-                          cases={manifest.cases}
-                          onSelect={selectObservation}
-                          onCase={commitCase}
-                          snapshotStart={manifest.snapshotStart}
-                          snapshotEnd={manifest.snapshotEnd}
-                          focus={selected}
-                          zoom={zoom}
-                          reset={reset}
-                          onBackToGlobe={() => {
-                            setAtlasOpen(false);
-                            setSelected(null);
-                            setBrowseGlobal(false);
-                            setReset((v) => v + 1);
-                          }}
                         />
                       )}
                     </Suspense>

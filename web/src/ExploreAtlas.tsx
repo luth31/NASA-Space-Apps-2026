@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
@@ -30,6 +30,7 @@ import {
 } from "./explore/contour-data";
 import type { CountRegion } from "./explore/contour-data";
 import "./explore/contours.css";
+import TerrainDetail from "./explore/TerrainDetail";
 
 interface Props {
   observations: Observation[];
@@ -44,6 +45,7 @@ interface Props {
   initialOpen?: boolean;
   initialContinent?: string;
   onBackToGlobe?: () => void;
+  onSurfaceReady?: (surface: SVGSVGElement) => void;
 }
 interface Selection {
   kind: CountRegion["kind"];
@@ -89,9 +91,13 @@ export default function ExploreAtlas({
   reset = 0,
   initialContinent,
   onBackToGlobe,
+  onSurfaceReady,
 }: Props) {
   const [countries, setCountries] = useState<Country[]>([]),
     [admin, setAdmin] = useState<Country[]>([]);
+  const [detailedCountries, setDetailedCountries] = useState<Country[]>([]);
+  const [activityWash, setActivityWash] = useState(true);
+  const [flying, setFlying] = useState(false);
   const [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [retry, setRetry] = useState(0);
@@ -114,6 +120,7 @@ export default function ExploreAtlas({
       const { width, height } = entry.contentRect;
       const pixelScale = width / 1000;
       if (width > 0) setViewHeight((height / width) * 1000);
+      if (svg.current) onSurfaceReady?.(svg.current);
       if (pixelScale > 0)
         setLabelFont(
           Math.min(36, Math.max(8, (width < 700 ? 10.5 : 12) / pixelScale)),
@@ -159,6 +166,23 @@ export default function ExploreAtlas({
       });
     return () => controller.abort();
   }, [retry]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/assets/geography/countries-50m.json", { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) throw Error();
+        return r.json() as Promise<GeoData>;
+      })
+      .then((data) => setDetailedCountries(data.features))
+      .catch(() => {
+        /* The bundled counting geometry remains a usable fallback. */
+      });
+    return () => controller.abort();
+  }, []);
+  const displayGeometry = useMemo(
+    () => new Map(detailedCountries.map((c) => [c.properties.NAME_EN, c])),
+    [detailedCountries],
+  );
   const assignment = useMemo(
     () => partitionRegions(observations, countries),
     [observations, countries],
@@ -325,6 +349,58 @@ export default function ExploreAtlas({
     () => fitProjection(bounds, 1000, viewHeight),
     [bounds, viewHeight],
   );
+  const returnPending = useRef(false);
+  const previousProjection = useRef(projection);
+  useLayoutEffect(() => {
+    const prior = previousProjection.current;
+    previousProjection.current = projection;
+    const group = svg.current?.querySelector<SVGGElement>(".contour-flight");
+    if (!group || reduced || prior === projection) return;
+    const [x0, y0] = projection.project(0, 0),
+      [x1, y1] = projection.project(1, 1);
+    const [px0, py0] = prior.project(0, 0),
+      [px1, py1] = prior.project(1, 1);
+    const sx = (px1 - px0) / (x1 - x0),
+      sy = (py1 - py0) / (y1 - y0);
+    setFlying(true);
+    const animation = group.animate(
+      [
+        {
+          transform: `matrix(${sx},0,0,${sy},${px0 - sx * x0},${py0 - sy * y0})`,
+        },
+        { transform: "matrix(1,0,0,1,0,0)" },
+      ],
+      { duration: 1050, easing: "cubic-bezier(.22,.68,.18,1)", fill: "none" },
+    );
+    animation.onfinish = () => {
+      setFlying(false);
+      if (returnPending.current) {
+        returnPending.current = false;
+        onBackToGlobe?.();
+      }
+    };
+    return () => {
+      animation.cancel();
+      setFlying(false);
+    };
+  }, [projection, reduced]);
+  const terrainImage = (source: string, extent: Bounds, key: string) => {
+    const a = projection.project(extent[0], extent[3]),
+      b = projection.project(extent[2], extent[1]);
+    return (
+      <image
+        key={key}
+        href={source}
+        x={a[0]}
+        y={a[1]}
+        width={b[0] - a[0]}
+        height={b[1] - a[1]}
+        preserveAspectRatio="none"
+        className={`contour-terrain ${key !== "world" ? "terrain-detail" : ""}`}
+        aria-hidden="true"
+      />
+    );
+  };
   const thresholds = useMemo(
     () => countThresholds(Math.max(0, ...scene.map((r) => r.rows.length))),
     [scene],
@@ -333,21 +409,36 @@ export default function ExploreAtlas({
     () =>
       scene.map((region) => ({
         region,
-        d: contourPath(region.features, projection.project),
+        d: contourPath(
+          region.kind === "admin" || region.kind === "sector"
+            ? region.features
+            : region.features.map(
+                (f) => displayGeometry.get(f.properties.NAME_EN) || f,
+              ),
+          projection.project,
+        ),
         point: projection.project(
           ...(region.center || labelPoint(region.features)),
         ),
       })),
-    [scene, projection],
+    [scene, projection, displayGeometry],
   );
   const background = useMemo(
-    () => contourPath(countries, projection.project),
-    [countries, projection],
+    () =>
+      contourPath(
+        detailedCountries.length ? detailedCountries : countries,
+        projection.project,
+      ),
+    [countries, detailedCountries, projection],
   );
   const labels = useMemo(() => {
     const occupied: { x: number; y: number; w: number; h: number }[] = [];
     return [...mapShapes]
-      .sort((a, b) => b.region.rows.length - a.region.rows.length)
+      .sort(
+        (a, b) =>
+          Number(b.region.id === hover) - Number(a.region.id === hover) ||
+          b.region.rows.length - a.region.rows.length,
+      )
       .flatMap((item) => {
         const [anchorX, anchorY] = item.point;
         if (
@@ -369,7 +460,7 @@ export default function ExploreAtlas({
             Math.abs(b.x - x) < (b.w + w) / 2 + 4 &&
             Math.abs(b.y - y) < (b.h + h) / 2 + 4,
         );
-        if (collision && hover !== item.region.id) return [];
+        if (collision) return [];
         occupied.push({ x, y, w, h });
         return [{ ...item, point: [x, y] as [number, number] }];
       });
@@ -394,7 +485,8 @@ export default function ExploreAtlas({
     setPath([]);
     setPan({ x: 0, y: 0 });
     setScale(1);
-    onBackToGlobe?.();
+    if (path.length && !reduced) returnPending.current = true;
+    else onBackToGlobe?.();
   };
   useEffect(() => {
     setPan({ x: 0, y: 0 });
@@ -428,7 +520,7 @@ export default function ExploreAtlas({
     let last = 0;
     const wheel = (event: WheelEvent) => {
       event.preventDefault();
-      if (performance.now() - last < 360) return;
+      if (performance.now() - last < 1100) return;
       last = performance.now();
       const s = latest.current;
       if (event.deltaY > 0) {
@@ -519,7 +611,7 @@ export default function ExploreAtlas({
         : 0;
   return (
     <section
-      className="contour-atlas"
+      className={`contour-atlas terrain-atlas ${activityWash ? "with-activity" : ""} ${flying ? "is-flying" : ""}`}
       aria-label="Geographic contours and satellite detections"
     >
       <header className="contour-header">
@@ -545,6 +637,13 @@ export default function ExploreAtlas({
           ))}
         </nav>
         <div className="contour-controls">
+          <button
+            className="terrain-toggle"
+            aria-pressed={activityWash}
+            onClick={() => setActivityWash((v) => !v)}
+          >
+            Activity wash
+          </button>
           <button onClick={back} aria-label="Wider geographic view">
             <Minus size={15} />
           </button>
@@ -658,135 +757,178 @@ export default function ExploreAtlas({
                 width="110%"
                 height="110%"
               >
+                <feComponentTransfer in="SourceAlpha" result="solid">
+                  <feFuncA type="linear" slope="1000" />
+                </feComponentTransfer>
                 <feMorphology
-                  in="SourceAlpha"
+                  in="solid"
                   operator="dilate"
-                  radius=".65"
+                  radius={labelFont / 12}
                   result="outline"
                 />
-                <feFlood floodColor="#d0b9a8" />
-                <feComposite in2="outline" operator="in" />
+                <feComposite
+                  in="outline"
+                  in2="solid"
+                  operator="out"
+                  result="edge"
+                />
+                <feFlood floodColor="#f6a08d" />
+                <feComposite in2="edge" operator="in" />
                 <feComposite in="SourceGraphic" />
               </filter>
             </defs>
-            <g
-              className={`contour-camera ${reduced ? "is-reduced" : ""}`}
-              transform={`translate(${pan.x} ${pan.y}) translate(500 ${viewHeight / 2}) scale(${scale}) translate(-500 ${-viewHeight / 2})`}
-            >
-              {current && (
-                <path
-                  d={background}
-                  className="contour-background"
-                  fillRule="evenodd"
+            <g className="contour-flight">
+              <g
+                className={`contour-camera ${reduced ? "is-reduced" : ""}`}
+                transform={`translate(${pan.x} ${pan.y}) translate(500 ${viewHeight / 2}) scale(${scale}) translate(-500 ${-viewHeight / 2})`}
+              >
+                {terrainImage(
+                  "/assets/geography/world-terrain.jpg",
+                  [-180, -90, 180, 90],
+                  "world",
+                )}
+                {selectedContinent?.name === "Europe" &&
+                  terrainImage(
+                    "/assets/geography/europe-terrain.jpg",
+                    [-25, 30, 50, 75],
+                    "europe",
+                  )}
+                {selectedCountry?.properties.NAME_EN === "Greece" &&
+                  terrainImage(
+                    "/assets/geography/greece-terrain.jpg",
+                    [18, 33, 31, 43],
+                    "greece",
+                  )}
+                <TerrainDetail
+                  projection={projection}
+                  height={viewHeight}
+                  enabled={
+                    !!current &&
+                    ["country", "admin", "sector"].includes(current.kind)
+                  }
                 />
-              )}
-              {mapShapes.map(({ region, d }) => (
-                <g
-                  key={region.id}
-                  className={`contour-place ${hover === region.id ? "is-hovered" : ""}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`${region.name}: ${integer(region.rows.length)} recorded detections. Open details.`}
-                  onFocus={() => setHover(region.id)}
-                  onMouseEnter={() => setHover(region.id)}
-                  onMouseLeave={() => setHover(null)}
-                  onClick={() => {
-                    if (!moved.current) enter(region);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      enter(region);
-                    }
-                  }}
-                >
+                {current && (
                   <path
-                    d={d}
-                    fill={countFill(region.rows.length, thresholds)}
+                    d={background}
+                    className="contour-background"
                     fillRule="evenodd"
-                    className={
-                      region.kind === "continent" || region.kind === "subregion"
-                        ? "continent-fill"
-                        : "region-fill"
-                    }
-                    filter={
-                      region.kind === "continent" || region.kind === "subregion"
-                        ? "url(#continent-outline)"
-                        : undefined
-                    }
-                  >
-                    <title>
-                      {region.name}: {integer(region.rows.length)} detections
-                    </title>
-                  </path>
-                </g>
-              ))}
-              {!pointMode &&
-                labels.map(({ region, point }) => (
+                  />
+                )}
+                {mapShapes.map(({ region, d }) => (
                   <g
-                    className="contour-label"
                     key={region.id}
-                    transform={`translate(${point[0]} ${point[1]})`}
-                    aria-hidden="true"
+                    className={`contour-place ${hover === region.id ? "is-hovered" : ""}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${region.name}: ${integer(region.rows.length)} recorded detections. Open details.`}
+                    onFocus={() => setHover(region.id)}
+                    onMouseEnter={() => setHover(region.id)}
+                    onMouseLeave={() => setHover(null)}
+                    onClick={() => {
+                      if (!moved.current) enter(region);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        enter(region);
+                      }
+                    }}
                   >
-                    <text
-                      textAnchor="middle"
-                      style={{
-                        fontSize: labelFont,
-                        strokeWidth: labelFont * 0.2,
-                      }}
-                    >
-                      {region.name}
-                    </text>
-                    <text
-                      textAnchor="middle"
-                      y={labelFont * 1.25}
-                      className="contour-count"
-                      style={{
-                        fontSize: labelFont * 1.15,
-                        strokeWidth: labelFont * 0.2,
-                      }}
-                    >
-                      {integer(region.rows.length)}
-                    </text>
-                  </g>
-                ))}
-              {pointMode &&
-                visibleRows.slice(0, 4000).map((o) => {
-                  const [x, y] = projection.project(o.lon, o.lat);
-                  return (
-                    <circle
-                      key={o.id}
-                      cx={x}
-                      cy={y}
-                      r={focus?.id === o.id ? 5 : 3.2}
-                      className="contour-observation"
-                      tabIndex={0}
-                      role="button"
-                      aria-label={`${o.lat.toFixed(3)}, ${o.lon.toFixed(3)}, ${o.time} UTC`}
-                      onClick={() => {
-                        if (!moved.current) onSelect(o);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") onSelect(o);
-                      }}
+                    <path
+                      d={d}
+                      fill={countFill(region.rows.length, thresholds)}
+                      fillRule="evenodd"
+                      data-zero={region.rows.length === 0}
+                      filter={
+                        region.kind === "continent" ||
+                        region.kind === "subregion"
+                          ? "url(#continent-outline)"
+                          : undefined
+                      }
+                      className={
+                        region.kind === "continent" ||
+                        region.kind === "subregion"
+                          ? "continent-fill"
+                          : "region-fill"
+                      }
                     >
                       <title>
-                        {o.time} · {o.frp ?? "—"} MW
+                        {region.name}: {integer(region.rows.length)} detections
                       </title>
-                    </circle>
-                  );
-                })}
+                    </path>
+                  </g>
+                ))}
+                {!pointMode &&
+                  labels.map(({ region, point }) => (
+                    <g
+                      className="contour-label"
+                      key={region.id}
+                      transform={`translate(${point[0]} ${point[1]})`}
+                      aria-hidden="true"
+                    >
+                      <text
+                        textAnchor="middle"
+                        style={{
+                          fontSize: labelFont,
+                          strokeWidth: labelFont * 0.2,
+                        }}
+                      >
+                        {region.name}
+                      </text>
+                      <text
+                        textAnchor="middle"
+                        y={labelFont * 1.25}
+                        className="contour-count"
+                        style={{
+                          fontSize: labelFont * 1.15,
+                          strokeWidth: labelFont * 0.2,
+                        }}
+                      >
+                        {integer(region.rows.length)}
+                      </text>
+                    </g>
+                  ))}
+                {pointMode &&
+                  visibleRows.slice(0, 4000).map((o) => {
+                    const [x, y] = projection.project(o.lon, o.lat);
+                    return (
+                      <circle
+                        key={o.id}
+                        cx={x}
+                        cy={y}
+                        r={focus?.id === o.id ? 5 : 3.2}
+                        className="contour-observation"
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`${o.lat.toFixed(3)}, ${o.lon.toFixed(3)}, ${o.time} UTC`}
+                        onClick={() => {
+                          if (!moved.current) onSelect(o);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") onSelect(o);
+                        }}
+                      >
+                        <title>
+                          {o.time} · {o.frp ?? "—"} MW
+                        </title>
+                      </circle>
+                    );
+                  })}
+              </g>
             </g>
           </svg>
           <button className="contour-back" onClick={back}>
             <ArrowLeft size={13} /> Wider view
           </button>
           <span className="contour-gesture">
-            Select a shape · scroll to enter · drag to pan
+            Select a place · scroll to travel · drag to pan
           </span>
         </div>
       )}
+      <div className="terrain-credit">
+        <span>NASA BLUE MARBLE</span> August 2004 composite · geographic context{" "}
+        <span>Natural Earth boundaries</span>
+      </div>
       {!pointMode && (
         <div
           className="contour-legend"
@@ -886,16 +1028,19 @@ export default function ExploreAtlas({
           never zero.
         </p>
         <p>
-          Natural Earth public-domain boundaries: countries 1:110m, Greece’s 13
-          regions and Mount Athos 1:10m. Continental groups follow the source
-          country classification, including transcontinental countries; named
-          subregions use Natural Earth’s SUBREGION field; boundaries are
-          generalized. Region counts retain the parent country scope.{" "}
+          Natural Earth public-domain boundaries: country display 1:50m (1:110m
+          fallback), count assignment 1:110m, Greece’s 13 regions and Mount
+          Athos 1:10m. Continental groups follow the source country
+          classification, including transcontinental countries; named subregions
+          use Natural Earth’s SUBREGION field; boundaries are generalized.
+          Region counts retain the parent country scope.{" "}
           {unassigned > 0
             ? `${integer(unassigned)} detections in this scope are outside the available generalized child boundaries and remain unassigned.`
             : ""}{" "}
           Red thresholds stay fixed across the visible sibling shapes. Grids are
-          analytical sectors, not administrative regions.
+          analytical sectors, not administrative regions. NASA Blue Marble
+          shaded relief is an August 2004 geographic composite, not current
+          imagery or evidence of these fires.
         </p>
         {pointMode && visibleRows.length > 4000 && (
           <p>

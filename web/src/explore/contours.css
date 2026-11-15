@@ -393,3 +393,192 @@
     animation: none !important;
   }
 }
+
+/* The same textured surface carries the eye from orbit into geography. */
+.continuous-earth .earth-atlas-layer {
+  position: relative;
+}
+.continuous-earth .contour-atlas {
+  opacity: var(--earth-map-reveal, 0);
+  background: #101918;
+}
+.continuous-earth.is-map .contour-atlas {
+  opacity: var(--earth-map-reveal, 1);
+}
+.continuous-earth .continuous-globe {
+  inset: 0 !important;
+  height: 640px;
+  z-index: 3;
+}
+.continuous-earth .contour-map {
+  height: clamp(430px, calc(100dvh - 355px), 700px);
+}
+.continuous-earth.is-orbit .contour-legend,
+.continuous-earth.is-orbit .contour-places,
+.continuous-earth.is-orbit .contour-history,
+.continuous-earth.is-orbit .contour-method,
+.continuous-earth.is-orbit .terrain-credit {
+  visibility: hidden;
+}
+.continuous-earth .global-intro {
+  z-index: 5;
+  transition:
+    opacity 450ms,
+    transform 900ms;
+}
+.continuous-earth .global-intro.departing {
+  opacity: 0;
+  transform: translateY(-18px);
+  pointer-events: none;
+}
+.continuous-earth.is-map .global-intro {
+  pointer-events: none;
+}
+.orbital-entry .continuous-earth {
+  height: auto !important;
+  min-height: 600px !important;
+}
+.contour-flight {
+  transform-origin: 0 0;
+  transform-box: view-box;
+}
+.terrain-atlas .contour-map-wrap {
+  background: #071720;
+}
+.terrain-atlas .contour-background {
+  fill: none;
+  stroke: #c3d3d5;
+  opacity: 0.3;
+  stroke-width: 0.55;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.terrain-atlas .contour-terrain {
+  pointer-events: none;
+}
+.terrain-atlas .continent-fill,
+.terrain-atlas .region-fill {
+  fill-opacity: 0;
+  stroke: #fa8472;
+  stroke-width: 0.9;
+  vector-effect: non-scaling-stroke;
+  transition:
+    fill-opacity 350ms,
+    stroke 250ms;
+}
+.terrain-atlas.with-activity .continent-fill,
+.terrain-atlas.with-activity .region-fill {
+  fill-opacity: 0.25;
+}
+.terrain-atlas.with-activity [data-zero="true"] {
+  fill-opacity: 0.06;
+}
+.terrain-atlas .contour-place:hover path,
+.terrain-atlas .contour-place.is-hovered path,
+.terrain-atlas .contour-place:focus-visible path {
+  fill-opacity: 0.48;
+  stroke: #ffe2bc;
+  stroke-width: 1.8;
+}
+.terrain-atlas .contour-label text {
+  stroke: #08131a;
+  stroke-opacity: 0.95;
+}
+.terrain-atlas .contour-count {
+  fill: #ffceb9;
+}
+.terrain-atlas.is-flying .contour-map {
+  pointer-events: none;
+}
+.terrain-atlas.is-flying .contour-label {
+  opacity: 0.25;
+}
+.terrain-atlas .contour-label {
+  transition: opacity 400ms;
+}
+.terrain-credit {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 28px;
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+  color: #94aaa9;
+  border-bottom: 1px solid #ffffff10;
+}
+.contour-controls .terrain-toggle {
+  width: auto;
+  padding: 0 12px;
+  font-size: 10px;
+  color: #c3cabe;
+}
+.contour-controls .terrain-toggle[aria-pressed="true"] {
+  border-color: #e28b76;
+  color: #ffd1bd;
+  background: #c65f4215;
+}
+@media (max-width: 760px) {
+  .continuous-earth .contour-map {
+    height: 530px;
+  }
+  .continuous-earth .contour-header {
+    min-height: 100px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .continuous-earth .contour-heading {
+    min-height: 85px;
+  }
+  .continuous-earth .contour-controls {
+    justify-content: flex-end;
+  }
+  .continuous-earth .global-intro {
+    left: 22px;
+    top: 25px;
+  }
+  .continuous-earth.is-orbit .contour-places {
+    display: none;
+  }
+  .terrain-credit {
+    padding: 10px 15px;
+    line-height: 1.6;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .continuous-earth .global-intro,
+  .terrain-atlas .contour-label,
+  .terrain-atlas path {
+    transition: none;
+  }
+}
+.terrain-atlas .continent-fill {
+  stroke: none;
+}
+.terrain-atlas .contour-place:hover .continent-fill,
+.terrain-atlas .contour-place.is-hovered .continent-fill {
+  stroke: none;
+}
+.terrain-atlas .contour-map-wrap {
+  background: #020814;
+}
+.terrain-detail {
+  transition: opacity 600ms ease;
+}
+.terrain-atlas.is-flying .terrain-detail {
+  opacity: 0;
+}
+.continuous-earth.is-orbit .contour-notes {
+  visibility: hidden;
+}
+.continuous-earth.is-orbit .contour-legend,
+.continuous-earth.is-orbit .contour-places,
+.continuous-earth.is-orbit .contour-historical,
+.continuous-earth.is-orbit .contour-notes,
+.continuous-earth.is-orbit .terrain-credit {
+  display: none;
+}
+.terrain-atlas .continent-fill {
+  fill-opacity: 0.01;
+}
