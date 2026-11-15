@@ -8,6 +8,9 @@ import "@fontsource/dm-sans/700.css";
 import "@fontsource/ibm-plex-mono/400.css";
 import App from "./App";
 import "./style.css";
+import "./orbital/mission.css";
+import "./readability.css";
+import "./orbital/living.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

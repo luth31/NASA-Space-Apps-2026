@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { decode } from "../data";
 import type { ObservationTuple } from "../data";
-import { boundsOf, grid, groupGeography, signalClusters } from "./geography";
+import {
+  administrativeCountries,
+  boundsOf,
+  grid,
+  groupGeography,
+  signalClusters,
+} from "./geography";
 import type { Area, Geography } from "./geography";
 import geography from "./map-units.json";
 import snapshot from "../../public/data/global.json";
@@ -43,6 +49,19 @@ describe("atlas observation accounting", () => {
         region.rows.map((r) => r.id).sort(),
       );
     }
+  });
+  it("combines country units without losing readings or moving overseas land into the mainland frame", () => {
+    const countries = administrativeCountries(groups.countries);
+    expect(ids([...countries, groups.unmatched])).toEqual(sourceIds);
+    expect(new Set(countries.map((c) => c.id)).size).toBe(countries.length);
+    const france = countries.filter((c) => c.adminName === "France");
+    expect(france.length).toBeGreaterThan(1);
+    const mainland = france.find((c) => c.parent === "Europe")!;
+    const [west, , east] = boundsOf(mainland);
+    expect(east - west).toBeLessThan(20);
+    expect(ids(france)).toEqual(
+      ids(groups.countries.filter((c) => c.adminName === "France")),
+    );
   });
   it("frames regions across the date line without zooming out to the whole world", () => {
     const region = groups.regions.find(
