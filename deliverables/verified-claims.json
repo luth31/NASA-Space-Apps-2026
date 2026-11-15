@@ -1,0 +1,128 @@
+{
+  "manifestSha256": "3f34ba9300a83a59c557ba3e7b6d3d7a572f7446826c66a4dfab0bf79ed74e7c",
+  "bundleVersion": "20261115T091758Z",
+  "scope": "Evros + Evia rectangular study areas; raw S-NPP VIIRS detections, not unique fires or national totals",
+  "august2023": {
+    "detections": 4178,
+    "yearTotal": 4685,
+    "sharePercent": 89.17822838847385
+  },
+  "octoberPeak": {
+    "years": 9,
+    "completeYears": 13,
+    "period": "2013\u20132025",
+    "excluded": "2012: partial S-NPP observing year"
+  },
+  "evrosAugust2023": {
+    "modis": 625,
+    "viirs": 4175,
+    "ratio": 6.68,
+    "imageDate": "2023-08-22"
+  },
+  "annualEvidence": [
+    {
+      "year": 2013,
+      "total": 703,
+      "august": 70,
+      "peakMonths": [
+        10
+      ]
+    },
+    {
+      "year": 2014,
+      "total": 1028,
+      "august": 72,
+      "peakMonths": [
+        10
+      ]
+    },
+    {
+      "year": 2015,
+      "total": 859,
+      "august": 54,
+      "peakMonths": [
+        11
+      ]
+    },
+    {
+      "year": 2016,
+      "total": 1139,
+      "august": 158,
+      "peakMonths": [
+        10
+      ]
+    },
+    {
+      "year": 2017,
+      "total": 865,
+      "august": 61,
+      "peakMonths": [
+        10
+      ]
+    },
+    {
+      "year": 2018,
+      "total": 736,
+      "august": 74,
+      "peakMonths": [
+        10
+      ]
+    },
+    {
+      "year": 2019,
+      "total": 910,
+      "august": 97,
+      "peakMonths": [
+        10
+      ]
+    },
+    {
+      "year": 2020,
+      "total": 642,
+      "august": 56,
+      "peakMonths": [
+        10
+      ]
+    },
+    {
+      "year": 2021,
+      "total": 4560,
+      "august": 4125,
+      "peakMonths": [
+        8
+      ]
+    },
+    {
+      "year": 2022,
+      "total": 735,
+      "august": 1,
+      "peakMonths": [
+        10
+      ]
+    },
+    {
+      "year": 2023,
+      "total": 4685,
+      "august": 4178,
+      "peakMonths": [
+        8
+      ]
+    },
+    {
+      "year": 2024,
+      "total": 625,
+      "august": 21,
+      "peakMonths": [
+        10
+      ]
+    },
+    {
+      "year": 2025,
+      "total": 245,
+      "august": 10,
+      "peakMonths": [
+        9
+      ]
+    }
+  ]
+}

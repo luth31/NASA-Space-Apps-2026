@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight,
   ArrowUpRight,
+  ChevronLeft,
   ChevronRight,
-  Database,
   Globe2,
   Pause,
   Play,
@@ -28,6 +27,7 @@ import ContinuousMap, {
   type MapDepth,
 } from "./ContinuousMap";
 import Navigation from "../Navigation";
+import "./dashboard-compact.css";
 
 type Props = {
   observations: Observation[];
@@ -71,14 +71,11 @@ export default function OrbitalAtlas(props: Props) {
 function LivingDashboard({
   observations,
   manifest,
-  offlineReady,
-  initialExplore,
   onNavigate,
   onCase,
   geography,
 }: Props & { geography: Geography }) {
   const reduced = useReducedMotion();
-  const [explore, setExplore] = useState(initialExplore);
   const [camera, setCamera] = useState<Camera>({
     id: "earth",
     center: [24, 19],
@@ -89,6 +86,7 @@ function LivingDashboard({
   const [rotating, setRotating] = useState(!reduced);
   const [search, setSearch] = useState("");
   const [sensor, setSensor] = useState<"all" | "MODIS" | "NOAA-20">("all");
+  const [page, setPage] = useState(0);
   const map = useRef<MapHandle>(null);
   const rows = useMemo(
     () =>
@@ -125,8 +123,15 @@ function LivingDashboard({
   }, [groups, countries, depth, continent, search]);
   const date = `${dateLabel(manifest.snapshotStart, { day: "numeric", month: "short" })}–${dateLabel(manifest.snapshotEnd, { day: "numeric", month: "short", year: "numeric" })}`;
   const count = activeContext?.rows.length ?? rows.length;
-  function home(asExplore = false) {
-    setExplore(asExplore);
+  const showingSignals = depth === "points" && !search;
+  const signals = activeContext?.rows ?? rows;
+  const pageSize = 4;
+  const itemCount = showingSignals ? signals.length : items.length;
+  const pageCount = Math.max(1, Math.ceil(itemCount / pageSize));
+  const currentPage = Math.min(page, pageCount - 1);
+  const pageStart = currentPage * pageSize;
+  useEffect(() => setPage(0), [depth, context?.id, search, sensor]);
+  function home() {
     setSelected(null);
     setContext(null);
     setSearch("");
@@ -138,7 +143,6 @@ function LivingDashboard({
     setSelected(null);
     setContext(place);
     setSearch("");
-    setExplore(true);
     setCamera({
       id: `${place.id}-${Date.now()}`,
       center: place.point,
@@ -149,26 +153,17 @@ function LivingDashboard({
   function pick(row: Observation) {
     setSelected(row);
     setRotating(false);
-    setExplore(true);
     setCamera({ id: row.id, center: [row.lon, row.lat], zoom: 9.5 });
-  }
-  function stepIn() {
-    setRotating(false);
-    setExplore(true);
-    map.current?.zoom(1);
   }
   return (
     <main
-      className={`mission-app living-earth ${depth === "globe" ? "at-earth" : "at-detail"}`}
+      className={`mission-app living-earth dashboard-compact ${depth === "globe" ? "at-earth" : "at-detail"}`}
     >
       <Navigation
-        active={explore ? "explore" : "dashboard"}
+        active="dashboard"
         onNavigate={(v) => {
-          if (v === "dashboard") home();
-          else if (v === "explore") {
-            setExplore(true);
-            setRotating(false);
-          } else onNavigate(v);
+          if (v === "dashboard" || v === "explore") home();
+          else onNavigate(v);
         }}
       />
       <div className="living-toolbar">
@@ -186,7 +181,6 @@ function LivingDashboard({
             onChange={(e) => {
               setSearch(e.target.value);
               setSelected(null);
-              setExplore(true);
               setRotating(false);
             }}
           />
@@ -195,46 +189,19 @@ function LivingDashboard({
       <div className="mission-workspace living-workspace">
         <aside className="mission-story" aria-label="Explore fire activity">
           <div className="mission-story-scroll">
-            <p className="mission-eyebrow">
-              {selected
-                ? "A CLOSER LOOK"
-                : depth === "globe"
-                  ? "THE FIRE OBSERVATORY"
-                  : "FOLLOW THE FIRE SIGNALS"}
-            </p>
-            <h1>
-              {selected ? (
-                "One signal. A place to look closer."
-              ) : depth === "globe" ? (
-                <>
-                  A changing planet.
-                  <br />
-                  <em>Every signal matters.</em>
-                </>
-              ) : (
-                <>
-                  {activeContext?.name ?? "A closer look"}
-                  <span className="living-title-dot">.</span>
-                  <br />
-                  <em>
-                    {depth === "points"
-                      ? "See each signal."
-                      : "Find the places to watch."}
-                  </em>
-                </>
-              )}
-            </h1>
-            <p className="mission-description">
-              {selected
-                ? "A satellite spotted heat here. It may be part of a larger fire, or another source of heat."
-                : depth === "globe"
-                  ? "See where satellites spotted fire activity. Turn the globe, choose a place, and look closer."
-                  : depth === "points"
-                    ? "Each light is a satellite heat detection. Choose one to see when and where it was spotted."
-                    : "Redder places have more reported fire signals. Choose a place to keep exploring."}
-            </p>
+            <div className="dashboard-heading">
+              <p className="mission-eyebrow">THE FIRE OBSERVATORY</p>
+              <h1>{activeContext?.name ?? "A changing planet."}</h1>
+            </div>
+            <div className="living-measure">
+              <strong>{integer(count)}</strong>
+              <span>reported fire signals</span>
+            </div>
             {selected ? (
-              <section className="living-reading">
+              <section
+                className="living-reading"
+                aria-label="Selected fire signal"
+              >
                 <button
                   className="reading-close"
                   onClick={() => setSelected(null)}
@@ -242,22 +209,21 @@ function LivingDashboard({
                 >
                   <X size={17} />
                 </button>
-                <span className="eyebrow">SPOTTED HERE</span>
-                <strong>{activeContext?.name ?? "Selected location"}</strong>
-                <p>{coordinates(selected.lon, selected.lat)}</p>
+                <span className="eyebrow">SELECTED SIGNAL</span>
+                <strong>{coordinates(selected.lon, selected.lat)}</strong>
                 <dl>
                   <div>
-                    <dt>When</dt>
+                    <dt>Observed</dt>
                     <dd>
                       {dateLabel(selected.time)} · {timeLabel(selected.time)}
                     </dd>
                   </div>
                   <div>
-                    <dt>Seen by</dt>
+                    <dt>Satellite</dt>
                     <dd>{sensorLabel(selected.sensor)}</dd>
                   </div>
                   <div>
-                    <dt>Time of day</dt>
+                    <dt>Conditions</dt>
                     <dd>{selected.daynight === "D" ? "Daylight" : "Night"}</dd>
                   </div>
                 </dl>
@@ -265,111 +231,102 @@ function LivingDashboard({
                   className="mission-text"
                   onClick={() => onNavigate("sources")}
                 >
-                  Where this information comes from <ArrowUpRight size={14} />
+                  View data source <ArrowUpRight size={14} />
                 </button>
               </section>
             ) : (
-              <>
-                <div className="living-measure">
-                  <strong>{integer(count)}</strong>
-                  <span>
-                    reported fire signals
-                    {activeContext
-                      ? ` in ${activeContext.name}`
-                      : " around Earth"}
-                  </span>
-                  <small>{date}</small>
+              <section
+                className="dashboard-browse"
+                aria-label={showingSignals ? "Fire signals" : "Places"}
+              >
+                <div className="dashboard-list-heading">
+                  <h2>
+                    {search
+                      ? "Matching places"
+                      : showingSignals
+                        ? "Explore a signal"
+                        : "Explore a place"}
+                  </h2>
+                  <span>{integer(itemCount)}</span>
                 </div>
-                {depth === "globe" && !explore && !search ? (
-                  <>
-                    <button className="mission-primary" onClick={stepIn}>
-                      Explore by place <ArrowRight size={18} />
-                    </button>
-                    <button
-                      className="living-feature"
-                      onClick={() => onCase(manifest.cases[0])}
-                    >
-                      <span>FOLLOW A REAL FIRE</span>
-                      <strong>
-                        Evros, Greece <ArrowUpRight size={17} />
-                      </strong>
-                      <small>August 2023 · open the story</small>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    {!!items.length && (
-                      <div
-                        className="living-place-list"
-                        aria-label={
-                          depth === "globe" ? "Continents" : "Countries"
-                        }
-                      >
-                        {items.slice(0, search ? 30 : 18).map((a) => (
-                          <button key={a.id} onClick={() => choose(a)}>
+                <div className="living-place-list">
+                  {showingSignals
+                    ? signals
+                        .slice(pageStart, pageStart + pageSize)
+                        .map((row) => (
+                          <button key={row.id} onClick={() => pick(row)}>
                             <span>
-                              {a.name}
+                              {coordinates(row.lon, row.lat)}
                               <small>
-                                {a.kind === "continent"
-                                  ? "Explore countries"
-                                  : "Look closer"}
+                                {timeLabel(row.time)} ·{" "}
+                                {row.sensor === "MODIS" ? "MODIS" : "VIIRS"}
                               </small>
                             </span>
-                            <strong>{integer(a.rows.length)}</strong>
+                            <ChevronRight size={15} />
+                          </button>
+                        ))
+                    : items
+                        .slice(pageStart, pageStart + pageSize)
+                        .map((area) => (
+                          <button key={area.id} onClick={() => choose(area)}>
+                            <span>{area.name}</span>
+                            <strong>{integer(area.rows.length)}</strong>
                             <ChevronRight size={15} />
                           </button>
                         ))}
-                      </div>
-                    )}
-                    {search && !items.length && (
-                      <p className="mission-note">
-                        No place matches “{search}”.
-                      </p>
-                    )}
-                    {depth === "points" && (
-                      <div
-                        className="living-place-list"
-                        aria-label="Fire signals in this country"
-                      >
-                        {(activeContext?.rows ?? rows)
-                          .slice(0, 8)
-                          .map((row) => (
-                            <button key={row.id} onClick={() => pick(row)}>
-                              <span>
-                                {dateLabel(row.time)}
-                                <small>
-                                  {timeLabel(row.time)} ·{" "}
-                                  {row.daynight === "D" ? "Daylight" : "Night"}
-                                </small>
-                              </span>
-                              <ChevronRight size={15} />
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </>
+                </div>
+                {itemCount === 0 ? (
+                  <p className="dashboard-empty">
+                    {search
+                      ? `No place matches “${search}”.`
+                      : "No signals in this snapshot."}
+                  </p>
+                ) : (
+                  <div
+                    className="dashboard-pagination"
+                    aria-label="Browse results"
+                  >
+                    <span>
+                      {pageStart + 1}–
+                      {Math.min(pageStart + pageSize, itemCount)} of{" "}
+                      {integer(itemCount)}
+                    </span>
+                    <button
+                      aria-label="Previous results"
+                      disabled={currentPage === 0}
+                      onClick={() => setPage(currentPage - 1)}
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <button
+                      aria-label="Next results"
+                      disabled={currentPage === pageCount - 1}
+                      onClick={() => setPage(currentPage + 1)}
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
                 )}
-              </>
+              </section>
             )}
-            <p className="living-note">
-              Several signals can belong to the same fire. This is a satellite
-              snapshot, not a live emergency map.
-            </p>
-            <button
-              className="mission-text"
-              onClick={() => onNavigate("calendar")}
-            >
-              Explore the longer fire record <ArrowUpRight size={15} />
-            </button>
+            <div className="dashboard-story-access">
+              {manifest.cases[0] && (
+                <button
+                  className="living-feature"
+                  onClick={() => onCase(manifest.cases[0])}
+                >
+                  <span>FOLLOW A REAL FIRE</span>
+                  <strong>
+                    Evros, Greece <ArrowUpRight size={16} />
+                  </strong>
+                  <small>August 2023 · open the story</small>
+                </button>
+              )}
+              <p className="living-note">
+                Satellite snapshot · several signals may belong to one fire.
+              </p>
+            </div>
           </div>
-          <footer className="mission-story-footer">
-            <Database size={14} />
-            <span>
-              {offlineReady
-                ? "Saved for offline exploring"
-                : "NASA satellite observations"}
-            </span>
-          </footer>
         </aside>
         <section
           className="mission-scene"
@@ -414,7 +371,7 @@ function LivingDashboard({
                   onClick={() => {
                     setSelected(null);
                     setRotating(false);
-                    if (d === "globe") home(explore);
+                    if (d === "globe") home();
                     else if (d === "continents")
                       map.current?.level("continents");
                     else if (d === "countries") map.current?.level("countries");
@@ -426,7 +383,7 @@ function LivingDashboard({
                 </button>
               ))}
             </nav>
-            <button aria-label="Reset to Earth" onClick={() => home(explore)}>
+            <button aria-label="Reset to Earth" onClick={() => home()}>
               <Globe2 size={18} />
             </button>
           </div>
@@ -478,7 +435,7 @@ function LivingDashboard({
                 rotating ? "Pause globe rotation" : "Resume globe rotation"
               }
               onClick={() => {
-                if (!rotating && depth !== "globe") home(explore);
+                if (!rotating && depth !== "globe") home();
                 else setRotating((v) => !v);
               }}
             >
@@ -491,23 +448,6 @@ function LivingDashboard({
           </div>
         </section>
       </div>
-      <footer className="living-footer">
-        <span>
-          <Globe2 size={14} /> Drag to explore · scroll to zoom
-        </span>
-        <span>
-          {depth === "globe"
-            ? "EARTH"
-            : depth === "continents"
-              ? "CONTINENTS"
-              : depth === "countries"
-                ? "COUNTRIES"
-                : "FIRE SIGNALS"}
-        </span>
-        <button onClick={() => onNavigate("methods")}>
-          How the records connect <ArrowUpRight size={14} />
-        </button>
-      </footer>
     </main>
   );
 }

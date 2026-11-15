@@ -1,0 +1,57 @@
+{
+  "bundle": "20261114T172758Z",
+  "checked": "2026-11-15",
+  "provisionalBrand": "PyroBridge",
+  "assets": {
+    "report": {
+      "file": "assets/report.png",
+      "sha256": "399ea04e0628883e35502ba17a832d0fd6bba7428e885468546610070c050b41"
+    },
+    "region": {
+      "file": "assets/region.png",
+      "sha256": "7ff78f4de7a4b357941721a6b0a966485fddf341ce26f6f576aec6cd8db31cdf"
+    },
+    "atlas": {
+      "file": "assets/atlas.png",
+      "sha256": "7e421eb103845588a3ce7452384b919df1e2f009dec5ef6e3b50e29bdf62a53a"
+    },
+    "globe": {
+      "file": "assets/globe.png",
+      "sha256": "42fb1a3ac9168386625833fdaeea2d34da19fbd913ef2fd38ed0651abeb5b0a3"
+    },
+    "cover": {
+      "file": "assets/evia-2021-08-10.jpg",
+      "sha256": "b0c10c6e0649ce71b2170b281a2bde8763d1491ba7a12f3baacb2f976fd95f1f",
+      "attribution": "NASA EOSDIS GIBS / Aqua MODIS, 10 August 2021 daily true-color context composite; source bounds and URL in web/public/assets/assets-manifest.json"
+    }
+  },
+  "modelMAE": [
+    {
+      "name": "Unchanged MODIS rate",
+      "exact": 4.125030480360298,
+      "displayed": 4.125
+    },
+    {
+      "name": "Seasonal scaling",
+      "exact": 2.620390131297277,
+      "displayed": 2.62
+    },
+    {
+      "name": "Negative binomial",
+      "exact": 5.9243154743513085,
+      "displayed": 5.924
+    },
+    {
+      "name": "LightGBM",
+      "exact": 11.220831802240596,
+      "displayed": 11.221
+    }
+  ],
+  "format": {
+    "slides": 7,
+    "width": 1280,
+    "height": 720,
+    "editableTableSlide": 2,
+    "editableChartSlide": 5
+  }
+}

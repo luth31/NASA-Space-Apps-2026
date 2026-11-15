@@ -9,11 +9,10 @@ export type Destination =
   | "sources";
 const destinations: [Destination, string][] = [
   ["dashboard", "Dashboard"],
-  ["explore", "Explore"],
   ["investigations", "Investigations"],
-  ["calendar", "Fire calendar"],
-  ["methods", "Models & validation"],
-  ["sources", "Data & sources"],
+  ["calendar", "Calendar"],
+  ["methods", "Models"],
+  ["sources", "Sources"],
 ];
 
 export default function Navigation({
@@ -26,6 +25,7 @@ export default function Navigation({
   onNavigate: (view: Destination) => void;
 }) {
   const nav = useRef<HTMLElement>(null);
+  const current = active === "explore" ? "dashboard" : active;
   useEffect(() => {
     const activeButton = nav.current?.querySelector<HTMLElement>(
       '[aria-current="page"]',
@@ -55,8 +55,8 @@ export default function Navigation({
         {destinations.map(([view, name]) => (
           <button
             key={view}
-            className={active === view ? "active" : ""}
-            aria-current={active === view ? "page" : undefined}
+            className={current === view ? "active" : ""}
+            aria-current={current === view ? "page" : undefined}
             onClick={() => onNavigate(view)}
           >
             {name}

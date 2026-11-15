@@ -1,0 +1,46 @@
+PYROBRIDGE — UNIFIED SEVEN-SLIDE SPEAKER NOTES
+Updated 15 November 2026 for the selective showcase integration into main.
+These notes match pyrobridge-seven-slides.md. The imported PPTX/PDF/PNGs still show the older feature branch and have not been regenerated. These updated notes are not the notes embedded in that legacy PPTX.
+
+SLIDE 1 — READ THE FIRE RECORD
+A longer record needs a fair comparison. Analysts need geography, timing and sensor identity before drawing historical conclusions. PyroBridge preserves main's visual identity and architecture while adding two visual inspection tools. It is an observation and experimental calibration product, not an operational warning service.
+Sources: web/public/data/manifest.json; README.md; NASA FIRMS https://firms.modaps.eosdis.nasa.gov/
+Visual instruction: current unified Dashboard capture, not a legacy feature-branch screenshot.
+
+SLIDE 2 — EXPLORE WITHOUT LOSING THE MAP
+Explore keeps a persistent MapLibre canvas while panning, zooming and inspecting observations. NOAA-20 VIIRS contributes 74,304 detections from 13 Nov 2026 00:15 UTC through 14 Nov 2026 13:33 UTC. Aqua MODIS contributes 7,031 in the same inclusive window; both sensors total 81,335. Historical cases remain separate. Counts are thermal-pixel detections, not unique fires, burned area or risk. Acquisition time is not ignition time.
+Sources: bundle 20261115T091758Z, web/public/data/manifest.json and global.json; web/src/orbital/ContinuousMap.tsx. Preserve current map attribution: NASA GIBS and Natural Earth where used.
+Visual instruction: current MapLibre Explore with NOAA-20 VIIRS selected; do not use the imported unfolded atlas as a unified view.
+
+SLIDE 3 — SIX LANDSCAPES, TWO REFERENCE SCALES
+Retain Evros, Evia, Rhodes, Manavgat, Gran Chaco and Northern Pantanal. Studies are rectangular analytical areas, not complete national inventories. The Fire-Mesh comparison uses coral MODIS and red VIIRS flames, toggleable meshes and a movable divider. Mesh cells indicate nominal 1 km versus 375 m reference spacing; they are not actual scan footprints, burned land or fire perimeters. The dossier preserves reported scan/track dimensions and acquisition metadata. Context imagery has its own date.
+Sources: web/public/data/manifest.json; web/public/assets/assets-manifest.json; source observations and dossier. NASA MODIS Fire User Guide: https://modis-land.gsfc.nasa.gov/pdf/MODIS_C6_C6.1_Fire_User_Guide_1.0.pdf ; VIIRS active-fire documentation: https://viirsland.gsfc.nasa.gov/Products/NASA/FireESDR.html
+Visual instruction: new unified case-map capture with visible nominal-cell disclaimer and comparison divider.
+
+SLIDE 4 — FOLLOW THE SEASON; KEEP THE NUMBERS
+Fire Calendar keeps main's monthly comparison, observed vs experimental harmonized controls, model choice and experimental CSV export. The added twelve-petal wheel supports year scrubbing and month selection; petal area encodes counts on a labeled scale, and missing data are distinct from zero.
+The monthly experiment has 648 overlap region-months and 13 whole-year folds, 2013–2025. Seasonal scaling beats raw MODIS MAE in five of six landscapes; Evia is the exception (53.70 vs raw 49.12). Other seasonal/raw regional MAEs: Evros 14.50/50.78; Gran Chaco 7,139.67/16,004.00; Rhodes 2.36/7.76; Manavgat 17.42/30.45; Northern Pantanal 1,069.44/10,351.83. Units are detections per region-month. Chaco and Pantanal have only 2020, making transfer less supported. Earlier historical estimates use a final fit; overlapping years use held-out-year predictions. Retrospective folds are exploratory. Clouds and observation opportunities are not normalized; estimates do not reconstruct missing fire locations.
+Sources: web/public/data/monthly-harmonization.json; pipeline/monthly.py; web/src/monthly.ts; README.md.
+Visual instruction: new unified Fire Calendar, wheel alongside original monthly comparison, with experimental badge.
+
+SLIDE 5 — TRY CALIBRATION. MEASURE THE RESULT.
+The interactive demo moves from the MODIS count toward a model-estimated VIIRS-scale count and reveals the actual VIIRS observation. Its tiles illustrate counts, not locations. Landscape, month and model remain selectable, including zeros and cases where calibration is worse.
+Keep that monthly demo separate from the matched-pass pilot. The pilot contains 48 eligible rows, 24 each from Evia and Evros, with whole-region geographic holdouts; 42 zero targets and six positive targets. Exact mean regional MAE: unchanged MODIS rate 4.125030480360298; seasonal scaling 2.620390131297277; negative binomial 5.9243154743513085; LightGBM 11.220831802240596. Display rounded values 4.125 / 2.620 / 5.924 / 11.221. Unit: hotspot pixels per 0.25-degree cell and paired pass. These errors are not monthly errors. The selected small sample does not establish global performance, monthly historical accuracy or calibrated risk. The later-time check is exploratory.
+Sources: web/public/data/models.json; models/held-out-predictions.json; models/training-report.json; web/src/CalibrationDemo.tsx.
+Visual instruction: new unified calibration-demo capture or MAE chart using the checked table.
+
+SLIDE 6 — EXPERIMENTAL VISIBILITY, STRICT RELEASE GATE
+The six destinations are Dashboard, Explore, Investigations, Fire calendar, Models & validation, and Data & sources. Available now: real observation exploration, six cases, nominal Fire-Mesh, seasonal wheel, experimental monthly archive-count estimates and labeled CSV, interactive calibration demo and provenance.
+The official coverage-normalized monthly product remains gated: release.json monthlyRelease=false, publishedEstimates=0. The separate experimental monthly estimates are visible/exportable but do not satisfy this release policy. Clouds and overpass effort remain unnormalized. Next evidence: complete observation opportunities, declared reference effort, broader geography/seasons, independent monthly and later-time holdouts under a frozen protocol.
+Sources: web/public/data/release.json; config/release-policy.json; web/public/data/monthly-harmonization.json; web/src/monthly.ts.
+Visual instruction: current release status and Data & sources; preserve the distinction between experimental and official outputs.
+
+SLIDE 7 — CHOOSE A PLACE. FOLLOW A SEASON.
+Test the bridge before trusting the comparison. NASA supplies observations; PyroBridge connects geography, seasonal inspection and reproducible evidence. Add verified public demo/repository/team links only when supplied. No remote publication or submission has occurred.
+Credits: NASA FIRMS observations; NASA EOSDIS GIBS/Aqua MODIS and source-specific NASA/USGS imagery; Natural Earth geography. Exact imagery dates/bounds/URLs: web/public/assets/assets-manifest.json and assets/map-context/provenance.json.
+AI disclosure: OpenAI Codex assisted with implementation, tests, design and text. Human team review remains required. Scientific observations and model scores are not AI-generated. Use no generated NASA insignia. Full sources and disclosure: docs/submission-copy.md.
+Visual instruction: current unified Dashboard or MapLibre view, with readable credits.
+
+SEASONAL FINDING FOR SLIDE 4
+In the Evros and Evia study rectangles, August accounts for **4,178 of 4,685 S-NPP VIIRS detections in 2023 (89.18%)**. October is the sole busiest month in **9 of 13 complete years (2013–2025)**. The partial 2012 record is excluded. These are descriptive detection counts, not unique fires, Greek national totals or a calibrated risk measure.
+Reproduce: python3 deliverables/scripts/verify-claims.py. Evidence: deliverables/verified-claims.json.
