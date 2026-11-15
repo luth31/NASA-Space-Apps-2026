@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import type { CaseStudy } from "./data";
 import { dateLabel, integer } from "./data";
+import FireMeshInvestigation from "./FireMeshInvestigation";
 
 export default function Investigations({
   cases,
@@ -18,6 +19,7 @@ export default function Investigations({
         imagery, original satellite readings, official reports, and a monthly
         observation archive.
       </p>
+      <FireMeshInvestigation cases={cases} onCase={onCase} />
       <div className="investigation-cards">
         {cases.map((study) => (
           <button key={study.id} onClick={() => onCase(study)}>

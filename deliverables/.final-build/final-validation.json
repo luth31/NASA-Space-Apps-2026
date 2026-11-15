@@ -1,0 +1,33 @@
+{
+  "pdfPages": 7,
+  "pdfImagesByPage": [
+    48,
+    48,
+    48,
+    48,
+    48,
+    48,
+    48
+  ],
+  "renderedPages": [
+    "deliverables/.final-build/slide-1.png",
+    "deliverables/.final-build/slide-2.png",
+    "deliverables/.final-build/slide-3.png",
+    "deliverables/.final-build/slide-4.png",
+    "deliverables/.final-build/slide-5.png",
+    "deliverables/.final-build/slide-6.png",
+    "deliverables/.final-build/slide-7.png"
+  ],
+  "visuallyReviewedAllSeven": true,
+  "pdfExportUsesPrivateStaticPosterCopy": true,
+  "pptxRetainsEmbeddedVideos": true,
+  "powerPointPlaybackTested": false,
+  "fileBytes": {
+    "PyroBridge_Final_Deck.pptx": 10003564,
+    "PyroBridge_Final_Deck.pdf": 894943
+  },
+  "sha256": {
+    "PyroBridge_Final_Deck.pptx": "4fdb68381b9c78fcf79100624411577015c873480554d625eda14ee9bc84bafc",
+    "PyroBridge_Final_Deck.pdf": "29683cdd3a82f64a43b0a53cedf3443d6c535257ee783c667c5b32cd1e5ef88f"
+  }
+}

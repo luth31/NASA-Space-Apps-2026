@@ -1,0 +1,23 @@
+{
+  "finding_count": 0,
+  "findings": [],
+  "font_policy": {
+    "checked_text_script_count": 96,
+    "native_font_rendering_verified": false,
+    "observed_font_families": [
+      "Arial"
+    ],
+    "observed_font_use_counts": {
+      "Arial": 96
+    },
+    "passed": true,
+    "performed": true
+  },
+  "slide_count": 7,
+  "slide_size_in": [
+    13.333,
+    7.5
+  ],
+  "warning_count": 0,
+  "warnings": []
+}

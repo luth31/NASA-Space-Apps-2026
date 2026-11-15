@@ -1,0 +1,264 @@
+.fire-mesh-investigation {
+  margin: 30px 0 38px;
+  border: 1px solid #43564a;
+  border-radius: 8px;
+  background: #15251c;
+  overflow: hidden;
+}
+.fire-mesh-intro {
+  padding: 24px 26px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+.fire-mesh-intro h2 {
+  font-size: clamp(23px, 3vw, 34px);
+  margin: 9px 0 10px;
+  letter-spacing: -0.7px;
+}
+.fire-mesh-intro p:last-child {
+  max-width: 660px;
+  color: #bbd0c1;
+  line-height: 1.65;
+  font-size: 14px;
+}
+.fire-mesh-intro > .text-button {
+  flex-shrink: 0;
+}
+.fire-mesh-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+  padding: 16px 26px;
+  background: #1a2c21;
+  border-top: 1px solid #3b5142;
+  border-bottom: 1px solid #3b5142;
+}
+.fire-mesh-filters label {
+  display: grid;
+  gap: 7px;
+  color: #afc7b7;
+  font-size: 12px;
+}
+.fire-mesh-filters select {
+  color: #e4eddf;
+  background: #13251a;
+  border: 1px solid #56725e;
+  border-radius: 4px;
+  padding: 9px 30px 9px 10px;
+  min-height: 39px;
+  font: inherit;
+}
+.fire-mesh-count {
+  margin-left: auto;
+  padding-bottom: 11px;
+  color: #d9cdb8;
+  font-size: 13px;
+}
+.fire-mesh-stage {
+  position: relative;
+  height: 640px;
+  isolation: isolate;
+}
+.fire-mesh-investigation .fire-mesh-stage .compare-button {
+  top: 22px;
+  right: 22px;
+  left: auto;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.fire-mesh-investigation .fire-mesh-stage .scene-heading {
+  right: 215px;
+}
+.fire-mesh-stage .scene-heading h1 {
+  font-size: 34px;
+}
+.fire-mesh-stage .scene-heading .eyebrow {
+  font-size: 10px;
+}
+.fire-mesh-stage .scene-credit {
+  font-size: 10px;
+}
+.fire-mesh-stage .comparison-titles > span {
+  font-size: 11px;
+}
+.fire-mesh-stage .comparison-titles small {
+  font-size: 12px;
+}
+.fire-mesh-stage .comparison-note {
+  font-size: 9px;
+  top: 210px;
+}
+.fire-mesh-stage .mesh-key {
+  width: 330px;
+}
+.fire-mesh-stage .mesh-key-top .eyebrow {
+  font-size: 9px;
+}
+.fire-mesh-stage .mesh-sensor {
+  font-size: 10px;
+}
+.fire-mesh-stage .mesh-sensor strong {
+  font-size: 17px;
+}
+.fire-mesh-stage .mesh-key > p,
+.fire-mesh-stage .mesh-key summary {
+  font-size: 10px;
+}
+.fire-mesh-stage .mesh-reading {
+  font-size: 9px;
+}
+.fire-mesh-records {
+  padding: 18px 26px;
+  border-top: 1px solid #3b5142;
+}
+.fire-mesh-records summary {
+  cursor: pointer;
+  color: #dce7d6;
+  font-size: 14px;
+}
+.fire-mesh-records details > p {
+  color: #b6cbbd;
+  font-size: 13px;
+  margin: 14px 0;
+  line-height: 1.6;
+}
+.fire-mesh-record-scroll {
+  max-height: 320px;
+  overflow: auto;
+  margin: 12px 0;
+}
+.fire-mesh-records table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.fire-mesh-records th,
+.fire-mesh-records td {
+  border-bottom: 1px solid #344c3c;
+  padding: 10px 14px 10px 0;
+}
+.fire-mesh-records th {
+  color: #a9c6b1;
+  font-weight: 500;
+}
+.fire-mesh-records td {
+  color: #cedbc7;
+}
+.fire-mesh-records td button {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  color: #e5ceb4;
+}
+.fire-mesh-records tr.selected {
+  background: #2c4230;
+}
+.fire-mesh-selected {
+  margin-top: 16px;
+  color: #dcc7b4;
+  line-height: 1.7;
+  font-size: 13px;
+}
+.fire-mesh-caveat {
+  padding: 0 26px 20px;
+  color: #b0c5b8;
+  font-size: 12px;
+  line-height: 1.7;
+}
+@media (max-width: 700px) {
+  .fire-mesh-intro {
+    display: block;
+    padding: 20px 18px;
+  }
+  .fire-mesh-intro > .text-button {
+    margin-top: 16px;
+  }
+  .fire-mesh-filters {
+    padding: 16px 18px;
+    gap: 14px;
+  }
+  .fire-mesh-filters label {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+  .fire-mesh-filters select {
+    width: 100%;
+    max-width: 100%;
+  }
+  .fire-mesh-count {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  .fire-mesh-stage {
+    height: 680px;
+  }
+  .fire-mesh-investigation .fire-mesh-stage .compare-button {
+    top: 18px;
+    right: 18px;
+    left: auto;
+  }
+  .fire-mesh-investigation .fire-mesh-stage .scene-heading {
+    top: 68px;
+    left: 18px;
+    right: 18px;
+  }
+  .fire-mesh-investigation .fire-mesh-stage .scene-heading .eyebrow {
+    display: none;
+  }
+  .fire-mesh-stage .mesh-key {
+    height: 180px;
+    padding: 12px 18px;
+  }
+  .fire-mesh-stage .regional-map > svg {
+    height: calc(100% - 180px);
+  }
+  .fire-mesh-stage .map-shading {
+    bottom: 180px;
+  }
+  .fire-mesh-stage .scene-credit {
+    bottom: 189px;
+    font-size: 8px;
+  }
+  .fire-mesh-stage .map-tool-stack {
+    bottom: 212px;
+  }
+  .fire-mesh-stage .comparison-slider {
+    top: calc((100% - 180px) / 2);
+  }
+  .fire-mesh-stage .scene-heading h1 {
+    font-size: 28px;
+    margin-top: 0;
+    line-height: 1.2;
+  }
+  .fire-mesh-stage .scene-heading h1 > span {
+    display: block;
+    margin-top: 4px;
+  }
+  .fire-mesh-investigation .fire-mesh-stage .comparison-titles {
+    top: 190px;
+  }
+  .fire-mesh-stage .comparison-titles > span {
+    font-size: 9px;
+  }
+  .fire-mesh-stage .comparison-titles small {
+    font-size: 10px;
+  }
+  .fire-mesh-investigation .fire-mesh-stage .comparison-note {
+    top: 266px;
+    font-size: 7px;
+  }
+  .fire-mesh-records {
+    padding: 16px 18px;
+  }
+  .fire-mesh-caveat {
+    padding: 0 18px 18px;
+  }
+}

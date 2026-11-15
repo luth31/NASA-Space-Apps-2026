@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 export type Destination =
   | "dashboard"
   | "explore"
+  | "report"
   | "investigations"
   | "calendar"
   | "methods"
@@ -10,6 +11,7 @@ export type Destination =
 const destinations: [Destination, string][] = [
   ["dashboard", "Dashboard"],
   ["explore", "Explore"],
+  ["report", "Report"],
   ["investigations", "Investigations"],
   ["calendar", "Fire calendar"],
   ["methods", "Models & validation"],

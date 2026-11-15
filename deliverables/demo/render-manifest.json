@@ -1,0 +1,118 @@
+{
+  "title": "PyroBridge \u2014 Read the fire record",
+  "format": "Edited montage of verified application still captures, not a continuous screen recording",
+  "durationSeconds": 29,
+  "fps": 30,
+  "frames": 870,
+  "dimensions": [
+    1920,
+    1080
+  ],
+  "audio": false,
+  "createdAt": "2026-11-15T07:16:23.316Z",
+  "inputs": [
+    {
+      "id": "01-globe",
+      "file": "explore-globe.png",
+      "start": 0,
+      "end": 4,
+      "title": "Read the fire record",
+      "subtitle": "PyroBridge \u00b7 NASA FIRMS observations",
+      "credit": "Data: NASA FIRMS \u00b7 Global snapshot: 13\u201314 Nov 2026 \u00b7 Provisional identity",
+      "sourceDimensions": [
+        2560,
+        1412
+      ],
+      "sha256": "42fb1a3ac9168386625833fdaeea2d34da19fbd913ef2fd38ed0651abeb5b0a3",
+      "frame": "01-globe.png"
+    },
+    {
+      "id": "02-atlas",
+      "file": "explore-atlas.png",
+      "start": 4,
+      "end": 9,
+      "title": "Open a place. Keep the context.",
+      "subtitle": "Global snapshot and historical studies are separate",
+      "credit": "Data: NASA FIRMS \u00b7 Boundaries: Natural Earth \u00b7 Actual application capture",
+      "sourceDimensions": [
+        2560,
+        1412
+      ],
+      "sha256": "7e421eb103845588a3ce7452384b919df1e2f009dec5ef6e3b50e29bdf62a53a",
+      "frame": "02-atlas.png"
+    },
+    {
+      "id": "03-sensors",
+      "file": "regional-comparison.png",
+      "start": 9,
+      "end": 14,
+      "title": "Two sensors. Different observations.",
+      "subtitle": "Detections are thermal pixels, not individual fires",
+      "credit": "Data: NASA FIRMS \u00b7 Image: NASA EOSDIS GIBS / Aqua MODIS \u00b7 22 Aug 2023",
+      "sourceDimensions": [
+        2560,
+        1412
+      ],
+      "sha256": "7ff78f4de7a4b357941721a6b0a966485fddf341ce26f6f576aec6cd8db31cdf",
+      "frame": "03-sensors.png"
+    },
+    {
+      "id": "04-report",
+      "file": "report-overview.png",
+      "start": 14,
+      "end": 21,
+      "title": "89% concentrated in August",
+      "subtitle": "4,178 / 4,685 VIIRS detections \u00b7 Greek studies \u00b7 2023",
+      "credit": "Data: NASA FIRMS \u00b7 Evros + Evia study rectangles \u00b7 Descriptive source-record share",
+      "sourceDimensions": [
+        2560,
+        1464
+      ],
+      "sha256": "399ea04e0628883e35502ba17a832d0fd6bba7428e885468546610070c050b41",
+      "frame": "04-report.png"
+    },
+    {
+      "id": "05-science",
+      "file": "science-status.png",
+      "start": 21,
+      "end": 26,
+      "title": "Test the bridge before trusting it",
+      "subtitle": "48 sampled cell-passes \u00b7 Monthly estimates remain gated",
+      "credit": "Selected pilot: Evia + Evros \u00b7 Independent monthly validation still required",
+      "sourceDimensions": [
+        2560,
+        1412
+      ],
+      "sha256": "4ebacd0979a0a270a79a91b1419e78702cc063fc2eb4ee3aae2ee8160b39da8e",
+      "frame": "05-science.png"
+    },
+    {
+      "id": "06-closing",
+      "file": "report-overview.png",
+      "start": 26,
+      "end": 29,
+      "title": "Choose a place. Follow a season.",
+      "subtitle": "PyroBridge \u00b7 Read the fire record",
+      "credit": "Real observations \u00b7 Scoped evidence \u00b7 NASA Space Apps 2026",
+      "sourceDimensions": [
+        2560,
+        1464
+      ],
+      "sha256": "399ea04e0628883e35502ba17a832d0fd6bba7428e885468546610070c050b41",
+      "frame": "06-closing.png"
+    }
+  ],
+  "output": {
+    "filename": "pyrobridge-29s.mp4",
+    "bytes": 6163885,
+    "sha256": "a2d13827f8e4ef32e367adb78fb55af5bc94b8d14be0aa61b01947656e6e95ff",
+    "verifiedDurationSeconds": 29.0,
+    "verifiedDimensions": [
+      1920,
+      1080
+    ],
+    "verifiedNominalFrameRate": 30.0,
+    "verifiedAudioTracks": 0,
+    "verification": "Lead ran Swift AVFoundation verifier in full-access host, decoded six scene-center frames and visually inspected all six; child reviewed composed contact sheet."
+  }
+}

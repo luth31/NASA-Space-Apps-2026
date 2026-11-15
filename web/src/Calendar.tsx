@@ -4,6 +4,7 @@ import { ArrowDownToLine, ArrowUpRight, Info, Sparkles } from "lucide-react";
 import { calendarColors } from "./calendar-colors";
 import type { CaseStudy, Month } from "./data";
 import { dateLabel, number } from "./data";
+import SeasonWheel from "./calendar/SeasonWheel";
 
 import {
   downloadMonthly,
@@ -45,8 +46,8 @@ export default function Calendar({
   onExplore,
   onMethods,
 }: Props) {
-  const [sensor, setSensor] = useState<"modis" | "viirs">("modis");
-  const [harmonized, setHarmonized] = useState(true);
+  const [sensor, setSensor] = useState<"modis" | "viirs">("viirs");
+  const [harmonized, setHarmonized] = useState(false);
   const [model, setModel] = useState<MonthlyModel>("Seasonal scaling");
   const { data: calibration, failed } = useMonthlyCalibration();
   const monthly = calibration?.cases[study.id];
@@ -112,6 +113,20 @@ export default function Calendar({
           Back to the scene <ArrowUpRight size={16} />
         </button>
       </div>
+      <SeasonWheel
+        key={study.id}
+        study={study}
+        months={months}
+        field={field}
+        model={model}
+        selectedMonth={selectedMonth}
+        onMonth={onMonth}
+        onField={(next) => {
+          setHarmonized(next === "estimate");
+          if (next !== "estimate") setSensor(next);
+        }}
+        onExplore={onExplore}
+      />
       <div className="calendar-top">
         <div className="mode-control">
           <button

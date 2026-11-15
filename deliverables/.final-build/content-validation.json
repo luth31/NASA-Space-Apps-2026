@@ -1,0 +1,183 @@
+{
+  "slideCount": 7,
+  "dimensionsEmu": [
+    12191695,
+    6858000
+  ],
+  "embeddedMp4": [
+    "ppt/media/media1.mp4",
+    "ppt/media/media2.mp4",
+    "ppt/media/media3.mp4"
+  ],
+  "notesCount": 7,
+  "chartCount": 1,
+  "nativeTableSlides": [
+    5
+  ],
+  "sha256": "4fdb68381b9c78fcf79100624411577015c873480554d625eda14ee9bc84bafc",
+  "slides": [
+    {
+      "slide": "ppt/slides/slide1.xml",
+      "wordCount": 33,
+      "visibleChartText": [],
+      "text": [
+        "01",
+        "PyroBridge",
+        "Bridging 26 Years of Incompatible",
+        "NASA Satellite Fire Records",
+        "MODIS 1 km",
+        "VIIRS 375 m",
+        "NASA Space Apps Challenge 2026",
+        "Challenge: Harmonization of MODIS and VIIRS Hot Spots",
+        "Offline-Ready Intelligence Platform"
+      ],
+      "videoTiming": []
+    },
+    {
+      "slide": "ppt/slides/slide2.xml",
+      "wordCount": 38,
+      "visibleChartText": [],
+      "text": [
+        "Why raw fire counts lie",
+        "02",
+        "6.7\u00d7",
+        "VIIRS / MODIS ratio",
+        "625 MODIS \u00b7 1 km",
+        "4,175 VIIRS \u00b7 375 m",
+        "Evros study rectangle",
+        "August 2023 totals",
+        "A raw merge creates an",
+        "artificial post-2012 step.",
+        "Nominal resolution mesh \u00b7 acquisition times differ"
+      ],
+      "videoTiming": [
+        "<p:cMediaNode xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" vol=\"0\" showWhenStopped=\"1\"><p:cTn id=\"2\" fill=\"hold\" display=\"0\" repeatCount=\"indefinite\" restart=\"always\"><p:stCondLst><p:cond delay=\"0\"/></p:stCondLst></p:cTn><p:tgtEl><p:spTgt spid=\"11\"/></p:tgtEl></p:cMediaNode>"
+      ]
+    },
+    {
+      "slide": "ppt/slides/slide3.xml",
+      "wordCount": 34,
+      "visibleChartText": [],
+      "text": [
+        "Global-to-local fire exploration",
+        "03",
+        "74,304",
+        "NOAA-20 VIIRS detections",
+        "Pinned snapshot",
+        "13\u201314 November 2026",
+        "20+ years of regional archives",
+        "Six landscapes",
+        "Evros, Evia, Rhodes, Manavgat,",
+        "Gran Chaco, Northern Pantanal",
+        "Offline-first exploration with sensor identity preserved"
+      ],
+      "videoTiming": [
+        "<p:cMediaNode xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" vol=\"0\" showWhenStopped=\"1\"><p:cTn id=\"2\" fill=\"hold\" display=\"0\" repeatCount=\"indefinite\" restart=\"always\"><p:stCondLst><p:cond delay=\"0\"/></p:stCondLst></p:cTn><p:tgtEl><p:spTgt spid=\"10\"/></p:tgtEl></p:cMediaNode>"
+      ]
+    },
+    {
+      "slide": "ppt/slides/slide4.xml",
+      "wordCount": 38,
+      "visibleChartText": [],
+      "text": [
+        "Seasonal fire intelligence",
+        "04",
+        "89%",
+        "of 2023 detections",
+        "occurred in August",
+        "4,178 of 4,685 S-NPP VIIRS",
+        "Evros + Evia rectangles",
+        "12-petal seasonal wheel",
+        "October leads in 9 of 13",
+        "complete archive years",
+        "Observed counts and clearly labelled experimental estimates"
+      ],
+      "videoTiming": [
+        "<p:cMediaNode xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" vol=\"0\" showWhenStopped=\"1\"><p:cTn id=\"2\" fill=\"hold\" display=\"0\" repeatCount=\"indefinite\" restart=\"always\"><p:stCondLst><p:cond delay=\"0\"/></p:stCondLst></p:cTn><p:tgtEl><p:spTgt spid=\"10\"/></p:tgtEl></p:cMediaNode>"
+      ]
+    },
+    {
+      "slide": "ppt/slides/slide5.xml",
+      "wordCount": 50,
+      "visibleChartText": [
+        "Unchanged",
+        "Seasonal",
+        "Negative binomial",
+        "LightGBM",
+        "4.125",
+        "2.620",
+        "5.924",
+        "11.221"
+      ],
+      "text": [
+        "Simple Seasonal Scaling Beats Complex ML",
+        "Under Strict Holdout",
+        "05",
+        "48 cell-passes",
+        "MAE",
+        "\u221236%",
+        "648 region-months \u00b7 13 holdouts",
+        "Raw MAE",
+        "Scaled MAE",
+        "Evros",
+        "50.78",
+        "14.50",
+        "Rhodes",
+        "7.76",
+        "2.36",
+        "Manavgat",
+        "30.45",
+        "17.42",
+        "Gran Chaco",
+        "16,004",
+        "7,140",
+        "N. Pantanal",
+        "10,352",
+        "1,069",
+        "5/6 landscapes"
+      ],
+      "videoTiming": []
+    },
+    {
+      "slide": "ppt/slides/slide6.xml",
+      "wordCount": 41,
+      "visibleChartText": [],
+      "text": [
+        "Scientific integrity & engineering architecture",
+        "06",
+        "Release gate",
+        "monthlyRelease: false",
+        "Monthly release awaits",
+        "cloud and scan-angle",
+        "normalization.",
+        "Reproducible pipeline",
+        "Python + DuckDB",
+        "pandas / NumPy",
+        "Co-located Aqua MODIS",
+        "and S-NPP VIIRS passes.",
+        "Reliability",
+        "46 automated tests",
+        "14 pipeline + 32 frontend",
+        "Offline caching in production"
+      ],
+      "videoTiming": []
+    },
+    {
+      "slide": "ppt/slides/slide7.xml",
+      "wordCount": 42,
+      "visibleChartText": [],
+      "text": [
+        "Next: normalized monthly releases",
+        "07",
+        "Cloud-mask & off-nadir normalization",
+        "For emergency managers",
+        "NASA Earthdata FIRMS",
+        "MODIS Collection 6.1 \u00b7 Suomi-NPP VIIRS 375 m \u00b7 NOAA-20 VIIRS 375 m",
+        "Use of SI (AI) disclosure",
+        "Statistical/ML benchmarks: seasonal scaling and LightGBM",
+        "AI-assisted software engineering and presentation drafting"
+      ],
+      "videoTiming": []
+    }
+  ]
+}

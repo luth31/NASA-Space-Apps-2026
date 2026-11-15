@@ -41,12 +41,25 @@ import Calendar from "./Calendar";
 import Methods from "./Methods";
 import Sources from "./Sources";
 import Navigation from "./Navigation";
+import type { Destination } from "./Navigation";
 import Investigations from "./Investigations";
 import { exportInvestigation } from "./exports";
 
 const Globe = lazy(() => import("./Globe"));
 const OrbitalAtlas = lazy(() => import("./orbital/OrbitalAtlas"));
-type View = "explore" | "calendar" | "methods" | "sources" | "investigations";
+const Report = lazy(() => import("./Report"));
+type View = Exclude<Destination, "dashboard">;
+
+function initialView(): View {
+  const tab = new URLSearchParams(location.search).get("tab");
+  return tab === "report" ||
+    tab === "calendar" ||
+    tab === "methods" ||
+    tab === "sources" ||
+    tab === "investigations"
+    ? tab
+    : "explore";
+}
 
 function Brand() {
   return (
@@ -80,7 +93,7 @@ export default function App() {
   const [coverage, setCoverage] = useState<CoverageReport | null>(null);
   const [browseGlobal, setBrowseGlobal] = useState(false);
   const [atlasExplore, setAtlasExplore] = useState(false);
-  const [view, setView] = useState<View>("explore"),
+  const [view, setView] = useState<View>(initialView),
     [study, setStudy] = useState<CaseStudy | null>(null),
     [selected, setSelected] = useState<Observation | null>(null);
   const [month, setMonth] = useState("2023-08"),
@@ -102,6 +115,20 @@ export default function App() {
   const reduced = useReducedMotion();
   const [destination, setDestination] = useState<CaseStudy | null>(null);
   const flightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const url = new URL(location.href);
+    url.searchParams.set("tab", view);
+    if (view !== "report") url.searchParams.delete("concept");
+    history.replaceState(null, "", url);
+  }, [view]);
+  useEffect(() => {
+    if (view !== "calendar" || study || !manifest) return;
+    const first = manifest.cases[0];
+    if (!first) return;
+    setStudy(first);
+    setMonth(first.date.slice(0, 7));
+    setDay(null);
+  }, [view, study, manifest]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -562,6 +589,7 @@ export default function App() {
                     selected={selected}
                     onSelect={selectObservation}
                     compare={compare}
+                    sensor={sensor}
                     onCompare={() => {
                       setCompare((v) => !v);
                       setSensor("all");
@@ -896,6 +924,34 @@ export default function App() {
           </div>
         )}
         <AnimatePresence mode="wait">
+          {view === "report" && (
+            <Suspense
+              key="report"
+              fallback={
+                <div className="boot" role="status">
+                  Opening the report…
+                </div>
+              }
+            >
+              <Report
+                manifest={manifest}
+                onExplore={(context) => {
+                  const target = manifest.cases.find(
+                    (c) => c.id === context.caseId,
+                  );
+                  if (!target) return;
+                  commitCase(target);
+                  setMonth(context.month);
+                  setDay(null);
+                  setSensor(
+                    context.sensor === "all"
+                      ? "all"
+                      : (context.sensor ?? "viirs").toUpperCase(),
+                  );
+                }}
+              />
+            </Suspense>
+          )}
           {view === "calendar" && study && (
             <Calendar
               key={"calendar" + study.id}

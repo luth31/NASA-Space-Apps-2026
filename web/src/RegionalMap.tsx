@@ -1,13 +1,30 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { Crosshair, Layers2, Minus, Plus, ScanLine } from "lucide-react";
+import {
+  Crosshair,
+  Grid2X2,
+  Layers2,
+  Minus,
+  Pause,
+  Play,
+  Plus,
+  ScanLine,
+} from "lucide-react";
 import LocationInset, {
   viewportCountry,
   type Viewport,
 } from "./orbital/LocationInset";
 import { groupGeography, type Area, type Point } from "./orbital/geography";
 import geographyUrl from "./orbital/map-units.json?url";
-import { sensorColor } from "./orbital/map-palette";
+import { occupiedMeshCells } from "./fire-mesh/resolution-mesh";
+import "./fire-mesh/fire-mesh.css";
 import type { CaseStudy, MapMarker, Observation } from "./data";
 import {
   clusterMarkers,
@@ -27,6 +44,7 @@ interface Props {
   period: string;
   reset: number;
   wide: boolean;
+  sensor?: string;
 }
 
 export default function RegionalMap({
@@ -38,6 +56,8 @@ export default function RegionalMap({
   onCompare,
   period,
   reset,
+  wide,
+  sensor = "all",
 }: Props) {
   const [countries, setCountries] = useState<Area[]>([]);
   useEffect(() => {
@@ -55,6 +75,12 @@ export default function RegionalMap({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [split, setSplit] = useState(50);
   const [columns, setColumns] = useState(false);
+  const [meshVisible, setMeshVisible] = useState(true);
+  const [flamesMoving, setFlamesMoving] = useState(true);
+  const [inView, setInView] = useState(true);
+  const [pageVisible, setPageVisible] = useState(true);
+  const [dragging, setDragging] = useState(false);
+  const meshId = useId().replace(/:/g, "");
   const [size, setSize] = useState({ width: 1000, height: 500 });
   const [hover, setHover] = useState<{
     o: Observation;
@@ -111,20 +137,34 @@ export default function RegionalMap({
     return [p[0], p[1] * ratio];
   };
   useEffect(() => {
-    if (!host.current) return;
+    if (!svg.current) return;
     const observer = new ResizeObserver(([entry]) =>
       setSize({
         width: entry.contentRect.width,
         height: entry.contentRect.height,
       }),
     );
-    observer.observe(host.current);
+    observer.observe(svg.current);
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
   }, [reset]);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) =>
+      setInView(entry.isIntersecting),
+    );
+    if (host.current) observer.observe(host.current);
+    const visibility = () =>
+      setPageVisible(document.visibilityState === "visible");
+    visibility();
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", visibility);
+    };
+  }, []);
   useEffect(() => {
     if (!selected) return;
     const p = project(selected.lon, selected.lat, study.sceneBounds);
@@ -147,32 +187,116 @@ export default function RegionalMap({
     });
     return clusterMarkers(
       visible,
-      visible.length > 3500 ? 16 / (zoom * scale) : 0,
+      (visible.length > 1500 ? 24 : 18) / (zoom * scale),
       selected?.id,
     );
   }, [observations, study.id, zoom, pan, size, selected?.id]);
+  const box = wide ? study.sceneBounds : study.bbox;
+  const corner = xy(box[0], box[3]);
+  const end = xy(box[2], box[1]);
   const transform = `translate(${500 + pan.x}px, ${h / 2 + pan.y}px) scale(${zoom}) translate(-500px, ${-h / 2}px)`;
   const mapStyle = {
     transform,
     // Camera and locator share the same rendered transform during direct interaction.
     transition: "none",
   };
-  const mark = (item: MapMarker) => {
+  const meshes = useMemo(
+    () => [
+      {
+        sensor: "MODIS",
+        metres: 1000,
+        color: "#f5a1ad",
+        data: occupiedMeshCells(
+          observations.filter((o) => o.sensor === "MODIS"),
+          box,
+          study.sceneBounds,
+          1000,
+        ),
+      },
+      {
+        sensor: "VIIRS",
+        metres: 375,
+        color: "#ff6354",
+        data: occupiedMeshCells(
+          observations.filter((o) => o.sensor !== "MODIS"),
+          box,
+          study.sceneBounds,
+          375,
+        ),
+      },
+    ],
+    [observations, study.id, wide],
+  );
+  const meshLayer = (side?: string) =>
+    meshVisible &&
+    meshes
+      .filter(
+        (m) =>
+          (!side || m.sensor === side) &&
+          (sensor === "all" || m.sensor === sensor),
+      )
+      .map((m) => {
+        const g = m.data;
+        // Subpixel cells merge visually at a wide extent: disclose rather than enlarge them.
+        const readable =
+          Math.min(g.cellWidth, g.cellHeight) * scale * zoom >= 2.2;
+        return (
+          <g
+            key={m.sensor}
+            className="resolution-mesh"
+            data-sensor={m.sensor}
+            data-cell-metres={m.metres}
+            pointerEvents="none"
+          >
+            <rect
+              x={g.x}
+              y={g.y}
+              width={g.width}
+              height={g.height}
+              fill={`url(#${meshId}-${m.sensor})`}
+              opacity={readable ? 1 : 0.14}
+            />
+            <g
+              clipPath={`url(#${meshId}-area)`}
+              fill={m.color}
+              fillOpacity={readable ? 0.13 : 0.07}
+            >
+              {g.cells.map((c) => (
+                <rect
+                  key={c.key}
+                  x={c.x}
+                  y={c.y}
+                  width={g.cellWidth}
+                  height={g.cellHeight}
+                />
+              ))}
+            </g>
+          </g>
+        );
+      });
+  const mark = (item: MapMarker, animate = true) => {
     const { o, count } = item;
     const p = [item.x, item.y];
     const active = selected?.id === o.id;
-    const color = sensorColor(o.sensor);
+    const color = o.sensor === "MODIS" ? "#f5a1ad" : "#ff6354";
+    const iconScale = (active ? 1 : 0.72) / (zoom * scale);
+    const phase = [...o.id].reduce((sum, c) => sum + c.charCodeAt(0), 0) % 19;
     return (
       <g
         key={item.key}
-        className="map-mark"
+        className={`map-mark fire-mark ${active ? "is-selected" : ""}`}
+        data-sensor={o.sensor}
+        data-count={count}
+        data-observation-id={o.id}
         onClick={(e) => {
           e.stopPropagation();
           if (!moved.current) {
-            if (count > 1) {
+            if (count > 1 && zoom < 8) {
               const z = Math.min(8, Math.max(2.3, zoom * 1.8));
               setZoom(z);
               setPan({ x: (500 - p[0]) * z, y: (h / 2 - p[1]) * z });
+              setHover(null);
+              return;
             }
             onSelect(o);
           }
@@ -189,12 +313,6 @@ export default function RegionalMap({
         }}
         onPointerLeave={() => setHover(null)}
       >
-        <circle
-          cx={p[0]}
-          cy={p[1]}
-          r={Math.max(4, 5 / zoom)}
-          fill="transparent"
-        />
         {columns && count === 1 && o.frp !== null && (
           <line
             x1={p[0]}
@@ -206,39 +324,46 @@ export default function RegionalMap({
             opacity=".7"
           />
         )}
-        <circle
-          cx={p[0]}
-          cy={p[1]}
-          r={
-            count > 1
-              ? Math.min(7, 2 + Math.log2(count)) / zoom
-              : (active ? 3.8 : 1.65) / Math.sqrt(zoom)
-          }
-          fill={color}
-          fillOpacity={count > 1 ? 0.55 : 1}
-          stroke={active ? "#fff" : count > 1 ? color : "#1c1c1c"}
-          strokeWidth={active ? 0.9 : 0.25}
-        />
-        {active && (
-          <circle
-            cx={p[0]}
-            cy={p[1]}
-            r={8 / zoom}
-            fill="none"
-            stroke="#fff"
-            strokeWidth={0.6 / zoom}
-          />
-        )}
+        <g transform={`translate(${p[0]} ${p[1]}) scale(${iconScale})`}>
+          <rect x="-10" y="-18" width="20" height="23" fill="transparent" />
+          {active && (
+            <path
+              d="M-11 -13v-7h7 M4 -20h7v7 M11 -1v6H4 M-4 5h-7v-6"
+              className="fire-selection"
+            />
+          )}
+          <g
+            className={`fire-glyph ${animate ? "" : "is-still"}`}
+            style={{ "--flame-delay": `${-phase / 10}s` } as CSSProperties}
+          >
+            <path
+              className="fire-outer"
+              fill={color}
+              d="M0 1C-8 1-8-6-5-10C-5-7-3-7-3-8C-4-12 1-13 0-18C7-13 3-10 6-7C8-3 5 1 0 1Z"
+            />
+            <path
+              className="fire-core"
+              d="M0 0C-3 0-3-3-1-5C0-6 1-8 0-10C4-7 2-5 3-3C4-1 2 0 0 0Z"
+            />
+          </g>
+          {count > 1 && (
+            <path
+              className="fire-group-tick"
+              d="M-4 4h8M-2 7h4"
+              stroke={color}
+            />
+          )}
+        </g>
       </g>
     );
   };
   const marks = useMemo(
     () =>
-      markerItems.map((item) => ({
+      markerItems.map((item, index) => ({
         sensor: item.o.sensor,
-        element: mark(item),
+        element: mark(item, index < 180 || item.o.id === selected?.id),
       })),
-    [markerItems, selected?.id, columns, zoom, onSelect],
+    [markerItems, selected?.id, columns, zoom, scale, onSelect],
   );
   const modis = observations.filter((o) => o.sensor === "MODIS");
   const viirs = observations.filter((o) => o.sensor !== "MODIS");
@@ -249,7 +374,10 @@ export default function RegionalMap({
       ? dateLabel(period + "-01", { month: "long", year: "numeric" })
       : dateLabel(period);
   return (
-    <div className="regional-map" ref={host}>
+    <div
+      className={`regional-map fire-mesh-map ${reduced || !flamesMoving || !inView || !pageVisible || dragging ? "flames-paused" : ""}`}
+      ref={host}
+    >
       <motion.svg
         ref={svg}
         initial={{ opacity: 0, scale: reduced ? 1 : 1.08 }}
@@ -276,22 +404,52 @@ export default function RegionalMap({
             dy = (e.clientY - drag.current.y) / scale;
           if (Math.abs(dx) + Math.abs(dy) > 3) {
             moved.current = true;
+            setDragging(true);
           }
           setPan({ x: drag.current.px + dx, y: drag.current.py + dy });
         }}
         onPointerUp={() => {
           drag.current = null;
+          setDragging(false);
         }}
         onPointerLeave={() => {
           drag.current = null;
+          setDragging(false);
           setHover(null);
         }}
       >
         <defs>
-          <clipPath id="left-compare">
+          <clipPath id={`${meshId}-area`}>
+            <rect
+              x={corner[0]}
+              y={corner[1]}
+              width={end[0] - corner[0]}
+              height={end[1] - corner[1]}
+            />
+          </clipPath>
+          {meshes.map((m) => (
+            <pattern
+              key={m.sensor}
+              id={`${meshId}-${m.sensor}`}
+              patternUnits="userSpaceOnUse"
+              x={m.data.x}
+              y={m.data.y}
+              width={m.data.cellWidth}
+              height={m.data.cellHeight}
+            >
+              <path
+                d={`M${m.data.cellWidth} 0H0V${m.data.cellHeight}`}
+                fill="none"
+                stroke={m.color}
+                strokeOpacity={m.sensor === "MODIS" ? 0.28 : 0.22}
+                strokeWidth={0.6 / (scale * zoom)}
+              />
+            </pattern>
+          ))}
+          <clipPath id={`${meshId}-left-compare`}>
             <rect x="-1000" y="-1000" width={splitX + 1000} height={h + 2000} />
           </clipPath>
-          <clipPath id="right-compare">
+          <clipPath id={`${meshId}-right-compare`}>
             <rect x={splitX} y="-1000" width="2000" height={h + 2000} />
           </clipPath>
         </defs>
@@ -304,6 +462,7 @@ export default function RegionalMap({
           />
           <rect width="1000" height={h} fill="#0a1424" opacity=".2" />
 
+          {!compare && meshLayer()}
           {!compare && (
             <g aria-hidden="true">
               {marks.map((m) => m.element)}
@@ -321,26 +480,28 @@ export default function RegionalMap({
         </g>
         {compare && (
           <>
-            <g clipPath="url(#left-compare)" aria-hidden="true">
+            <g clipPath={`url(#${meshId}-left-compare)`} aria-hidden="true">
               <motion.g
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.6 }}
               >
                 <g style={mapStyle}>
+                  {meshLayer("MODIS")}
                   {marks
                     .filter((m) => m.sensor === "MODIS")
                     .map((m) => m.element)}
                 </g>
               </motion.g>
             </g>
-            <g clipPath="url(#right-compare)" aria-hidden="true">
+            <g clipPath={`url(#${meshId}-right-compare)`} aria-hidden="true">
               <motion.g
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.25 }}
               >
                 <g style={mapStyle}>
+                  {meshLayer("VIIRS")}
                   {marks
                     .filter((m) => m.sensor !== "MODIS")
                     .map((m) => m.element)}
@@ -388,12 +549,12 @@ export default function RegionalMap({
             <span>
               <i className="dot aqua" />
               AQUA / MODIS <b>{modis.length.toLocaleString()}</b>
-              <small>1 km at nadir</small>
+              <small>Nominal 1 km reference cells</small>
             </span>
             <span>
               <i className="dot fire" />
               S-NPP / VIIRS <b>{viirs.length.toLocaleString()}</b>
-              <small>375 m at nadir</small>
+              <small>Nominal 375 m reference cells</small>
             </span>
           </div>
           <div className="comparison-note mono">
@@ -452,6 +613,84 @@ export default function RegionalMap({
         <ScanLine size={15} />
         {compare ? "Close comparison" : "Compare satellites"}
       </button>
+      <div className="mesh-key">
+        <div className="mesh-key-top">
+          <span className="eyebrow">THE RESOLUTION LENS</span>
+          <div>
+            <button
+              aria-label="Show resolution mesh"
+              aria-pressed={meshVisible}
+              onClick={() => setMeshVisible((v) => !v)}
+              title="Show resolution mesh"
+            >
+              <Grid2X2 size={14} />
+            </button>
+            <button
+              aria-label={
+                flamesMoving ? "Pause flame animation" : "Play flame animation"
+              }
+              aria-pressed={flamesMoving && !reduced}
+              disabled={!!reduced}
+              onClick={() => setFlamesMoving((v) => !v)}
+              title={reduced ? "Reduced motion enabled" : "Flame animation"}
+            >
+              {flamesMoving && !reduced ? (
+                <Pause size={14} />
+              ) : (
+                <Play size={14} />
+              )}
+            </button>
+          </div>
+        </div>
+        <div className="mesh-sensors">
+          <span
+            className={`mesh-sensor modis ${!modis.length ? "is-muted" : ""}`}
+          >
+            <i className="mesh-swatch coarse" />
+            <span>
+              MODIS
+              <strong>
+                1 km <small>nominal at nadir</small>
+              </strong>
+            </span>
+          </span>
+          <span
+            className={`mesh-sensor viirs ${!viirs.length ? "is-muted" : ""}`}
+          >
+            <i className="mesh-swatch fine" />
+            <span>
+              VIIRS
+              <strong>
+                375 m <small>nominal at nadir</small>
+              </strong>
+            </span>
+          </span>
+        </div>
+        <p>
+          Nominal reference cells · not actual scan footprints or burned area.
+        </p>
+        <div className="mesh-reading">
+          {meshes.some(
+            (m) =>
+              (sensor === "all" || m.sensor === sensor) &&
+              Math.min(m.data.cellWidth, m.data.cellHeight) * scale * zoom >=
+                2.2,
+          )
+            ? "Zoom to separate nearby detections"
+            : "Zoom in to reveal the resolution mesh"}
+        </div>
+        <details>
+          <summary>Reading the flames</summary>
+          <p>
+            Flames locate satellite detections from the selected period, not
+            individual fires. Underlined flames group nearby records from one
+            sensor. Colour identifies the sensor; motion does not show fire
+            behaviour. The mesh illustrates nominal resolution; actual pixel
+            sizes vary across the scan. Select a record for its reported
+            footprint.
+          </p>
+        </details>
+      </div>
       <div className="scene-credit mono">
         IMAGERY {study.date} · AQUA MODIS / NASA GIBS
         {period !== study.date
@@ -471,7 +710,7 @@ export default function RegionalMap({
         >
           <strong>
             {hover.count > 1
-              ? `${hover.count.toLocaleString()} detections · click to inspect`
+              ? `${hover.count.toLocaleString()} ${hover.o.sensor === "MODIS" ? "MODIS" : "VIIRS"} detections · ${zoom < 8 ? "click to separate" : "inspect record"}`
               : sensorLabel(hover.o.sensor)}
           </strong>
           <span>
