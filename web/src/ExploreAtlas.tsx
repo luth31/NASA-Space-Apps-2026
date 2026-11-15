@@ -21,6 +21,7 @@ import {
   continents,
   countryBounds,
   inBounds,
+  localWindow,
   sectors,
   WORLD,
 } from "./explore/geography";
@@ -133,6 +134,20 @@ export default function ExploreAtlas({
     ]);
     setPage(0);
   }, []);
+  const chooseWindow = useCallback((lon: number, lat: number) => {
+    const window = localWindow(lon, lat);
+    setPath((p) => [
+      ...p.filter(
+        (place) => place.kind === "world" || place.kind === "continent",
+      ),
+      {
+        name: `Map window · ${((window[1] + window[3]) / 2).toFixed(1)}° / ${((window[0] + window[2]) / 2).toFixed(1)}°`,
+        bounds: window,
+        kind: "country",
+      },
+    ]);
+    setPage(0);
+  }, []);
   useEffect(() => {
     setHoveredSector(null);
     setHover(null);
@@ -202,14 +217,27 @@ export default function ExploreAtlas({
         return;
       }
       if (current?.kind === "world") {
-        chooseContinent(
-          (at ? countryAt(...at)?.properties.CONTINENT : undefined) ||
-            hover?.properties.CONTINENT ||
-            "Europe",
-        );
+        const country = at ? countryAt(...at) : hover;
+        if (
+          country &&
+          continents.some((c) => c.name === country.properties.CONTINENT)
+        )
+          chooseContinent(country.properties.CONTINENT);
+        else if (country) chooseCountry(country);
+        else
+          chooseWindow(
+            ...(at || [
+              (bounds[0] + bounds[2]) / 2,
+              (bounds[1] + bounds[3]) / 2,
+            ]),
+          );
         return;
       }
       if (current?.kind === "continent") {
+        if (at && !countryAt(...at)) {
+          chooseWindow(...at);
+          return;
+        }
         const country =
           (at ? countryAt(...at) : undefined) ||
           hover ||
@@ -241,6 +269,8 @@ export default function ExploreAtlas({
       countryAt,
       bins,
       hoveredSector,
+      chooseWindow,
+      bounds,
     ],
   );
   const lastZoom = useRef(zoom),
@@ -305,9 +335,13 @@ export default function ExploreAtlas({
     }
     const c = countryAt(lon, lat);
     if (c) {
-      if (current?.kind === "world") chooseContinent(c.properties.CONTINENT);
+      if (
+        current?.kind === "world" &&
+        continents.some((region) => region.name === c.properties.CONTINENT)
+      )
+        chooseContinent(c.properties.CONTINENT);
       else chooseCountry(c);
-    }
+    } else chooseWindow(lon, lat);
   };
   const onHover = (lon: number, lat: number) => {
     if (!open || current?.kind === "sector") return;
@@ -564,8 +598,11 @@ export default function ExploreAtlas({
               ))}
               {!bins.length && (
                 <p>
-                  No snapshot detections in this generalized country boundary.
-                  This does not establish fire-free conditions.
+                  No snapshot detections in{" "}
+                  {current.country
+                    ? "this generalized country boundary"
+                    : "this rectangular map window"}
+                  . This does not establish fire-free conditions.
                 </p>
               )}
             </div>

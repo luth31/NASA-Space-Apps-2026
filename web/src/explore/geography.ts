@@ -37,6 +37,13 @@ export const continents: {
 export function inBounds(o: { lon: number; lat: number }, b: Bounds) {
   return o.lon >= b[0] && o.lon < b[2] && o.lat >= b[1] && o.lat < b[3];
 }
+/** A local map window, shifted within the atlas seam and polar limits. */
+export function localWindow(lon: number, lat: number): Bounds {
+  const wrapped = ((((lon + 180) % 360) + 360) % 360) - 180;
+  const west = Math.max(-180, Math.min(168, wrapped - 6));
+  const south = Math.max(-90, Math.min(80, lat - 5));
+  return [west, south, west + 12, south + 10];
+}
 export function polygons(country: Country): number[][][][] {
   return country.geometry.type === "Polygon"
     ? [country.geometry.coordinates as number[][][]]
