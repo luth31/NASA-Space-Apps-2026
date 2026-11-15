@@ -31,7 +31,8 @@ import geographyUrl from "./map-units.json?url";
 import ContinuousMap from "./ContinuousMap";
 import type { Camera, MapHandle } from "./ContinuousMap";
 import Navigation from "../Navigation";
-import BridgeExperiment from "../BridgeExperiment";
+import CalibrationDemo from "../CalibrationDemo";
+import { useMonthlyCalibration } from "../monthly";
 import { geoContains } from "d3-geo";
 
 type Props = {
@@ -47,7 +48,7 @@ type Props = {
   onCase: (study: CaseStudy) => void;
 };
 const chapters = [
-  "The changing view",
+  "Try the calibration",
   "The sensor difference",
   "Learning the bridge",
   "The longer record",
@@ -78,7 +79,7 @@ const descriptions = [
   "Newer satellites detect smaller hotspots. PyroBridge learns from overlapping MODIS and VIIRS records to make decades of fire observations comparable.",
   "Same landscape and day. Different satellite counts. A higher count does not automatically mean more fire.",
   "Hide a whole region. Train elsewhere. Test estimates against the unseen VIIRS observations. Repeat for each region.",
-  "Explore decades of observed fire activity. A harmonized calendar needs broader validation before we publish estimates.",
+  "Apply the learned sensor relationship to older MODIS months. Compare the original record with experimental VIIRS-scale estimates.",
 ];
 
 export default function OrbitalAtlas(props: Props) {
@@ -111,7 +112,6 @@ export default function OrbitalAtlas(props: Props) {
 function Dashboard({
   observations,
   manifest,
-  report,
   offlineReady,
   initialExplore,
   onNavigate,
@@ -151,7 +151,7 @@ function Dashboard({
     [groups],
   );
   const study = manifest.cases.find((c) => c.id === caseId)!;
-  const inCase = !explore && chapter > 0;
+  const inCase = !explore;
   useEffect(() => {
     let active = true;
     setCaseRows([]);
@@ -246,7 +246,6 @@ function Dashboard({
   }
   function chooseChapter(next: number, automatic = false) {
     setChapter(next);
-    if (next === 2 && caseId === "chaco") setCaseId("evros");
     setExplore(false);
     clearPlace();
     if (next === 1) setSensor("MODIS");
@@ -377,7 +376,7 @@ function Dashboard({
                   className="mission-primary"
                   onClick={() => chooseChapter(1)}
                 >
-                  See the sensor difference <ArrowRight size={17} />
+                  Explore the original detections <ArrowRight size={17} />
                 </button>
                 <button className="mission-text" onClick={openExplore}>
                   Explore {integer(observations.length)} detections{" "}
@@ -455,15 +454,9 @@ function Dashboard({
                 )}
                 <p className="mission-note">
                   {dateLabel(study.date)} · Same analysis boundary. Separate
-                  overpasses and sampling. Counts alone do not measure the
-                  sensor correction.
+                  overpasses and sampling. Apply calibration in the next step to
+                  compare estimated counts.
                 </p>
-                {study.id === "chaco" && (
-                  <p className="mission-note">
-                    Gran Chaco has no eligible five-minute pairs in this sample.
-                    The next step demonstrates calibration on the Greek cases.
-                  </p>
-                )}
                 <button
                   className="mission-primary"
                   onClick={() => chooseChapter(2)}
@@ -474,38 +467,17 @@ function Dashboard({
             )}
             {!explore && !point && chapter === 2 && (
               <>
-                <p className="mission-note">
-                  Switching sensors shows two observations. Here, a trained
-                  model transforms the MODIS count into a VIIRS-scale estimate
-                  and we check it against withheld VIIRS data.
-                </p>
-                {study.id === "chaco" && (
-                  <p className="mission-note">
-                    Gran Chaco has no eligible five-minute pairs in this sample.
-                    The experiment uses the Greek cases with verified common
-                    coverage.
-                  </p>
-                )}
                 <div className="bridge-flow">
-                  <span>MODIS observations</span>
+                  <span>Start with MODIS</span>
                   <ChevronRight />
-                  <strong>Trained calibration</strong>
+                  <strong>Apply calibration</strong>
                   <ChevronRight />
-                  <span>VIIRS-equivalent count</span>
+                  <span>Reveal the VIIRS reading</span>
                 </div>
                 <p className="mission-note">
-                  The model estimates counts for a common observation
-                  opportunity. Original detection locations remain traceable.
+                  Try another month or landscape. The result can improve—or
+                  worsen. The measured error stays visible.
                 </p>
-                <div className="mission-measure">
-                  <strong>{report?.totalRows ?? "—"}</strong>
-                  <span>
-                    eligible cell-passes
-                    <br />
-                    {report?.independentRegions ?? "—"} regions · exploratory
-                    benchmark
-                  </span>
-                </div>
                 <button
                   className="mission-primary"
                   onClick={() => onNavigate("methods")}
@@ -525,8 +497,9 @@ function Dashboard({
                   </span>
                 </div>
                 <p className="mission-note">
-                  Observed counts are available now. Harmonized monthly values
-                  need broader validation and complete observing-effort records.
+                  Switch between original MODIS counts and monthly VIIRS-scale
+                  estimates. Each estimate retains its model and evaluation
+                  history.
                 </p>
                 <button
                   className="mission-primary"
@@ -541,6 +514,12 @@ function Dashboard({
             )}
             {explore && !point && (
               <>
+                <button
+                  className="mission-primary explore-calibration-link"
+                  onClick={() => chooseChapter(0)}
+                >
+                  Try MODIS → VIIRS calibration <ArrowRight size={17} />
+                </button>
                 <div className="mission-measure">
                   <strong>{integer(localRows.length)}</strong>
                   <span>
@@ -632,23 +611,32 @@ function Dashboard({
           </footer>
         </aside>
         <section
-          className={`mission-scene${!explore && chapter === 2 && !point ? " mission-learning-scene" : ""}`}
+          className={`mission-scene${!explore && (chapter === 0 || chapter === 2) && !point ? " mission-learning-scene" : ""}`}
           aria-label="Interactive Earth and scientific evidence"
         >
-          <ContinuousMap
-            ref={map}
-            rows={rows}
-            regions={regions}
-            countries={groups.countries}
-            camera={camera}
-            region={region}
-            selected={point}
-            study={inCase ? study : null}
-            onRegion={selectRegion}
-            onArea={selectArea}
-            onPoint={selectPoint}
-            onInteract={() => setPlaying(false)}
-          />
+          {!explore && !point && (chapter === 0 || chapter === 2) ? (
+            <div
+              className="demo-landscape"
+              style={{
+                backgroundImage: `url(/assets/map-context/${study.id}-mercator.jpg)`,
+              }}
+            />
+          ) : (
+            <ContinuousMap
+              ref={map}
+              rows={rows}
+              regions={regions}
+              countries={groups.countries}
+              camera={camera}
+              region={region}
+              selected={point}
+              study={inCase ? study : null}
+              onRegion={selectRegion}
+              onArea={selectArea}
+              onPoint={selectPoint}
+              onInteract={() => setPlaying(false)}
+            />
+          )}
           <div className="mission-location-bar">
             <nav aria-label="Geographic depth">
               {["Earth", "Region", "Area", "Observation"].map(
@@ -743,11 +731,13 @@ function Dashboard({
               </small>
             </div>
           )}
-          {!explore && !point && chapter === 2 && (
+          {!explore && !point && (chapter === 0 || chapter === 2) && (
             <div className="mission-bridge-panel">
-              <BridgeExperiment
-                initialRegion={caseId}
-                onRegion={(id) => {
+              <CalibrationDemo
+                cases={manifest.cases}
+                initialCase={caseId}
+                onCalendar={onMonth}
+                onCase={(id) => {
                   setCaseId(id);
                   clearPlace();
                   setPlaying(false);
@@ -886,11 +876,16 @@ function CalendarPreview({
   onOpen: (month?: string) => void;
 }) {
   const focusYear = Number(study.date.slice(0, 4));
+  const { data } = useMonthlyCalibration();
+  const calibrated = data?.cases[study.id]?.months ?? [];
+  const value = (month: string) =>
+    calibrated.find((m) => m.month === month)?.estimates["Seasonal scaling"] ??
+    null;
   const years = study.years.filter((y) => y >= focusYear - 2 && y <= focusYear);
   const max = Math.max(
     ...study.months
       .filter((m) => years.includes(Number(m.month.slice(0, 4))))
-      .map((m) => m.modis ?? 0),
+      .map((m) => value(m.month) ?? 0),
     1,
   );
   return (
@@ -898,7 +893,7 @@ function CalendarPreview({
       <header>
         <div>
           <p className="mission-eyebrow">
-            {study.name.toUpperCase()} · OBSERVED MODIS COUNTS
+            {study.name.toUpperCase()} · HARMONIZED MONTHLY ESTIMATES
           </p>
           <h2>Every season leaves a pattern.</h2>
         </div>
@@ -923,22 +918,22 @@ function CalendarPreview({
                 onClick={() =>
                   onOpen(`${year}-${String(i + 1).padStart(2, "0")}`)
                 }
-                title={`${year}-${i + 1}: ${month?.modis ?? "unavailable"} MODIS detections`}
+                title={`${year}-${i + 1}: ${value(month?.month ?? "") ?? "unavailable"} estimated VIIRS detections`}
                 style={{
                   background:
-                    month?.modis == null
+                    value(month?.month ?? "") == null
                       ? "#28343e"
-                      : `rgba(117,197,255,${0.07 + Math.sqrt(month.modis / max) * 0.9})`,
+                      : `rgba(117,197,255,${0.07 + Math.sqrt((value(month?.month ?? "") ?? 0) / max) * 0.9})`,
                 }}
-                aria-label={`${year} month ${i + 1}: ${month?.modis ?? "unavailable"} MODIS detections. Open this month.`}
+                aria-label={`${year} month ${i + 1}: ${value(month?.month ?? "") ?? "unavailable"} estimated VIIRS detections. Open this month.`}
               />
             );
           })}
         </div>
       ))}
       <p className="mission-note">
-        Raw counts reflect both fire activity and observation conditions.
-        Historical calibration is the next scientific milestone.
+        Experimental monthly counts · seasonal scaling. Select a month to
+        compare the estimate with its original MODIS reading.
       </p>
       <button className="mission-text" onClick={() => onOpen()}>
         Explore the full record <ArrowUpRight size={15} />

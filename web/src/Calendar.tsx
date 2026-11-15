@@ -1,9 +1,16 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowDownToLine, ArrowUpRight, Info, ShieldCheck } from "lucide-react";
+import { ArrowDownToLine, ArrowUpRight, Info, Sparkles } from "lucide-react";
 import { calendarColors } from "./calendar-colors";
 import type { CaseStudy, Month } from "./data";
-import { dateLabel, historicalMedian, number } from "./data";
+import { dateLabel, number } from "./data";
+
+import {
+  downloadMonthly,
+  monthlyModels,
+  useMonthlyCalibration,
+  type MonthlyModel,
+} from "./monthly";
 
 const names = [
   "JAN",
@@ -36,34 +43,40 @@ export default function Calendar({
   selectedMonth,
   onMonth,
   onExplore,
-  onExport,
   onMethods,
 }: Props) {
   const [sensor, setSensor] = useState<"modis" | "viirs">("modis");
-  const [harmonized, setHarmonized] = useState(study.harmonized);
+  const [harmonized, setHarmonized] = useState(true);
+  const [model, setModel] = useState<MonthlyModel>("Seasonal scaling");
+  const { data: calibration, failed } = useMonthlyCalibration();
+  const monthly = calibration?.cases[study.id];
+  const months = useMemo(
+    () =>
+      study.months.map((m) => ({
+        ...m,
+        estimate:
+          monthly?.months.find((r) => r.month === m.month)?.estimates[model] ??
+          null,
+      })),
+    [study, monthly, model],
+  );
+  const score = monthly?.scores[model];
   const [tip, setTip] = useState<Month | null>(null);
   const field = harmonized ? "estimate" : sensor;
   const max = useMemo(
     () =>
       Math.max(
         1,
-        ...study.months.flatMap((m) => [
-          m.modis ?? 0,
-          m.viirs ?? 0,
-          m.estimate ?? 0,
-        ]),
+        ...months.flatMap((m) => [m.modis ?? 0, m.viirs ?? 0, m.estimate ?? 0]),
       ),
-    [study],
+    [months],
   );
-  const selected = study.months.find((m) => m.month === selectedMonth);
+  const selected = months.find((m) => m.month === selectedMonth);
   const orderedMonths = [...study.years]
     .reverse()
     .flatMap((y) =>
       names.map((_, m) => `${y}-${String(m + 1).padStart(2, "0")}`),
     );
-  const median = harmonized
-    ? historicalMedian(study.months, selectedMonth, "estimate")
-    : { value: null, n: 0 };
   return (
     <motion.div
       className="calendar-view"
@@ -109,36 +122,65 @@ export default function Calendar({
           </button>
           <button
             className={harmonized ? "selected" : ""}
-            disabled={!study.harmonized}
-            title={
-              study.harmonized
-                ? "Validated reference-sensor estimates"
-                : "Requires verified paired coverage and a passing model benchmark"
-            }
             onClick={() => setHarmonized(true)}
           >
-            Harmonized <ShieldCheck size={13} />
+            Harmonized <Sparkles size={13} />
           </button>
         </div>
-        <div className="sensor-options" aria-label="Calendar sensor">
-          <button
-            className={sensor === "modis" ? "selected" : ""}
-            onClick={() => setSensor("modis")}
-            disabled={harmonized}
-          >
-            <i className="dot aqua" />
-            Aqua MODIS
-          </button>
-          <button
-            className={sensor === "viirs" ? "selected" : ""}
-            onClick={() => setSensor("viirs")}
-            disabled={harmonized}
-          >
-            <i className="dot fire" />
-            S-NPP VIIRS
-          </button>
-        </div>
+        {!harmonized && (
+          <div className="sensor-options" aria-label="Calendar sensor">
+            <button
+              className={sensor === "modis" ? "selected" : ""}
+              onClick={() => setSensor("modis")}
+              disabled={harmonized}
+            >
+              <i className="dot aqua" />
+              Aqua MODIS
+            </button>
+            <button
+              className={sensor === "viirs" ? "selected" : ""}
+              onClick={() => setSensor("viirs")}
+              disabled={harmonized}
+            >
+              <i className="dot fire" />
+              S-NPP VIIRS
+            </button>
+          </div>
+        )}
       </div>
+      {harmonized && (
+        <div className="calendar-calibration-bar">
+          <label>
+            Calibration{" "}
+            <select
+              aria-label="Calendar calibration model"
+              value={model}
+              onChange={(e) => setModel(e.target.value as MonthlyModel)}
+            >
+              {monthlyModels.map((m) => (
+                <option key={m}>{m}</option>
+              ))}
+            </select>
+          </label>
+          <span className="experiment-badge">Experimental estimates</span>
+          {score && (
+            <span>
+              <strong>{number(score.mae)}</strong> average error / month ·{" "}
+              {score.n} withheld months
+            </span>
+          )}
+          <button className="text-button" onClick={onMethods}>
+            Compare model scores <ArrowUpRight size={15} />
+          </button>
+        </div>
+      )}
+      {harmonized && !calibration && (
+        <p role="status">
+          {failed
+            ? "Calibration data could not load. Reload to retry."
+            : "Loading monthly estimates…"}
+        </p>
+      )}
       <div className="calendar-layout">
         <div className="heatmap-panel">
           <div className="heatmap-title">
@@ -150,9 +192,9 @@ export default function Calendar({
             </span>
           </div>
           <p className="calendar-reading-guide">
-            Every cell shows its count. Blue intensity uses a shared logarithmic
-            scale for both sensors. 0 = no reported detections; — = source
-            unavailable.
+            {harmonized
+              ? "Estimated monthly counts on the VIIRS scale, including years before VIIRS. Switch to Observed counts to see the original record."
+              : "Monthly counts reported by the selected satellite. 0 = no detections in the source; — = source unavailable."}
           </p>
           <div
             className="heatmap-scroll"
@@ -186,7 +228,7 @@ export default function Calendar({
                   </span>
                   {names.map((_, m) => {
                     const key = `${y}-${String(m + 1).padStart(2, "0")}`;
-                    const cell = study.months.find((v) => v.month === key)!;
+                    const cell = months.find((v) => v.month === key)!;
                     const n = cell[field];
                     return (
                       <button
@@ -237,7 +279,7 @@ export default function Calendar({
                         onMouseLeave={() => setTip(null)}
                         onFocus={() => setTip(cell)}
                         onBlur={() => setTip(null)}
-                        aria-label={`${names[m]} ${y}: ${n === null ? "data unavailable" : `${n} ${harmonized ? "estimated VIIRS-equivalent hotspots" : "reported detections"}; usable coverage ${cell.coverage}`}`}
+                        aria-label={`${names[m]} ${y}: ${n === null ? "data unavailable" : `${n} ${harmonized ? "estimated VIIRS-equivalent hotspots" : "reported detections"}`}`}
                         aria-selected={selectedMonth === key}
                       >
                         <span>{n === null ? "—" : number(n)}</span>
@@ -297,39 +339,41 @@ export default function Calendar({
               <dt>Analysis area</dt>
               <dd>{study.name} case boundary</dd>
             </div>
-            <div>
-              <dt>Usable coverage</dt>
-              <dd>{selected?.eligible ? "Verified" : "Not yet verified"}</dd>
-            </div>
             {harmonized && (
               <>
                 <div>
-                  <dt>Historical median</dt>
-                  <dd>{number(median.value)}</dd>
+                  <dt>Original MODIS</dt>
+                  <dd>{number(selected?.modis)}</dd>
                 </div>
                 <div>
-                  <dt>Eligible comparison years</dt>
-                  <dd>{median.n}</dd>
-                </div>
-              </>
-            )}
-            {harmonized && (
-              <>
-                <div>
-                  <dt>90% prediction interval</dt>
+                  <dt>Observed VIIRS</dt>
                   <dd>
-                    {selected?.interval
-                      ? selected.interval.map(number).join(" – ")
-                      : "Unreleased"}
+                    {selected?.viirs == null
+                      ? "Before VIIRS"
+                      : number(selected.viirs)}
                   </dd>
                 </div>
+                {selected?.viirs != null && selected.estimate != null && (
+                  <div>
+                    <dt>This month's error</dt>
+                    <dd>
+                      {number(Math.abs(selected.estimate - selected.viirs))}{" "}
+                      detections
+                    </dd>
+                  </div>
+                )}
                 <div>
-                  <dt>Selected approach</dt>
-                  <dd>{selected?.model ?? "Unavailable"}</dd>
+                  <dt>Model</dt>
+                  <dd>{model}</dd>
                 </div>
                 <div>
-                  <dt>Observation effort</dt>
-                  <dd>{selected?.referenceEffortId ?? "Unavailable"}</dd>
+                  <dt>Prediction</dt>
+                  <dd>
+                    {monthly?.months.find((r) => r.month === selectedMonth)
+                      ?.evaluation === "withheld-year"
+                      ? "Year excluded from training"
+                      : "Historical estimate"}
+                  </dd>
                 </div>
               </>
             )}
@@ -337,52 +381,25 @@ export default function Calendar({
           <button className="primary-button" onClick={onExplore}>
             Investigate this month <ArrowUpRight size={16} />
           </button>
-          <div className="export-row">
-            <button
-              disabled={!selected?.eligible}
-              onClick={() => onExport("csv")}
-            >
-              <ArrowDownToLine size={14} />
-              CSV
-            </button>
-            <button
-              disabled={!selected?.eligible}
-              onClick={() => onExport("pdf")}
-            >
-              <ArrowDownToLine size={14} />
-              PDF brief
-            </button>
-          </div>
-          <p className="micro-copy">
-            Exports unlock for supported historical comparisons.
-          </p>
+          {calibration && (
+            <div className="export-row">
+              <button
+                onClick={() => downloadMonthly(study, calibration, model)}
+              >
+                <ArrowDownToLine size={14} /> Download monthly CSV
+              </button>
+            </div>
+          )}
           <div className="calendar-note">
             <Info size={16} />
             <p>
-              {selected?.eligible
-                ? "Comparable observation effort verified."
-                : "Counts describe what the satellite reported. Cloud and pass coverage are unverified; an empty month does not establish no fire."}
+              {harmonized
+                ? "Estimates of reported counts, not fire locations. Cloud and overpass effort are not normalized."
+                : "Clouds and satellite passes affect reported counts. Zero detections does not establish no fire."}
             </p>
           </div>
         </aside>
       </div>
-      {!study.harmonized && (
-        <div className="evidence-strip">
-          <div className="evidence-icon">
-            <ShieldCheck size={19} />
-          </div>
-          <div>
-            <strong>The next step is a comparable record.</strong>
-            <p>
-              Training is separate from release. Harmonized values appear only
-              when paired coverage and independent validation support them.
-            </p>
-          </div>
-          <button className="text-button" onClick={onMethods}>
-            View the evidence <ArrowUpRight size={15} />
-          </button>
-        </div>
-      )}
     </motion.div>
   );
 }

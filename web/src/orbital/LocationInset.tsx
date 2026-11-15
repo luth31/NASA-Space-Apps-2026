@@ -48,7 +48,7 @@ export default function LocationInset({
   overviewLabel?: string;
 }) {
   const clipId = useId();
-  const drawing = useMemo(() => {
+  const context = useMemo(() => {
     if (!country.geometry) return null;
     const projection = geoMercator()
       .rotate([-country.point[0], 0])
@@ -57,14 +57,13 @@ export default function LocationInset({
           [12, 10],
           [208, 132],
         ],
-        {
-          type: "GeometryCollection",
-          geometries: [
-            country.geometry,
-            { type: "MultiPoint", coordinates: viewport.corners },
-          ],
-        },
+        country.geometry,
       );
+    return { projection, path: geoPath(projection)(country.geometry) };
+  }, [country]);
+  const drawing = useMemo(() => {
+    if (!context || !country.geometry) return null;
+    const { projection, path } = context;
     const selected =
       point && geoContains(country.geometry, [point.lon, point.lat])
         ? point
@@ -75,7 +74,7 @@ export default function LocationInset({
         p[1],
       ]);
     return {
-      path: geoPath(projection)(country.geometry),
+      path,
       viewport: viewport.corners
         .map(project)
         .filter(Boolean)
@@ -83,7 +82,7 @@ export default function LocationInset({
         .join(" "),
       point: selected ? project([selected.lon, selected.lat]) : null,
     };
-  }, [country, point, viewport]);
+  }, [context, country, point, viewport]);
   if (!drawing) return null;
   return (
     <button

@@ -98,3 +98,30 @@ The real cached-tab upgrade now loads `rgb(11, 19, 30)` and the calibration expe
 
 A second browser test changed the served build with two upgraded tabs left open and no manual update or reload calls: both received the new build automatically in 17.3 seconds. The preview process on port 4188 was explicitly restarted, and both local and private preview endpoints returned the current build. All 22 frontend tests pass.
 The restarted localhost preview was also tested with networking disabled: reloading the app, opening Models & validation, and opening the 276-cell Greek calendar all retained the new blue UI and saved experiment data.
+
+
+## Interactive harmonization review — 15 November 2026
+
+The dashboard now opens on a usable MODIS → model → VIIRS experiment. Drag the calibration slider or use Apply calibration, reveal the real VIIRS reading, switch month/region/model, and jump to a pre-VIIRS month. Counts are illustrated with nonspatial tiles; they are never presented as reconstructed fire locations. Explore has a direct route to this comparison alongside original global observations.
+
+### Requirement audit
+
+- **Model borders:** Chrome computed styles report 1 px on all four sides of the summary, scorecard, both detail sections, model table, matched-pass benchmark and coverage audit.
+- **Remove empty status text:** removed the released-accuracy placeholder, publishing checklist, repeated unavailable labels, and redundant pass-level experiment. Monthly regional MAE and unchanged-MODIS comparison are the primary evidence. Technical scope lives with the scores and in expandable protocol details.
+- **Harmonized calendar:** enabled by default, with seasonal scaling and LightGBM, original readings, individual-month error when VIIRS exists, prediction provenance and a downloadable experimental monthly CSV. All 276 Greek months and 12 Chaco months have saved estimates. Selecting historical October 2008 in the demo opens the same 348.8 estimate in the calendar; changing to LightGBM gives 400.5.
+- **Locator jitter and lag:** the old browser reproduction showed Germany → Greece during a flight to Evros and 100–120 ms between rectangle updates. Country resolution now happens when the camera settles; its projection is fitted to the country only. Three rapid zooms retained Greece and one unchanged country SVG path, with 52 rectangle updates, median 16.7 ms and p90 18.2 ms. A Greece → Chaco flight showed only Greece → Argentina. The historical SVG map uses the same immediate transform for its image and viewport, avoiding its former independent 800 ms interpolation.
+- **Dotted Evros rectangle:** removed the analysis-boundary layer from the continuous map and the rectangular overlay from historical scenes. Analysis bounds still constrain the underlying observations.
+- **Real model demonstration:** Evros August 2023 uses MODIS 625 → seasonal estimate 3,359.9 → VIIRS 4,175; error falls from 3,550 to 815.1 detections. Evia August 2021 explicitly shows a worse seasonal prediction. Neither example is selected by model improvement: defaults follow the case event date. Every month, including zero-count months, is selectable.
+- **Phone and keyboard:** Chrome DevTools MCP at 390 × 844 with touch and reduced motion: demo, model view and calendar have 390 px document width; the 848 px calendar grid scrolls within 350 px. The range input reaches 100% using End.
+
+### Monthly model evidence
+
+`pipeline.monthly` fits two distinct monthly-count models in 0.263 seconds on CPU using 324 region-months. It withholds all regions' records from one entire year, repeats over 13 years, and saves predictions plus native final models. Pre-2013 values use the full overlap fit; 2012 is excluded from fitting/scoring because the VIIRS year is partial. Input features exclude VIIRS. Saved predictions reproduce the displayed scores, and exports preserve null historical VIIRS readings and experimental status.
+
+The monthly product predicts archive counts without cloud/overpass normalization. It does not claim a historical/global accuracy percentage, reconstruct fire locations, or change the separate coverage-normalized release policy. Gran Chaco has one year, so its year holdout also withholds the whole region. Full scope and regional errors are in README.
+
+### Verification
+
+Chrome DevTools MCP exercised the complete calibration/reveal/historical/calendar flow, model and case changes, all four border edges, rapid zooms, intercontinental flight, mobile layout and keyboard interaction. Automated checks: 21 frontend tests and 14 pipeline tests, TypeScript, geography consistency and production build. Existing MapLibre chunk-size advisory remains.
+
+Production verification used the final `pyrobridge-b6084a9de26051a9` offline cache (412 files including its manifest; 30.8 MB). After a normal offline reload, the calibration reveal retained the 815.1 error and all three cases remained populated with both monthly models. The private preview showed the same result. Port 4188 was explicitly restarted; production Chrome reported no console warnings/errors. Phone checks above were completed before the instruction to skip further phone tests; no additional phone checks were run afterward.

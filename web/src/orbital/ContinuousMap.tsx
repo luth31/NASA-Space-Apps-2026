@@ -87,10 +87,7 @@ export default function ContinuousMap(props: Props) {
   const latest = useRef(props);
   latest.current = props;
   const [viewport, setViewport] = useState<Viewport | null>(null);
-  const insetCountry = useMemo(
-    () => (viewport ? viewportCountry(props.countries, viewport) : null),
-    [props.countries, viewport],
-  );
+  const [insetCountry, setInsetCountry] = useState<Area | null>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [layerBusy, setLayerBusy] = useState(true);
@@ -202,11 +199,10 @@ export default function ContinuousMap(props: Props) {
       return;
     }
     mapRef.current = map;
-    let lastViewport = 0;
     const updateViewport = () => {
       const { clientWidth: w, clientHeight: h } = map.getContainer();
       const center = map.getCenter();
-      setViewport({
+      const next: Viewport = {
         zoom: map.getZoom(),
         center: [center.lng, center.lat],
         corners: [
@@ -218,15 +214,19 @@ export default function ContinuousMap(props: Props) {
           const p = map.unproject([x, y]);
           return [p.lng, p.lat];
         }),
-      });
+      };
+      setViewport(next);
+      return next;
     };
-    map.on("move", () => {
-      if (performance.now() - lastViewport < 100) return;
-      lastViewport = performance.now();
-      updateViewport();
-    });
-    map.on("moveend", updateViewport);
-    map.on("load", updateViewport);
+    const settleContext = () => {
+      const next = updateViewport();
+      setInsetCountry(viewportCountry(latest.current.countries, next));
+    };
+    // MapLibre emits move with its render frames. Keep the rectangle in sync;
+    // resolve the country only when the camera settles, never along a flight.
+    map.on("move", updateViewport);
+    map.on("moveend", settleContext);
+    map.on("load", settleContext);
     map.on("sourcedata", (event) => {
       if (event.sourceId === "observations" && event.isSourceLoaded)
         setLayerBusy(false);
@@ -363,21 +363,6 @@ export default function ContinuousMap(props: Props) {
           "line-color": "#c8dfe1",
           "line-opacity": 0.35,
           "line-width": 1,
-        },
-      });
-      map.addSource("analysis", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
-      });
-      map.addLayer({
-        id: "analysis",
-        type: "line",
-        source: "analysis",
-        paint: {
-          "line-color": "#e8d9bb",
-          "line-width": 1,
-          "line-opacity": 0.65,
-          "line-dasharray": [4, 3],
         },
       });
       setReady(true);
@@ -611,30 +596,6 @@ export default function ContinuousMap(props: Props) {
       );
     }
     setImageryError(false);
-    const bbox = props.study?.bbox;
-    (map.getSource("analysis") as GeoJSONSource).setData({
-      type: "FeatureCollection",
-      features: bbox
-        ? [
-            {
-              type: "Feature",
-              properties: {},
-              geometry: {
-                type: "Polygon",
-                coordinates: [
-                  [
-                    [bbox[0], bbox[1]],
-                    [bbox[2], bbox[1]],
-                    [bbox[2], bbox[3]],
-                    [bbox[0], bbox[3]],
-                    [bbox[0], bbox[1]],
-                  ],
-                ],
-              },
-            },
-          ]
-        : [],
-    });
   }, [ready, props.study]);
 
   const area = hover?.area;

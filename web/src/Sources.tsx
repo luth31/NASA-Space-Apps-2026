@@ -126,6 +126,19 @@ export default function Sources({ manifest }: { manifest: Manifest }) {
             </dd>
           </div>
           <div>
+            <dt>Monthly estimates</dt>
+            <dd>
+              Seasonal scaling and LightGBM predict monthly VIIRS counts from
+              MODIS, season and location. Each overlap year is excluded from its
+              own prediction; older years use the full fit.{" "}
+              <a href="/data/monthly-harmonization.json" download>
+                Download predictions and year-fold scores
+              </a>
+              . Estimates are experimental archive counts, without cloud or
+              overpass normalization.
+            </dd>
+          </div>
+          <div>
             <dt>History</dt>
             <dd>
               Collections and processing versions remain visible. Older country

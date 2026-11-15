@@ -2,9 +2,9 @@
 
 A NASA Space Apps fire observatory with a separate, reproducible MODIS-to-VIIRS modeling pipeline.
 
-The dashboard introduces the sensor difference, overlap-based calibration, held-out evidence, and intended historical calendar. One persistent MapLibre globe/map supports Earth → region → area → observation, with smooth camera flights, place labels, country locators and original satellite metadata. Visible navigation opens global exploration, three dated investigations, the raw-count calendar, model diagnostics, and source manifests. A pausable introduction follows the same ordinary controls.
+The dashboard opens with an interactive MODIS → estimated VIIRS → observed VIIRS comparison. Apply calibration, reveal the withheld reading, switch landscape or model, and jump back before VIIRS. The calendar shows observed counts and experimental monthly estimates. Global exploration and dated investigations retain the original satellite locations; animated count tiles are explicitly nonspatial illustrations.
 
-**Scientific release status:** observations are available; harmonized historical estimates and investigation exports are gated off. Ten candidate satellite-pass pairs produced 48 eligible cell-pass examples across Evia and Evros. That selected sample cannot validate a monthly historical calendar. The app makes this limitation explicit and never publishes a generic accuracy percentage.
+**Scientific scope:** the harmonized calendar is an experimental transfer of monthly reported counts, trained separately from the matched-pass experiment. It includes 324 overlapping region-months, 13 whole-year holdouts, two saved models, and measured regional errors. Cloud and overpass effort are not normalized; estimates do not reconstruct missing fire locations. The existing gate for a validated, coverage-normalized monthly product remains unchanged. There is no generic accuracy percentage.
 
 ## Run the dashboard
 
@@ -68,7 +68,7 @@ uv run python -m pipeline.run
 
 The login command is for a human terminal. Credentials stay in the user's local Earthdata configuration, outside this repository. Never put a password or token in project files, chat, frontend environment variables, or shared developer fixtures.
 
-The batch verifies pinned checksums, builds border-complete point partitions, acquires the 40 declared protected swath files, computes common usable coverage, fits the candidate models, and applies the release gate. The latest measured cached run took **40.7 seconds**, with **2.39 GB peak child-process RSS**, on the development machine. Candidate fitting and evaluation took **0.137 seconds** on CPU. These are cached-run measurements; the expanded 356 MB public archive initially fetched and processed in 76 seconds. No GPU is required for this dataset.
+The batch verifies pinned checksums, builds border-complete point partitions, acquires the 40 declared protected swath files, computes common usable coverage, fits the candidate models, applies the coverage-normalized release gate, and builds the separate experimental monthly calibration. Before the additional monthly stage, the measured cached run took **40.7 seconds**, with **2.39 GB peak child-process RSS**, on the development machine. Candidate fitting and evaluation took **0.137 seconds** on CPU. These are cached-run measurements; the expanded 356 MB public archive initially fetched and processed in 76 seconds. No GPU is required for this dataset.
 
 Individual stages:
 
@@ -78,6 +78,7 @@ uv run python -m pipeline.acquire
 uv run python -m pipeline.coverage
 uv run python -m pipeline.train
 uv run python -m pipeline.release
+uv run python -m pipeline.monthly
 ```
 
 `pipeline.run --refresh` deliberately updates the public-source lock and creates a new observation snapshot. Protected standard swaths remain pinned by URL and SHA256. After updating the global snapshot, regenerate atlas assignments before rebuilding the app:
@@ -120,7 +121,23 @@ Use Chrome DevTools MCP for browser interactions and app testing, as requested f
 - `PLAN.md` / `RESEARCH.md`: agreed product direction and primary resources.
 - `DEVELOPMENT.md`: team handoff, ownership boundaries, and next scientific milestone.
 
-## Interpreting the current benchmark
+## Experimental monthly calendar
+
+Rebuild only this artifact with `uv run python -m pipeline.monthly`; the saved monthly archive is sufficient and no new NASA downloads are required. It fits seasonal scaling and LightGBM in about 0.26 seconds on CPU. Native fitted models and the evaluation artifact are saved in `models/monthly/`; `web/public/data/monthly-harmonization.json` is the app input and is included in the offline cache.
+
+The fixed evaluation protocol excludes 2012 (a partial VIIRS year), withholds each entire year across all regions, and uses only MODIS, season and location as predictors. Every overlapping calendar value from 2013 onward is a held-out-year prediction. Earlier estimates come from the final fit on all overlapping years. This evaluates within-archive year transfer, not future operational or pre-VIIRS accuracy. Parameters were fixed before generating folds; these exploratory folds are not a locked prospective test.
+
+| Landscape | Withheld months | Original MODIS MAE | Seasonal scaling MAE | LightGBM MAE |
+| --- | ---: | ---: | ---: | ---: |
+| Evros | 156 | 50.78 | 14.50 | 156.26 |
+| Evia | 156 | 49.12 | 53.70 | 115.96 |
+| Gran Chaco | 12 | 16,004.00 | 10,649.32 | 17,531.74 |
+
+Errors are detections per region-month. Gran Chaco has only 2020 in this bundle, so excluding that year also excludes its entire region. Its transfer is much less supported. Seasonal scaling is the transparent default; both approaches and the original MODIS baseline remain visible, including where calibration is worse. The demo is initialized to the case's dated event month, not selected by model improvement. All months, including zeros, are selectable.
+
+Calendar CSVs include original readings, estimates, model, experimental status, withheld-year versus historical-fit provenance, local MAE, coverage caveat, and input hash. A null VIIRS value stays null; historical estimates never become observations.
+
+## Separate matched-pass benchmark
 
 The reported unit is **hotspot pixels per 0.25-degree cell and paired pass**, not a complete region-month. Geographic folds withhold each whole case region. The later-time check is exploratory. There are 42 verified zero target rows and six positive rows; the sample is small and selected.
 
@@ -139,4 +156,4 @@ The pinned global snapshot contains 74,304 NOAA-20 VIIRS detections and 7,031 Aq
 
 A reported hotspot is a detected thermal pixel. It is not necessarily a separate fire, ignition location, or perimeter. Empty point lists do not establish observed fire-free conditions. Original confidence, footprint, source type, processing version, and FRP units remain visible. Dated background scenes are daily composites, not exact-time pass imagery.
 
-CSV and PDF code paths require a supported monthly comparison. CSV uses a rectangular schema with `record_type=calendar` or `observation`. PDF briefs include the map, dates, uncertainty when validated, method, and provenance. Test fixtures exercise these paths; no synthetic model values are shipped in the app.
+The older validated investigation CSV/PDF code paths still require a supported coverage-normalized monthly comparison. The separate experimental calendar CSV above is available now. CSV uses a rectangular schema with `record_type=calendar` or `observation`. PDF briefs include the map, dates, uncertainty when validated, method, and provenance. Test fixtures exercise these paths; no synthetic model values are shipped in the app.

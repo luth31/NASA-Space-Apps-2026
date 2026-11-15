@@ -675,3 +675,449 @@ button {
     bottom: 60px;
   }
 }
+
+/* Every scientific section has a complete, consistent frame. */
+.methods-view
+  :is(
+    .method-summary,
+    .model-table,
+    .benchmark-panel,
+    .coverage-audit,
+    .holdout-lab,
+    .monthly-scorecard,
+    .method-details
+  ) {
+  border: 1px solid #34516e;
+  border-radius: 14px;
+  background: #101e2d;
+  overflow: hidden;
+}
+.methods-view
+  :is(.benchmark-panel, .coverage-audit, .monthly-scorecard, .method-details) {
+  padding: 26px;
+  margin: 26px 0;
+}
+.methods-view .model-table {
+  margin: 22px 0;
+}
+.method-details summary {
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text);
+  padding: 4px 0;
+}
+.method-details p {
+  color: var(--muted);
+  margin-top: 18px;
+  line-height: 1.7;
+}
+.methods-view .model-table-row {
+  padding: 18px;
+  gap: 18px;
+}
+.monthly-summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 28px;
+  gap: 24px;
+  align-items: center;
+}
+.monthly-summary h2 {
+  margin: 12px 0;
+  font-weight: 400;
+  font-size: 28px;
+}
+.monthly-summary p {
+  color: var(--muted);
+  max-width: 64ch;
+}
+.monthly-summary .method-numbers {
+  padding: 0;
+  border: 0;
+}
+.scorecard-scroll {
+  overflow-x: auto;
+  margin-top: 22px;
+}
+.monthly-scorecard table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 16px;
+}
+.monthly-scorecard :is(th, td) {
+  padding: 18px 14px;
+  border-bottom: 1px solid #30465e;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.monthly-scorecard thead {
+  color: var(--muted);
+}
+.monthly-scorecard td {
+  font-family: "IBM Plex Mono", monospace;
+}
+.monthly-scorecard td:nth-child(4) {
+  color: #c4a4ff;
+}
+.method-footnote {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 14px !important;
+}
+.calibration-demo {
+  background:
+    radial-gradient(ellipse at 70% 20%, #27445a88, transparent 65%), #0d1e30f5;
+  border: 1px solid #466681;
+  border-radius: 18px;
+  padding: 30px;
+  color: #e7eff7;
+  box-shadow: 0 24px 80px #0004;
+}
+.calibration-demo h2 {
+  font-size: clamp(26px, 3vw, 40px);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -1px;
+  margin: 12px 0;
+}
+.calibration-demo header p {
+  color: #b7c7d8;
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 60ch;
+}
+.demo-selectors {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1.2fr;
+  gap: 14px;
+  margin: 24px 0;
+}
+.demo-selectors label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: #b7c7d8;
+  font-size: 14px;
+}
+.demo-selectors select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #496681;
+  border-radius: 7px;
+  padding: 10px;
+  background-color: #172e46;
+  color: #e7eff7;
+  font-size: 14px;
+}
+.demo-counts {
+  display: grid;
+  grid-template-columns: 1fr 20px 1.2fr 20px 1fr;
+  align-items: center;
+  gap: 14px;
+  margin: 24px 0;
+}
+.demo-counts > div {
+  min-width: 0;
+}
+.demo-counts strong {
+  display: block;
+  font-size: clamp(27px, 3vw, 48px);
+  font-weight: 400;
+  line-height: 1.2;
+  margin: 10px 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -1px;
+}
+.demo-counts span {
+  font-size: 14px;
+}
+.demo-counts small {
+  display: block;
+  color: #a9bbcd;
+  font-size: 13px;
+}
+.demo-counts .modis {
+  color: #f0b581;
+}
+.demo-counts .estimate {
+  color: #c4a4ff;
+}
+.demo-counts .viirs {
+  color: #75c5ff;
+}
+.demo-counts > svg {
+  color: #647d95;
+  width: 18px;
+}
+.demo-visual {
+  border: 1px solid #334d67;
+  border-radius: 12px;
+  padding: 18px 18px 10px;
+  background: linear-gradient(160deg, #071524cc, #152c4488);
+  overflow: hidden;
+}
+.demo-grid-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font:
+    12px "IBM Plex Mono",
+    monospace;
+  color: var(--demo-color);
+}
+.demo-grid-title span:last-child {
+  color: #9eb4ca;
+}
+.demo-visual svg {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  overflow: visible;
+}
+.demo-visual rect {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.demo-visual-note {
+  display: block;
+  font-size: 12px;
+  color: #a9bbcd;
+  text-align: right;
+}
+.calibration-slider {
+  display: block;
+  margin: 24px 0 18px;
+}
+.calibration-slider > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #b7c7d8;
+  font-size: 13px;
+  gap: 12px;
+}
+.calibration-slider strong {
+  color: #c4a4ff;
+  font-weight: 500;
+}
+.calibration-slider input {
+  width: 100%;
+  margin: 16px 0 0;
+  accent-color: #c4a4ff;
+  cursor: ew-resize;
+  min-height: 32px;
+}
+.demo-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.demo-actions .primary-button {
+  background: #c4a4ff;
+  color: #171326;
+  border: 0;
+}
+.demo-actions .text-button {
+  margin: 0;
+  color: #9cd5ff;
+}
+.demo-reset {
+  background: #22384f;
+  color: #b5c8d9;
+  border: 1px solid #4b6075;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+}
+.demo-result {
+  margin-top: 20px;
+  padding: 16px 18px;
+  background: #1c3549;
+  border: 1px solid #5a7e97;
+  border-radius: 8px;
+  display: grid;
+  gap: 7px;
+}
+.demo-result strong {
+  font-weight: 500;
+  font-size: 20px;
+}
+.demo-result span {
+  font-size: 14px;
+  color: #bbccdc;
+  line-height: 1.5;
+}
+.calibration-demo footer {
+  border-top: 1px solid #30475e;
+  padding-top: 18px;
+  margin-top: 24px;
+  display: grid;
+  gap: 8px;
+  color: #a9bbcd;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.calibration-demo footer strong {
+  color: #e7eff7;
+}
+.demo-time-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 24px;
+  margin-top: 18px;
+}
+.demo-time-actions .text-button {
+  color: #bfa6ee;
+  font-size: 14px;
+}
+.mission-bridge-panel {
+  margin: 135px 26px 250px;
+}
+.explore-calibration-link {
+  margin-bottom: 26px;
+}
+.calendar-calibration-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px 24px;
+  border: 1px solid #3b526d;
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 24px;
+  background: #112237;
+  font-size: 14px;
+}
+.calendar-calibration-bar label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.calendar-calibration-bar strong {
+  color: #c4a4ff;
+  font-size: 20px;
+}
+.experiment-badge {
+  border: 1px solid #776198;
+  background: #312944;
+  color: #d6bfff;
+  padding: 5px 9px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+.calendar-calibration-bar .text-button {
+  margin-left: auto;
+}
+.methods-view .calibration-demo {
+  margin: 30px 0;
+}
+.mission-location-inset svg,
+.mission-location-inset polygon {
+  transition: none;
+}
+@media (max-width: 760px) {
+  .calibration-demo {
+    padding: 20px 16px;
+  }
+  .demo-selectors {
+    grid-template-columns: 1fr 1fr;
+  }
+  .demo-selectors label:last-child {
+    grid-column: 1 / -1;
+  }
+  .demo-counts {
+    grid-template-columns: 1fr 10px 1fr 10px 1fr;
+    gap: 6px;
+  }
+  .demo-counts strong {
+    font-size: 27px;
+  }
+  .demo-counts span,
+  .demo-counts small {
+    font-size: 12px;
+  }
+  .demo-counts > svg {
+    width: 10px;
+  }
+  .demo-visual {
+    padding: 12px 8px 10px;
+  }
+  .demo-grid-title {
+    font-size: 10px;
+  }
+  .demo-visual-note {
+    font-size: 10px;
+  }
+  .calibration-slider > span {
+    font-size: 11px;
+    gap: 6px;
+  }
+  .demo-actions {
+    gap: 14px;
+  }
+  .demo-actions .primary-button,
+  .demo-actions .text-button {
+    font-size: 13px;
+  }
+  .demo-reset {
+    width: 32px;
+    height: 32px;
+  }
+  .mission-bridge-panel {
+    margin: 130px 12px 210px;
+  }
+  .monthly-summary {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .methods-view
+    :is(
+      .monthly-scorecard,
+      .method-details,
+      .benchmark-panel,
+      .coverage-audit
+    ) {
+    padding: 20px 16px;
+  }
+  .calendar-calibration-bar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .calendar-calibration-bar .text-button {
+    margin-left: 0;
+  }
+}
+.demo-landscape {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.22;
+}
+.mission-learning-scene .mission-bridge-panel {
+  margin: 24px 26px 52px;
+}
+.mission-learning-scene :is(.mission-location-bar, .mission-map-caption) {
+  display: none;
+}
+.demo-visual svg {
+  height: 170px;
+  margin-top: 10px;
+}
+.mission-learning-scene .mission-imagery-note {
+  bottom: 12px;
+}
+@media (max-width: 760px) {
+  .mission-learning-scene .mission-bridge-panel {
+    margin: 16px 12px 62px;
+  }
+  .demo-visual svg {
+    height: auto;
+  }
+}
