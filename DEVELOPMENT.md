@@ -1,5 +1,7 @@
 # First-version handoff
 
+The current integrated delivery is on `overnight/integration`; see [MORNING_HANDOFF.md](MORNING_HANDOFF.md) for final startup steps, assets, local commit history and verification. The overnight scope now includes Explore's unfolding atlas and Report together. Earlier Report-only descriptions below refer to their original implementation stage; the scientific pipeline and published data remain unchanged.
+
 ## Stable boundary for parallel development
 
 The frontend reads generated JSON and local imagery. It never authenticates to Earthdata or trains a model. The scientific pipeline writes those artifacts independently. Start frontend work with the included bundle; a complete raw-data download is unnecessary.
@@ -58,7 +60,7 @@ The ribbon uses a bounded monotone cubic visual guide through period totals. Its
 
 `pattern-data.ts` computes recurrence and same-coverage satellite ratios; `PatternViews.tsx` renders the within-year share heat field, shared-scale satellite profiles, and curated reading cards. The recurring view uses a fixed 0–100% share scale. Satellite ratios are suppressed when source-period coverage differs or the MODIS baseline is zero. Source counts remain available for interpreting patterns.
 
-Stories & research supplies region/time-matched NASA and Copernicus reporting, the Schroeder et al. (2014) VIIRS algorithm paper, and NASA product documentation. The primary-source links were verified on 2026-11-15. This is curated context, not a live feed or automatic incident linkage. Existing local satellite imagery retains its credited acquisition date. Unmatched selections show general measurement research and an explicit absence of curated reporting. Sources and models remain observations-only; no release gates, datasets, map, or Explore files are changed.
+Stories & research supplies region/time-matched NASA and Copernicus reporting, the Schroeder et al. (2014) VIIRS algorithm paper, and NASA product documentation. The primary-source links were verified on 2026-11-15. This is curated context, not a live feed or automatic incident linkage. Existing local satellite imagery retains its credited acquisition date. Unmatched selections show general measurement research and an explicit absence of curated reporting. Sources and models remain observations-only; release gates and published datasets are unchanged.
 
 ### A Year in Fire
 
@@ -68,7 +70,7 @@ The default Report tab (`?tab=report`, or `?tab=report&concept=journey`) is a sc
 
 The Where panel ranks available study-area counts through the supported hierarchy. Unlike the older playground, geography changes preserve the exact selected date even when the destination has no records; the report offers an explicit action to visit an available year instead of silently changing time. Loading and unavailable data use a dash, never a temporary zero. Satellite controls, coverage, raw comparisons, uncertainty, and metric definitions live in the details panel. The report remains observations-only.
 
-Run `cd web && npm test` and `npm run build`. Browser acceptance includes year → month → day → hour and return, source observations, geography retention and missing records, Across years and year selection, zero counts, both satellite counts, reset, keyboard arrows/Enter/Escape and focus restoration, pause/reduced motion, and desktop/mobile overflow. The quiet Prototype gallery link preserves all nine old concept URLs and local shortlists; its footer links back to the new report. No map, Explore, calendar, shared observation types, dependencies, or generated source data are changed.
+Run `cd web && npm test` and `npm run build`. Browser acceptance includes year → month → day → hour and return, source observations, geography retention and missing records, Across years and year selection, zero counts, both satellite counts, reset, keyboard arrows/Enter/Escape and focus restoration, pause/reduced motion, and desktop/mobile overflow. The quiet Playground link preserves all nine old concept URLs and local shortlists; its footer links back to the new report. The integrated atlas and navigation are described in `docs/explore-design.md`; completed checks and limits are in `docs/verification.md`.
 
 ### Report concept previews
 

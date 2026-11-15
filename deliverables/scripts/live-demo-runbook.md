@@ -17,7 +17,7 @@ This is the operator script. The lead's observed rehearsal results belong in `do
 | Step | Operator action | Expected evidence / words to say | Fallback |
 | --- | --- | --- | --- |
 | 1 | Load `/?tab=explore` with no case parameters. | Global opening; name the displayed snapshot dates. “This is a separate recent observation snapshot.” | Globe capture, once verified. |
-| 2 | Activate the atlas/unfold control; select Europe/Greece through the visible hierarchy. | Geographic anchors and broader context remain clear. “The map opens into places we can investigate.” | Atlas capture. A still does not prove motion; call it an atlas view. |
+| 2 | Click **Unfold the Earth**, then **Europe**. In **Country**, choose **Greece**. Optionally select **39.25° / 22.25° ·24**, then its first observation. Use **Close observation details**, then **Zoom atlas out** to return to Greece. | Globe→World atlas→Europe→Greece. Country86, sector24; first record39.118°N22.382°E,13Nov2026 12:14UTC,5.6MW. “The map opens into places we can investigate.” | `explore-atlas.png` and `explore-greece.png`. A still does not prove motion; call it an atlas view. |
 | 3 | Open the Evros study; if needed load `/?tab=explore&case=evros&month=2023-08&sensor=all`. Activate sensor comparison. | Dated regional scene and separate Aqua/S-NPP records. “Different sensors produce different observations.” | `regional-comparison.png`. |
 | 4 | For the headline annual finding, load `/?tab=report` without case/month parameters. Select/reset to Greece study areas, VIIRS, 2023 if required. | 4,685 annual detections and August 4,178 / 89%. State “two Greek study rectangles,” not a national total. | `report-overview.png`. |
 | 5 | Click August and press Enter; click 22 and Enter; click 00 and Enter. Use Zoom buttons if the visual focus is elsewhere. | Month → day → hour: 4,178 → 1,938 → 1,009. “These are acquisition hours, not ignition times.” | Remain at annual finding; the short pitch does not need every level. |
@@ -25,7 +25,7 @@ This is the operator script. The lead's observed rehearsal results belong in `do
 | 7 | Open The science / `/?tab=methods`. | 48 sampled cell-passes, seasonal baseline best, monthly release closed. “The next test is independent monthly validation.” | `science-status.png` or deck slide 5. |
 | 8 | Return to the deck's final slide. | “Choose a place. Follow a season. See what the satellites actually recorded.” | Finish directly from PDF. |
 
-Step 2's exact atlas labels must be reconciled with the integrated UI after the atlas agent's final commit. This runbook deliberately does not invent a verified button label before that inspection. The lead should replace this sentence with its observed labels and record the tested sequence before final handoff.
+The exact labels and Greece→sector→observation route above were exercised in native Firefox on 15 November 2026. Report drilldown, context return, comparison, reading, calendar and Science controls were also exercised; see `docs/verification.md`. This is a functional rehearsal, not a timed spoken performance. For the short live pitch, omit the optional sector detour and Across years if needed.
 
 ## If something fails
 

@@ -2,7 +2,9 @@
 
 A NASA Space Apps fire observatory with a separate, reproducible MODIS-to-VIIRS modeling pipeline.
 
-The first version includes a 3D global hotspot globe, three dated investigations, a satellite comparison slider, observation dossiers, time playback, monthly raw-count calendars, a guided interactive tour, measured model diagnostics, source manifests, and an offline rehearsal bundle.
+The integrated version includes a globe that unfolds into a country atlas, analytical sectors and original detections; three dated investigations; sensor comparison; a temporal Report with concentration and recurring timing; monthly raw-count calendars; measured model diagnostics; source manifests; and an offline rehearsal bundle.
+
+**Overnight delivery:** branch `overnight/integration`. Start with [MORNING_HANDOFF.md](MORNING_HANDOFF.md) for the running previews, seven-slide deck/PDF, 29-second demo package, pitches, brand choices, exact runbook and verification limits. PyroBridge remains provisional.
 
 **Scientific release status:** observations are available; harmonized historical estimates and investigation exports are gated off. Ten candidate satellite-pass pairs produced 48 eligible cell-pass examples across Evia and Evros. That selected sample cannot validate a monthly historical calendar. The app makes this limitation explicit and never publishes a generic accuracy percentage.
 
@@ -60,7 +62,7 @@ npm test
 npm run build
 ```
 
-Use Chrome DevTools MCP for browser interactions and app testing, as requested for this workspace. Development builds do not install a service worker. Production builds do.
+Use supported browser/computer tools for app testing. The Chrome plugin had no connected browser during this run; native Firefox CUA provided the recorded browser checks. Development builds do not install a service worker. Production builds do. Readiness requires both the app-build identity and data-bundle version; use **Update and reload** when a newer installed build is offered.
 
 ## Layout
 

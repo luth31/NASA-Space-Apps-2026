@@ -4,13 +4,13 @@ PyroBridge is a NASA Space Apps 2026 fire observatory addressing the harmonizati
 
 The current v0.1 publishes real satellite observations and exploratory model diagnostics. Historical harmonized estimates and investigation exports remain disabled because monthly validation is incomplete. Preserve that distinction in product copy, visualizations, demos, and future development.
 
-Project snapshot: November 15, 2026. Repository: `NASA-Space-Apps-2026`. The working branch at the time of writing is `reports`.
+Project snapshot: November 15, 2026. Repository: `NASA-Space-Apps-2026`. Integrated working branch: `overnight/integration`; the original `reports` branch and a recoverable baseline are preserved. [MORNING_HANDOFF.md](MORNING_HANDOFF.md) records the delivered app, presentation assets, checks, preview URLs and remaining user decisions.
 
 ## Product purpose and user experience
 
 MODIS and VIIRS observe thermal activity with different detection characteristics and observation opportunities. Their raw counts cannot establish a continuous, comparable historical series by themselves. PyroBridge aims to estimate activity on a declared VIIRS-equivalent scale using historically available Aqua MODIS inputs, wherever independent validation supports that conversion.
 
-The core experience connects a global view to a local investigation: explore a 3D hotspot globe, descend into a dated case scene, compare the satellites, inspect individual observations, and examine the longer calendar record. The interface includes time playback, a guided tour, methods, source attribution, and an interactive Report section. Motion supports exploration and must respect reduced-motion preferences.
+The core experience connects geography with a local investigation: unfold the globe into an atlas, select a continent window and actual country boundary, inspect an analytical sector and original observations, or enter a separately dated historical study. Explore and Report carry supported study/month/sensor context. Report begins with an annual finding and supports month/day/acquisition-hour inspection, recurrence, raw period comparison and dated curated reading. The existing regional map, calendar, tour and nine quiet Report experiments remain available. Motion respects reduced-motion preferences.
 
 ## Current data and release status
 
