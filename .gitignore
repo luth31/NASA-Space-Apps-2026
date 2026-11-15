@@ -14,3 +14,4 @@ artifacts/
 *.tsbuildinfo
 .qa/
 .presentation-build/
+.chart-data-*/

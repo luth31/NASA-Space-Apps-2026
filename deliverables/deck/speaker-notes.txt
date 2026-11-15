@@ -1,0 +1,77 @@
+SLIDE 1
+The problem: a satellite hotspot count is easy to see and easy to misread. PyroBridge helps people investigate location, timing, and differences between instruments before drawing a historical conclusion. This is a working observation product with a separate research pipeline, not an operational warning service.
+
+Sources and credits:
+NASA FIRMS: https://firms.modaps.eosdis.nasa.gov/ (observations; thermal pixels, not unique fires)
+Local image: NASA EOSDIS GIBS / Aqua MODIS, 10 Aug 2021 daily true-color composite. Source and bounding box: web/public/assets/assets-manifest.json. This is dated context imagery, not exact-time hotspot imagery.
+Local bundle 20261114T172758Z: web/public/data/manifest.json, observations/, schema.json; independently checked in docs/science-audit.md on 15 November 2026.
+
+------------------------------------------------------------
+
+SLIDE 2
+Aqua MODIS and S-NPP VIIRS have different detection characteristics and observation opportunities. The displayed ranges describe the bundled Greek study records, not complete mission availability. The nominal pixel dimensions are not a fire perimeter, burned area, or unique-event size. The start of VIIRS creates a measurement discontinuity; raw totals cannot harmonize it by themselves.
+
+Sources and credits:
+NASA FIRMS: https://firms.modaps.eosdis.nasa.gov/ (observations; thermal pixels, not unique fires)
+Local bundle 20261114T172758Z: web/public/data/manifest.json, observations/, schema.json; independently checked in docs/science-audit.md on 15 November 2026.
+MODIS User Guide: https://modis-land.gsfc.nasa.gov/pdf/MODIS_C6_C6.1_Fire_User_Guide_1.0.pdf
+NASA VIIRS active fire documentation: https://viirsland.gsfc.nasa.gov/Products/NASA/FireESDR.html
+
+------------------------------------------------------------
+
+SLIDE 3
+Explore progressively reveals geography. Use the controls in the live app to unfold the globe, select geography, and open one of the bundled studies. Administrative boundaries and study rectangles have different meanings. The historical study data remain separate from the global snapshot. This actual application capture is cropped in the slide to show the atlas surface; the full capture is preserved in assets. The 13–14 November 2026 NOAA-20 VIIRS snapshot contains 74,304 raw detections. Its markers summarize counts per 5° bin without observation-effort adjustment.
+
+Sources and credits:
+Local bundle 20261114T172758Z: web/public/data/manifest.json, observations/, schema.json; independently checked in docs/science-audit.md on 15 November 2026.
+Actual local app capture: atlas.png
+Natural Earth boundaries: https://www.naturalearthdata.com/about/terms-of-use/ (public domain); map scope and attribution in the app.
+
+------------------------------------------------------------
+
+SLIDE 4
+The real Report finding is 4,178 August detections divided by 4,685 annual S-NPP VIIRS detections, or 89.178%, rounded to 89%. The scope is the Evros and Evia rectangular studies. Direct exploration reveals 1,938 detections on 22 August and 1,009 acquired in the 00 UTC hour. Acquisition time is not ignition time. Monthly source completeness does not establish full observing effort.
+
+Sources and credits:
+NASA FIRMS: https://firms.modaps.eosdis.nasa.gov/ (observations; thermal pixels, not unique fires)
+Local bundle 20261114T172758Z: web/public/data/manifest.json, observations/, schema.json; independently checked in docs/science-audit.md on 15 November 2026.
+Actual local app capture: report-overview.png
+Audit: docs/science-audit.md; no unique-fire, burned-area, causal, anomaly, or prediction claim.
+
+------------------------------------------------------------
+
+SLIDE 5
+A coverage-aware, reproducible pipeline compares an unchanged MODIS-rate control, seasonal scaling, negative binomial and LightGBM. Mean regional MAE was recomputed from held-out predictions, with one whole region withheld per fold. Values: 4.1250304804, 2.6203901313, 5.9243154744, 11.2208318022. Forty-two of 48 targets are zero and six are positive. Evia and Evros contribute 24 rows each. This small selected sample cannot establish monthly transfer, global performance, calibrated intervals, or a generic accuracy percentage. The later-time diagnostic remains exploratory.
+
+Sources and credits:
+Local bundle 20261114T172758Z: web/public/data/manifest.json, observations/, schema.json; independently checked in docs/science-audit.md on 15 November 2026.
+models/held-out-predictions.json; models/training-report.json; web/public/data/models.json
+config/release-policy.json; docs/science-audit.md
+Model artifact SHA-256 values were checked against the published report.
+
+------------------------------------------------------------
+
+SLIDE 6
+The current user value is careful investigation of observed geography, UTC timing and sensor differences. The screenshot is the Evros study in August 2023, with 625 Aqua MODIS and 4,175 S-NPP VIIRS detections. It is narrower than the two-study Report finding. The next validation milestone is a complete monthly observation inventory and declared reference effort, followed by independent region-month and later-time holdouts under a frozen protocol. Current release.json has monthlyRelease=false and zero published estimates; uncertainty and gated exports remain unavailable.
+
+Sources and credits:
+NASA FIRMS: https://firms.modaps.eosdis.nasa.gov/ (observations; thermal pixels, not unique fires)
+Local bundle 20261114T172758Z: web/public/data/manifest.json, observations/, schema.json; independently checked in docs/science-audit.md on 15 November 2026.
+Actual local app capture: regional-comparison.png
+Background: NASA EOSDIS GIBS / Aqua MODIS, fixed daily imagery 22 Aug 2023, separately labelled in the app.
+web/public/data/release.json; config/release-policy.json
+
+------------------------------------------------------------
+
+SLIDE 7
+Invite the judges to explore a place, inspect its observation record, and see what is supported and what is not. The provisional name is not a finalized brand decision. The actual globe capture is cropped in the slide to emphasize its geographic view; the full capture is preserved in assets. Its NOAA-20 VIIRS snapshot contains 74,304 detections spanning 13 November 2026 00:15 UTC to 14 November 2026 13:33 UTC. Marker size represents raw counts per 5° bin, not calibrated risk. Blue Marble is static geographic context.
+
+AI disclosure: OpenAI Codex assisted with research, code, testing, design, source text and presentation generation. Human team review and scientific validation remain required. No generated scientific observations or model accuracy values are presented.
+
+Sources and credits:
+NASA FIRMS: https://firms.modaps.eosdis.nasa.gov/ (observations; thermal pixels, not unique fires)
+Local bundle 20261114T172758Z: web/public/data/manifest.json, observations/, schema.json; independently checked in docs/science-audit.md on 15 November 2026.
+NASA imagery attribution: web/public/assets/assets-manifest.json
+Natural Earth: public domain boundaries, https://www.naturalearthdata.com/about/terms-of-use/
+Tools: React, TypeScript, Vite, Three.js, Motion, Lucide, jsPDF; Python scientific stack; @oai/artifact-tool for editable slides. Full dependencies and licenses are in repository lockfiles.
+Actual local app capture: globe.png
