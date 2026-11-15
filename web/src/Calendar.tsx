@@ -1,23 +1,27 @@
-import { useMemo, useState } from "react";
-import { motion } from "motion/react";
-import { ArrowDownToLine, ArrowUpRight, Info, ShieldCheck } from "lucide-react";
-import type { CaseStudy, Month } from "./data";
-import { dateLabel, historicalMedian, number } from "./data";
+import { useEffect, useId, useMemo, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import {
+  ArrowDownToLine,
+  ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
+  ShieldCheck,
+} from "lucide-react";
+import type { CaseStudy } from "./data";
+import { dateLabel, number } from "./data";
+import {
+  monthKey,
+  monthNames,
+  monthProfile,
+  petalRadius,
+  seasonSummary,
+  sectorPath,
+  sourceValue,
+} from "./calendar/season";
+import "./calendar/calendar.css";
 
-const names = [
-  "JAN",
-  "FEB",
-  "MAR",
-  "APR",
-  "MAY",
-  "JUN",
-  "JUL",
-  "AUG",
-  "SEP",
-  "OCT",
-  "NOV",
-  "DEC",
-];
 interface Props {
   study: CaseStudy;
   cases: CaseStudy[];
@@ -28,6 +32,7 @@ interface Props {
   onExport: (format: "csv" | "pdf") => void;
   onMethods: () => void;
 }
+
 export default function Calendar({
   study,
   cases,
@@ -38,341 +43,727 @@ export default function Calendar({
   onExport,
   onMethods,
 }: Props) {
-  const [sensor, setSensor] = useState<"modis" | "viirs">("modis");
-  const [harmonized, setHarmonized] = useState(study.harmonized);
-  const [tip, setTip] = useState<Month | null>(null);
-  const field = harmonized ? "estimate" : sensor;
-  const max = useMemo(
-    () =>
-      Math.max(
-        1,
-        ...study.months.flatMap((m) => [
-          m.modis ?? 0,
-          m.viirs ?? 0,
-          m.estimate ?? 0,
-        ]),
-      ),
-    [study],
+  const [sensor, setSensor] = useState<"modis" | "viirs">(() => {
+    try {
+      return sessionStorage.getItem("pyrobridge-calendar-sensor") === "viirs"
+        ? "viirs"
+        : "modis";
+    } catch {
+      return "modis";
+    }
+  });
+  const [harmonized, setHarmonized] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [recordScale, setRecordScale] = useState(false);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const reducedMotion = useReducedMotion();
+  const patternId = `season-missing-${useId().replace(/:/g, "")}`;
+  const years = useMemo(
+    () => [...study.years].sort((a, b) => a - b),
+    [study.years],
   );
+  const firstYear = years[0] ?? Number(selectedMonth.slice(0, 4));
+  const lastYear = years.at(-1) ?? firstYear;
+  const [range, setRange] = useState<[number, number]>([firstYear, lastYear]);
+  const year = Number(selectedMonth.slice(0, 4));
+  const monthIndex = Math.max(
+    0,
+    Math.min(11, Number(selectedMonth.slice(5, 7)) - 1),
+  );
+  const field = harmonized && study.harmonized ? "estimate" : sensor;
+  const summary = useMemo(
+    () => seasonSummary(study.months, year, field),
+    [study.months, year, field],
+  );
+  const profile = useMemo(
+    () => monthProfile(study.months, years, selectedMonth, field, range),
+    [study.months, years, selectedMonth, field, range],
+  );
+  const yearIndex = years.indexOf(year);
   const selected = study.months.find((m) => m.month === selectedMonth);
-  const orderedMonths = [...study.years]
-    .reverse()
-    .flatMap((y) =>
-      names.map((_, m) => `${y}-${String(m + 1).padStart(2, "0")}`),
-    );
-  const median = harmonized
-    ? historicalMedian(study.months, selectedMonth, "estimate")
-    : { value: null, n: 0 };
-  const color = (n: number | null) => {
-    if (n === null) return "#1c2525";
-    if (n === 0) return "#232e2c";
-    const t = Math.log1p(n) / Math.log1p(max);
-    return `hsl(${46 - t * 24} ${22 + t * 55}% ${19 + t * 48}%)`;
+  const selectedValue = sourceValue(selected, field);
+  const peakIndex = summary.peak
+    ? Number(summary.peak.month.slice(5, 7)) - 1
+    : null;
+  const maximum = Math.max(
+    1,
+    ...(recordScale
+      ? study.months.map((m) => sourceValue(m, field) ?? 0)
+      : summary.months.map((m) => m.value ?? 0)),
+  );
+  const profileMaximum = Math.max(
+    1,
+    ...profile.points.map((p) => p.value ?? 0),
+  );
+  const focusedIndex = hovered ?? monthIndex;
+  const focused = summary.months[focusedIndex];
+  const sensorLabel =
+    field === "estimate"
+      ? "VIIRS-equivalent"
+      : sensor === "modis"
+        ? "Aqua MODIS"
+        : "S-NPP VIIRS";
+  const unit =
+    field === "estimate"
+      ? "estimated hotspot pixels"
+      : "recorded hotspot pixels";
+  const selectMonth = (index: number) => {
+    setPlaying(false);
+    setHovered(null);
+    onMonth(monthKey(year, index));
   };
+  const selectYear = (next: number) => {
+    setPlaying(false);
+    setHovered(null);
+    onMonth(monthKey(next, monthIndex));
+  };
+  const stepYear = (direction: -1 | 1) => {
+    const next =
+      yearIndex < 0
+        ? direction > 0
+          ? firstYear
+          : lastYear
+        : years[Math.max(0, Math.min(years.length - 1, yearIndex + direction))];
+    selectYear(next);
+  };
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("pyrobridge-calendar-sensor", sensor);
+    } catch {
+      /* In-memory selection works without storage. */
+    }
+  }, [sensor]);
+  useEffect(() => {
+    if (!playing || reducedMotion || years.length < 2) return;
+    const timer = window.setTimeout(() => {
+      if (document.hidden) {
+        setPlaying(false);
+        return;
+      }
+      onMonth(monthKey(years[(yearIndex + 1) % years.length], monthIndex));
+    }, 1600);
+    return () => window.clearTimeout(timer);
+  }, [playing, reducedMotion, years, yearIndex, monthIndex, onMonth]);
+  useEffect(() => {
+    const pause = () => {
+      if (document.hidden) setPlaying(false);
+    };
+    document.addEventListener("visibilitychange", pause);
+    return () => document.removeEventListener("visibilitychange", pause);
+  }, []);
+
   return (
-    <motion.div
-      className="calendar-view"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+    <section
+      className="season-calendar"
+      data-sensor={sensor}
+      aria-label="Season calendar"
     >
-      <div className="page-heading">
+      <header className="sc-heading">
         <div>
-          <span className="eyebrow">THE FIRE ACTIVITY CALENDAR</span>
+          <span className="sc-kicker">THE SEASON CALENDAR / UTC</span>
           <h1>
-            A longer perspective<span>.</span>
+            Every year has a shape<span>.</span>
           </h1>
-          <p>
-            <select
-              className="case-picker"
-              aria-label="Calendar investigation"
-              value={study.id}
-              onChange={(e) =>
-                onStudy(cases.find((c) => c.id === e.target.value)!)
-              }
-            >
-              {cases.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}, {c.country}
-                </option>
-              ))}
-            </select>{" "}
-            <span className="muted">/</span> Monthly satellite detections · UTC
-          </p>
+          <p>Turn through the record. Find the months that shaped a season.</p>
         </div>
-        <button className="text-button" onClick={onExplore}>
-          Back to the scene <ArrowUpRight size={16} />
+        <button className="sc-link" onClick={onExplore}>
+          Explore this place <ArrowUpRight size={17} />
         </button>
-      </div>
-      <div className="calendar-top">
-        <div className="mode-control">
-          <button
-            className={!harmonized ? "selected" : ""}
-            onClick={() => setHarmonized(false)}
+      </header>
+      <div className="sc-controls">
+        <label className="sc-place">
+          <span>Investigation</span>
+          <select
+            value={study.id}
+            onChange={(e) => {
+              const next = cases.find((c) => c.id === e.target.value);
+              if (next) {
+                setPlaying(false);
+                onStudy(next);
+                onMonth(selectedMonth);
+              }
+            }}
           >
-            Observed counts
-          </button>
-          <button
-            className={harmonized ? "selected" : ""}
-            disabled={!study.harmonized}
-            title={
-              study.harmonized
-                ? "Validated reference-sensor estimates"
-                : "Requires verified paired coverage and a passing model benchmark"
-            }
-            onClick={() => setHarmonized(true)}
-          >
-            Harmonized <ShieldCheck size={13} />
-          </button>
+            {cases.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}, {c.country}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="sc-sensors" role="group" aria-label="Recorded sensor">
+          {(["modis", "viirs"] as const).map((s) => (
+            <button
+              key={s}
+              aria-pressed={!harmonized && sensor === s}
+              onClick={() => {
+                setPlaying(false);
+                setSensor(s);
+                setHarmonized(false);
+              }}
+            >
+              <i className={s} />
+              {s === "modis" ? "Aqua MODIS" : "S-NPP VIIRS"}
+            </button>
+          ))}
         </div>
-        <div className="sensor-options" aria-label="Calendar sensor">
-          <button
-            className={sensor === "modis" ? "selected" : ""}
-            onClick={() => setSensor("modis")}
-            disabled={harmonized}
-          >
-            <i className="dot aqua" />
-            Aqua MODIS
-          </button>
-          <button
-            className={sensor === "viirs" ? "selected" : ""}
-            onClick={() => setSensor("viirs")}
-            disabled={harmonized}
-          >
-            <i className="dot fire" />
-            S-NPP VIIRS
-          </button>
-        </div>
+        <span className="sc-record-label">
+          {field === "estimate"
+            ? "Validated estimates"
+            : "Raw observation record"}
+        </span>
       </div>
-      <div className="calendar-layout">
-        <div className="heatmap-panel">
-          <div className="heatmap-title">
-            <h2>
-              {harmonized ? "VIIRS-equivalent activity" : "The observed record"}
-            </h2>
-            <span className="mono">
-              {study.years.length} YEARS IN THIS BUNDLE
-            </span>
-          </div>
-          <div
-            className="heatmap"
-            role="grid"
-            aria-label="Monthly hotspot count calendar"
-          >
-            <div className="heatmap-row month-labels" role="row">
-              <span role="columnheader" aria-label="Year" />{" "}
-              {names.map((n) => (
-                <span key={n} role="columnheader">
-                  {n}
-                </span>
-              ))}
+      <div className="sc-main">
+        <div className="sc-wheel-panel">
+          <div className="sc-panel-heading">
+            <div>
+              <span className="sc-kicker">01 / SEASON SHAPE</span>
+              <h2>
+                {sensorLabel} · {year}
+              </h2>
             </div>
-            {[...study.years].reverse().map((y, i) => (
-              <motion.div
-                key={y}
-                className="heatmap-row"
-                role="row"
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.018 }}
-              >
-                <span className="year-label" role="rowheader">
-                  {y}
-                </span>
-                {names.map((_, m) => {
-                  const key = `${y}-${String(m + 1).padStart(2, "0")}`;
-                  const cell = study.months.find((v) => v.month === key)!;
-                  const n = cell[field];
-                  return (
-                    <button
-                      key={key}
-                      role="gridcell"
-                      data-month={key}
-                      tabIndex={selectedMonth === key ? 0 : -1}
-                      className={`heat-cell ${selectedMonth === key ? "selected" : ""} ${n === null ? "missing" : ""}`}
-                      style={{
-                        backgroundColor: color(n),
-                        transitionDelay: `${m * 13}ms`,
-                      }}
-                      onClick={() => onMonth(key)}
-                      onKeyDown={(e) => {
-                        const offsets: Record<string, number> = {
-                          ArrowLeft: -1,
-                          ArrowRight: 1,
-                          ArrowUp: -12,
-                          ArrowDown: 12,
-                        };
-                        const current = orderedMonths.indexOf(key);
-                        const offset =
-                          e.key === "Home"
-                            ? -m
-                            : e.key === "End"
-                              ? 11 - m
-                              : offsets[e.key];
-                        if (offset === undefined) return;
+            <label className="sc-scale">
+              <input
+                type="checkbox"
+                checked={recordScale}
+                onChange={(e) => setRecordScale(e.target.checked)}
+              />
+              Lock scale across years
+            </label>
+          </div>
+          <div className="sc-wheel-wrap">
+            <svg
+              className="sc-wheel"
+              viewBox="0 0 480 480"
+              role="group"
+              aria-label={`${year} season wheel, ${sensorLabel}. Select a month. Petal area represents count.`}
+            >
+              <defs>
+                <pattern
+                  id={patternId}
+                  width="7"
+                  height="7"
+                  patternUnits="userSpaceOnUse"
+                  patternTransform="rotate(40)"
+                >
+                  <line
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="7"
+                    stroke="#819289"
+                    strokeWidth="1"
+                    opacity=".45"
+                  />
+                </pattern>
+              </defs>
+              {[81, 132, 192].map((r) => (
+                <circle key={r} cx="240" cy="240" r={r} className="sc-orbit" />
+              ))}
+              {summary.months.map((m, i) => {
+                const selectedArc = i === monthIndex;
+                const angle = ((i * 30 - 90) * Math.PI) / 180;
+                const labelX = 240 + 216 * Math.cos(angle),
+                  labelY = 240 + 216 * Math.sin(angle);
+                const radius =
+                  m.value === null ? 192 : petalRadius(m.value, maximum);
+                const label = `${monthNames[i]} ${year}: ${m.value === null ? "source unavailable" : `${number(m.value)} ${unit}`}${selectedArc ? ", selected" : ""}`;
+                return (
+                  <g
+                    key={i}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={label}
+                    aria-pressed={selectedArc}
+                    className={`sc-month ${selectedArc ? "is-selected" : ""} ${m.value === null ? "is-missing" : ""}`}
+                    onMouseEnter={() => setHovered(i)}
+                    onMouseLeave={() => setHovered(null)}
+                    onFocus={() => setHovered(i)}
+                    onBlur={() => setHovered(null)}
+                    onClick={() => selectMonth(i)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        selectMonth(i);
+                      }
+                      if (
+                        [
+                          "ArrowRight",
+                          "ArrowDown",
+                          "ArrowLeft",
+                          "ArrowUp",
+                        ].includes(e.key)
+                      ) {
                         e.preventDefault();
                         const next =
-                          orderedMonths[
-                            Math.max(
-                              0,
-                              Math.min(
-                                orderedMonths.length - 1,
-                                current + offset,
-                              ),
-                            )
-                          ];
-                        onMonth(next);
-                        document
-                          .querySelector<HTMLButtonElement>(
-                            `[data-month="${next}"]`,
-                          )
-                          ?.focus();
-                      }}
-                      onMouseEnter={() => setTip(cell)}
-                      onMouseLeave={() => setTip(null)}
-                      onFocus={() => setTip(cell)}
-                      onBlur={() => setTip(null)}
-                      aria-label={`${names[m]} ${y}: ${n === null ? "data unavailable" : `${n} ${harmonized ? "estimated VIIRS-equivalent hotspots" : "reported detections"}; usable coverage ${cell.coverage}`}`}
-                      aria-selected={selectedMonth === key}
+                          (i +
+                            (["ArrowRight", "ArrowDown"].includes(e.key)
+                              ? 1
+                              : 11)) %
+                          12;
+                        selectMonth(next);
+                        e.currentTarget.parentElement
+                          ?.querySelectorAll<SVGGElement>(".sc-month")
+                          [next]?.focus();
+                      }
+                    }}
+                  >
+                    <title>{label}</title>
+                    <path
+                      className="sc-petal-track"
+                      d={sectorPath(i, 81, 192)}
+                    />
+                    {m.value === null ? (
+                      <path
+                        d={sectorPath(i, 86, 192)}
+                        fill={`url(#${patternId})`}
+                        pointerEvents="none"
+                      />
+                    ) : m.value > 0 ? (
+                      <motion.path
+                        className={`sc-petal sc-petal-${sensor}`}
+                        initial={false}
+                        animate={{ d: sectorPath(i, 81, radius) }}
+                        transition={{
+                          duration: reducedMotion ? 0 : 0.35,
+                          ease: "easeOut",
+                        }}
+                        pointerEvents="none"
+                      />
+                    ) : (
+                      <path
+                        className="sc-zero"
+                        d={sectorPath(i, 82, 87)}
+                        pointerEvents="none"
+                      />
+                    )}
+                    <path
+                      className="sc-petal-edge"
+                      d={sectorPath(i, 79, 195)}
+                      pointerEvents="none"
+                    />
+                    <text
+                      x={labelX}
+                      y={labelY}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      className="sc-month-label"
                     >
-                      <span>{n === null ? "—" : number(n)}</span>
-                    </button>
-                  );
-                })}
-              </motion.div>
-            ))}
+                      {monthNames[i].slice(0, 3).toUpperCase()}
+                    </text>
+                    {peakIndex === i && (
+                      <circle
+                        cx={240 + 202 * Math.cos(angle)}
+                        cy={240 + 202 * Math.sin(angle)}
+                        r="3"
+                        className="sc-peak-dot"
+                      />
+                    )}
+                  </g>
+                );
+              })}
+              <g pointerEvents="none" className="sc-wheel-center">
+                <text x="240" y="209" className="sc-center-month">
+                  {monthNames[focusedIndex].toUpperCase()}
+                </text>
+                <text x="240" y="248" className="sc-center-value">
+                  {focused.value === null ? "—" : number(focused.value)}
+                </text>
+                <text x="240" y="270" className="sc-center-unit">
+                  {focused.value === null
+                    ? "SOURCE UNAVAILABLE"
+                    : "HOTSPOT PIXELS"}
+                </text>
+                <text x="240" y="293" className="sc-center-year">
+                  {year}
+                </text>
+              </g>
+            </svg>
           </div>
-          <div className="heatmap-footer">
-            <span className="mono">
-              {tip
-                ? `${dateLabel(tip.month + "-01", { month: "short", year: "numeric" })} · ${tip[field] === null ? "Source unavailable" : number(tip[field]) + " detections"}`
-                : "SELECT A MONTH TO INVESTIGATE"}
+          <div className="sc-wheel-legend">
+            <span>
+              <i className="sc-fill-key" />
+              Petal area = count
             </span>
-            <div className="scale">
-              <span>0</span>
-              <div
-                style={{
-                  background:
-                    "linear-gradient(90deg,#232e2c,#706d36,#ce9b51,#edb56c)",
-                }}
-              />
-              <span>{number(max)}</span>
-              <span className="missing-swatch" />
-              No source
-            </div>
+            <span>
+              <i className="sc-zero-key" />
+              Recorded zero
+            </span>
+            <span>
+              <i className="sc-missing-key" />
+              Missing source
+            </span>
           </div>
-        </div>
-        <aside className="month-detail">
-          <span className="eyebrow">SELECTED MONTH</span>
-          <h2>
-            {dateLabel(selectedMonth + "-01", {
-              month: "long",
-              year: "numeric",
-            })}
-          </h2>
-          <div className="big-number">{number(selected?.[field])}</div>
-          <p>
-            {harmonized
-              ? "Estimated VIIRS-equivalent hotspots"
-              : "Reported hotspot detections"}
-          </p>
-          <dl>
-            <div>
-              <dt>Platform</dt>
-              <dd>
-                {harmonized
-                  ? "S-NPP VIIRS reference"
-                  : sensor === "modis"
-                    ? "Aqua MODIS"
-                    : "S-NPP VIIRS"}
-              </dd>
-            </div>
-            <div>
-              <dt>Analysis area</dt>
-              <dd>{study.name} case boundary</dd>
-            </div>
-            <div>
-              <dt>Usable coverage</dt>
-              <dd>{selected?.eligible ? "Verified" : "Not yet verified"}</dd>
-            </div>
-            <div>
-              <dt>Historical median</dt>
-              <dd>{number(median.value)}</dd>
-            </div>
-            <div>
-              <dt>Eligible comparison years</dt>
-              <dd>{median.n}</dd>
-            </div>
-            {harmonized && (
+          <p className="sc-scale-note">
+            {summary.available || recordScale ? (
               <>
-                <div>
-                  <dt>90% prediction interval</dt>
-                  <dd>
-                    {selected?.interval
-                      ? selected.interval.map(number).join(" – ")
-                      : "Unreleased"}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Selected approach</dt>
-                  <dd>{selected?.model ?? "Unavailable"}</dd>
-                </div>
-                <div>
-                  <dt>Observation effort</dt>
-                  <dd>{selected?.referenceEffortId ?? "Unavailable"}</dd>
-                </div>
+                Outer edge = {number(maximum)} pixels ·{" "}
+                {recordScale
+                  ? "same scale for every year"
+                  : "scale fitted to this year"}
+                .
               </>
-            )}
-          </dl>
-          <button className="primary-button" onClick={onExplore}>
-            Investigate this month <ArrowUpRight size={16} />
-          </button>
-          <div className="export-row">
-            <button
-              disabled={!selected?.eligible}
-              onClick={() => onExport("csv")}
-            >
-              <ArrowDownToLine size={14} />
-              CSV
-            </button>
-            <button
-              disabled={!selected?.eligible}
-              onClick={() => onExport("pdf")}
-            >
-              <ArrowDownToLine size={14} />
-              PDF brief
-            </button>
-          </div>
-          <p className="micro-copy">
-            Exports unlock for supported historical comparisons.
+            ) : (
+              "No source months are available for this year."
+            )}{" "}
+            Select a petal to compare its month.
           </p>
-          <div className="calendar-note">
-            <Info size={16} />
-            <p>
-              {selected?.eligible
-                ? "Comparable observation effort verified."
-                : "Counts describe what the satellite reported. Cloud and pass coverage are unverified; an empty month does not establish no fire."}
-            </p>
+          <div className="sc-year-controls">
+            <button
+              aria-label="Previous year"
+              disabled={yearIndex === 0 || !years.length}
+              onClick={() => stepYear(-1)}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <div className="sc-year-readout">
+              <strong>{year}</strong>
+              <span>{summary.available}/12 months present</span>
+            </div>
+            <button
+              aria-label="Next year"
+              disabled={yearIndex === years.length - 1 || !years.length}
+              onClick={() => stepYear(1)}
+            >
+              <ChevronRight size={20} />
+            </button>
+            <button
+              className="sc-play"
+              aria-label={
+                playing ? "Pause year playback" : "Play through years"
+              }
+              aria-pressed={playing}
+              disabled={!!reducedMotion || years.length < 2}
+              title={
+                reducedMotion
+                  ? "Playback is off because reduced motion is enabled. Use the year controls."
+                  : "Advance one year every 1.6 seconds"
+              }
+              onClick={() => {
+                setRecordScale(true);
+                setPlaying(!playing);
+              }}
+            >
+              {playing ? <Pause size={17} /> : <Play size={17} />}
+              {playing ? "Pause" : "Play years"}
+            </button>
           </div>
+          <label className="sc-scrubber">
+            <span>{firstYear}</span>
+            <input
+              aria-label="Season year"
+              type="range"
+              min="0"
+              max={Math.max(0, years.length - 1)}
+              value={Math.max(0, yearIndex)}
+              disabled={years.length < 2}
+              aria-valuetext={String(year)}
+              onChange={(e) => selectYear(years[Number(e.target.value)])}
+            />
+            <span>{lastYear}</span>
+          </label>
+          {yearIndex < 0 && (
+            <p className="sc-context-note">
+              Your selected date is preserved. {year} is outside this
+              investigation’s bundled years.
+            </p>
+          )}
+        </div>
+        <aside className="sc-insight-panel">
+          <span className="sc-kicker">READING THE RECORD</span>
+          <h2>
+            {summary.peak ? (
+              <>
+                {monthNames[peakIndex!]}
+                {summary.peakTies > 1
+                  ? " shares the peak"
+                  : " leaves the largest mark"}
+                .
+              </>
+            ) : summary.available ? (
+              "A quiet recorded season."
+            ) : (
+              "A gap in this record."
+            )}
+          </h2>
+          <p>
+            {summary.peak ? (
+              <>
+                {number(summary.peak.value)} pixels in the largest{" "}
+                {summary.complete ? "month of this year" : "available month"}.{" "}
+                {summary.concentration !== null
+                  ? `${Math.round(summary.concentration * 100)}% of this year's recorded total.`
+                  : "The year is incomplete; a whole-year share is not calculated."}
+              </>
+            ) : summary.available ? (
+              "Available months contain zero recorded hotspot pixels. That does not establish fire absence or satellite observing coverage."
+            ) : (
+              "There are no published source values for this sensor and year in this bundle. Missing months are not zero."
+            )}
+          </p>
+          <div className="sc-total">
+            <strong>{summary.available ? number(summary.total) : "—"}</strong>
+            <span>
+              {summary.complete ? "year total" : "available-month total"}
+              <small>
+                {summary.available}/12 source months · {unit}
+              </small>
+            </span>
+          </div>
+          <div className="sc-selection" aria-live={playing ? "off" : "polite"}>
+            <span className="sc-kicker">
+              SELECTED / {dateLabel(selectedMonth).toUpperCase()}
+            </span>
+            <div className="sc-selected-value">
+              {number(selectedValue)}
+              <span>{unit}</span>
+            </div>
+            <div className="sc-reference">
+              <span>
+                {field === "estimate"
+                  ? "Eligible same-month median"
+                  : "Raw same-month median"}
+              </span>
+              <strong>{number(profile.median)}</strong>
+            </div>
+            <p>
+              {profile.n ? (
+                <>
+                  {profile.n} other available{" "}
+                  {profile.n === 1 ? "year" : "years"}, {range[0]}–{range[1]}.
+                  {selectedValue !== null && profile.median !== null
+                    ? ` Selected month is ${selectedValue === profile.median ? "equal to" : `${number(Math.abs(selectedValue - profile.median))} pixels ${selectedValue > profile.median ? "above" : "below"}`} this median.`
+                    : ""}
+                </>
+              ) : (
+                "No other available year in this comparison range."
+              )}
+            </p>
+            <span className="sc-caution">
+              {field === "estimate"
+                ? "Released monthly estimates only. Review the method and uncertainty before interpretation."
+                : "Raw counts; observing effort is unadjusted. This is not a validated historical anomaly or a measure of fire risk."}
+            </span>
+          </div>
+          <button className="sc-scene-button" onClick={onExplore}>
+            Open this month in Explore <ArrowUpRight size={18} />
+          </button>
+          <p className="sc-footnote">
+            A hotspot pixel is a satellite detection, not a unique fire or
+            burned area. Sensor records should not be compared as equivalent
+            counts.
+          </p>
         </aside>
       </div>
-      {!study.harmonized && (
-        <div className="evidence-strip">
-          <div className="evidence-icon">
-            <ShieldCheck size={19} />
-          </div>
+      <section className="sc-history" aria-label="Same month across years">
+        <div className="sc-history-heading">
           <div>
-            <strong>The next step is a comparable record.</strong>
+            <span className="sc-kicker">02 / A MONTH THROUGH TIME</span>
+            <h2>
+              {monthNames[monthIndex]}, year after year<span>.</span>
+            </h2>
             <p>
-              Training is separate from release. Harmonized values appear only
-              when paired coverage and independent validation support them.
+              Choose a year below to move the season wheel. Same sensor, same
+              month;{" "}
+              {field === "estimate"
+                ? "eligible monthly estimates"
+                : "unadjusted observations"}
+              .
             </p>
           </div>
-          <button className="text-button" onClick={onMethods}>
-            View the evidence <ArrowUpRight size={15} />
-          </button>
+          <div className="sc-range">
+            <label>
+              From
+              <select
+                aria-label="Comparison first year"
+                value={range[0]}
+                onChange={(e) =>
+                  setRange([
+                    Number(e.target.value),
+                    Math.max(Number(e.target.value), range[1]),
+                  ])
+                }
+              >
+                {years.map((y) => (
+                  <option key={y}>{y}</option>
+                ))}
+              </select>
+            </label>
+            <span>—</span>
+            <label>
+              To
+              <select
+                aria-label="Comparison last year"
+                value={range[1]}
+                onChange={(e) =>
+                  setRange([
+                    Math.min(range[0], Number(e.target.value)),
+                    Number(e.target.value),
+                  ])
+                }
+              >
+                {years.map((y) => (
+                  <option key={y}>{y}</option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
-      )}
-    </motion.div>
+        <div className="sc-profile-top">
+          <span>
+            {number(profileMaximum)} pixels at full height · linear scale
+          </span>
+          <span>
+            {profile.n} reference {profile.n === 1 ? "year" : "years"} ·
+            selected year excluded
+          </span>
+        </div>
+        <div className="sc-profile-scroll">
+          <div
+            className="sc-profile"
+            style={{ minWidth: Math.max(300, profile.points.length * 31) }}
+          >
+            {profile.median !== null && (
+              <div
+                className="sc-median-line"
+                style={{
+                  bottom: `${34 + (profile.median / profileMaximum) * 140}px`,
+                }}
+                aria-hidden="true"
+              >
+                <span>median {number(profile.median)}</span>
+              </div>
+            )}
+            {profile.points.map((p) => (
+              <button
+                key={p.year}
+                className={`sc-profile-year ${p.year === year ? "is-selected" : ""} ${p.value === null ? "is-missing" : ""}`}
+                aria-pressed={p.year === year}
+                aria-label={`${monthNames[monthIndex]} ${p.year}: ${p.value === null ? "source unavailable" : `${number(p.value)} ${unit}`}`}
+                title={`${p.year}: ${p.value === null ? "missing source" : number(p.value) + " pixels"}`}
+                onClick={() => selectYear(p.year)}
+              >
+                <span className="sc-profile-bar-space">
+                  <span
+                    className={`sc-profile-bar sc-profile-${sensor}`}
+                    style={{
+                      height:
+                        p.value === null
+                          ? "100%"
+                          : `${(p.value / profileMaximum) * 100}%`,
+                    }}
+                  />
+                  {p.value === 0 && <span className="sc-profile-zero" />}
+                  {p.year === year && p.value !== null && (
+                    <span className="sc-profile-number">{number(p.value)}</span>
+                  )}
+                </span>
+                <span className="sc-profile-year-label">{p.year}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="sc-history-note">
+          Hatched columns are missing sources; baseline ticks are recorded
+          zeros.{" "}
+          {field === "estimate"
+            ? "Only eligible monthly estimates appear."
+            : "Source availability does not verify cloud-free, consistent, or complete observing effort."}
+          {year < range[0] || year > range[1]
+            ? " Your selected year remains outside the chosen comparison range."
+            : ""}
+        </p>
+      </section>
+      <div className="sc-details-grid">
+        <details className="sc-details">
+          <summary>
+            Read the values <span>12 months · {year}</span>
+          </summary>
+          <table>
+            <caption>
+              {year} · {sensorLabel} · {unit}
+            </caption>
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Value</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.months.map((m, i) => (
+                <tr
+                  key={m.month}
+                  className={i === monthIndex ? "is-selected" : ""}
+                >
+                  <th>
+                    <button onClick={() => selectMonth(i)}>
+                      {monthNames[i]}
+                    </button>
+                  </th>
+                  <td>{number(m.value)}</td>
+                  <td>{m.value === null ? "Unavailable" : "Present"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+        <details className="sc-details">
+          <summary>
+            Methods &amp; harmonized estimates <ShieldCheck size={17} />
+          </summary>
+          <div className="sc-methods-body">
+            <p>
+              Counts describe this investigation boundary. Missing source values
+              remain gaps. No coverage or risk claim follows from a zero.
+            </p>
+            <p>{study.supportReason}</p>
+            <div className="sc-method-actions">
+              <button
+                aria-pressed={harmonized}
+                disabled={!study.harmonized}
+                onClick={() => {
+                  setPlaying(false);
+                  setHarmonized(!harmonized);
+                }}
+              >
+                {harmonized
+                  ? "Return to raw counts"
+                  : "Show harmonized estimates"}
+              </button>
+              <button className="sc-link" onClick={onMethods}>
+                Read the method <ArrowUpRight size={16} />
+              </button>
+            </div>
+            <p className="sc-footnote">
+              Harmonized history and exports require the monthly validation
+              gate. Raw medians above are descriptive only.
+            </p>
+            <div className="sc-method-actions">
+              <button
+                disabled={!selected?.eligible}
+                onClick={() => onExport("csv")}
+              >
+                <ArrowDownToLine size={15} />
+                CSV
+              </button>
+              <button
+                disabled={!selected?.eligible}
+                onClick={() => onExport("pdf")}
+              >
+                <ArrowDownToLine size={15} />
+                PDF
+              </button>
+              <span>
+                {selected?.eligible
+                  ? "Selected month released"
+                  : "Monthly release gate closed"}
+              </span>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
   );
 }
