@@ -1,0 +1,63 @@
+{
+  "status": "identity concepts — no final name selected",
+  "provisional": {
+    "name": "PyroBridge",
+    "descriptor": "Satellite fire observations, in context."
+  },
+  "directions": [
+    {
+      "id": "ashkey",
+      "name": "ashkey",
+      "display": "Ashkey",
+      "pronunciation": "ASH-kee",
+      "tagline": "Read the signal.",
+      "descriptor": "Satellite fire observations, in context.",
+      "dark": "#111f23",
+      "light": "#f7f3e8",
+      "accent": "#f2ad57",
+      "ink": "#152b2d",
+      "lightAccent": "#8b4909",
+      "muted": "#a7bbb6",
+      "font": "Arial, sans-serif",
+      "weight": 600,
+      "tracking": -2,
+      "story": "A winged seed. An aperture. A key to the record."
+    },
+    {
+      "id": "brasa",
+      "name": "brasa",
+      "display": "Brasa",
+      "pronunciation": "BRAH-sah",
+      "tagline": "See the season.",
+      "descriptor": "An atlas of satellite fire observations.",
+      "dark": "#30202d",
+      "light": "#fcf1df",
+      "accent": "#ffae86",
+      "ink": "#422337",
+      "lightAccent": "#a64022",
+      "muted": "#d0b6bf",
+      "font": "Georgia, serif",
+      "weight": 400,
+      "tracking": -3,
+      "story": "Warm paper, an ember, and the layers of a field atlas."
+    },
+    {
+      "id": "vestige",
+      "name": "VESTIGE",
+      "display": "Vestige",
+      "pronunciation": "VES-tij",
+      "tagline": "Follow what remains.",
+      "descriptor": "A satellite record of burning activity.",
+      "dark": "#14242e",
+      "light": "#edf2f5",
+      "accent": "#8dd4e7",
+      "ink": "#163440",
+      "lightAccent": "#1d6378",
+      "muted": "#aac3cd",
+      "font": "Arial, sans-serif",
+      "weight": 500,
+      "tracking": 5,
+      "story": "An observed point. Two tracks. An evidence journal."
+    }
+  ]
+}
