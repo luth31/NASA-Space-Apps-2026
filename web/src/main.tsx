@@ -10,6 +10,7 @@ import App from "./App";
 import "./style.css";
 import "./orbital/mission.css";
 import "./readability.css";
+import "./orbital/living.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

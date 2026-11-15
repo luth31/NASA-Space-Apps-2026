@@ -1,8 +1,8 @@
 // Sensor identity stays constant across maps, clusters, and selection markers.
 export const mapPalette = {
-  modis: "#f0b581",
-  viirs: "#75c5ff",
-  mixed: "#b5c5d6",
+  modis: "#f7a16b",
+  viirs: "#ff665c",
+  mixed: "#f27b60",
   selection: "#ffffff",
 } as const;
 

@@ -36,6 +36,7 @@ const urls = [
   "/data/manifest.json",
   "/data/global.json",
   "/data/models.json",
+  "/data/monthly-harmonization.json",
   "/data/held-out-predictions.json",
   "/data/coverage.json",
   "/data/release.json",
@@ -57,7 +58,7 @@ const offline = {
   bytes,
   files: urls.length,
   scope:
-    "Global snapshot, three featured case months, complete calendar summaries, methods, provenance and local imagery. Additional month partitions are cached when viewed online.",
+    "Global snapshot, all featured case months, complete calendar summaries, methods, provenance and local imagery. Additional month partitions are cached when viewed online.",
 };
 await writeFile(path.join(root, "offline.json"), JSON.stringify(offline));
 const worker = createServiceWorker({

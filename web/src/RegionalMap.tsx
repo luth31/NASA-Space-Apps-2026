@@ -38,7 +38,6 @@ export default function RegionalMap({
   onCompare,
   period,
   reset,
-  wide,
 }: Props) {
   const [countries, setCountries] = useState<Area[]>([]);
   useEffect(() => {
@@ -56,7 +55,6 @@ export default function RegionalMap({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [split, setSplit] = useState(50);
   const [columns, setColumns] = useState(false);
-  const [dragging, setDragging] = useState(false);
   const [size, setSize] = useState({ width: 1000, height: 500 });
   const [hover, setHover] = useState<{
     o: Observation;
@@ -99,8 +97,13 @@ export default function RegionalMap({
     };
   }, [study, size, scale, pan, zoom, h]);
   const insetCountry = useMemo(
-    () => viewportCountry(countries, viewport),
-    [countries, viewport],
+    () =>
+      viewportCountry(countries, {
+        zoom: 7,
+        center: study.center,
+        corners: [study.center],
+      }),
+    [countries, study],
   );
   const splitX = (1000 - visibleWidth) / 2 + (visibleWidth * split) / 100;
   const xy = (lon: number, lat: number) => {
@@ -130,7 +133,6 @@ export default function RegionalMap({
     setPan({ x: (500 - p[0]) * z, y: (h / 2 - p[1] * ratio) * z });
   }, [selected?.id, study.id]);
 
-  const box = wide ? study.sceneBounds : study.bbox;
   const markerItems = useMemo(() => {
     const points = observations.map((o) => {
       const p = xy(o.lon, o.lat);
@@ -149,13 +151,11 @@ export default function RegionalMap({
       selected?.id,
     );
   }, [observations, study.id, zoom, pan, size, selected?.id]);
-  const corner = xy(box[0], box[3]),
-    end = xy(box[2], box[1]);
   const transform = `translate(${500 + pan.x}px, ${h / 2 + pan.y}px) scale(${zoom}) translate(-500px, ${-h / 2}px)`;
   const mapStyle = {
     transform,
-    transition:
-      dragging || reduced ? "none" : "transform .8s cubic-bezier(.2,.8,.2,1)",
+    // Camera and locator share the same rendered transform during direct interaction.
+    transition: "none",
   };
   const mark = (item: MapMarker) => {
     const { o, count } = item;
@@ -276,17 +276,14 @@ export default function RegionalMap({
             dy = (e.clientY - drag.current.y) / scale;
           if (Math.abs(dx) + Math.abs(dy) > 3) {
             moved.current = true;
-            setDragging(true);
           }
           setPan({ x: drag.current.px + dx, y: drag.current.py + dy });
         }}
         onPointerUp={() => {
           drag.current = null;
-          setDragging(false);
         }}
         onPointerLeave={() => {
           drag.current = null;
-          setDragging(false);
           setHover(null);
         }}
       >
@@ -306,18 +303,7 @@ export default function RegionalMap({
             preserveAspectRatio="none"
           />
           <rect width="1000" height={h} fill="#0a1424" opacity=".2" />
-          <rect
-            x={corner[0]}
-            y={corner[1]}
-            width={end[0] - corner[0]}
-            height={end[1] - corner[1]}
-            fill="#fff4dd"
-            fillOpacity=".02"
-            stroke="#e0dbc7"
-            strokeOpacity=".7"
-            strokeDasharray={`${4 / zoom} ${4 / zoom}`}
-            strokeWidth={0.75 / zoom}
-          />
+
           {!compare && (
             <g aria-hidden="true">
               {marks.map((m) => m.element)}

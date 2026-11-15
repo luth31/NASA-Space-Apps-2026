@@ -18,7 +18,7 @@ from pipeline.catalog import PUBLIC, ROOT
 def run(refresh=False, budget_seconds=7200):
     started = time.perf_counter()
     stages = []
-    for module in ["build", "acquire", "coverage", "train", "release"]:
+    for module in ["build", "acquire", "coverage", "train", "release", "monthly"]:
         command = [sys.executable, "-m", "pipeline." + module]
         if module == "build" and refresh:
             command.append("--refresh")

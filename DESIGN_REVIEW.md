@@ -98,3 +98,66 @@ The real cached-tab upgrade now loads `rgb(11, 19, 30)` and the calibration expe
 
 A second browser test changed the served build with two upgraded tabs left open and no manual update or reload calls: both received the new build automatically in 17.3 seconds. The preview process on port 4188 was explicitly restarted, and both local and private preview endpoints returned the current build. All 22 frontend tests pass.
 The restarted localhost preview was also tested with networking disabled: reloading the app, opening Models & validation, and opening the 276-cell Greek calendar all retained the new blue UI and saved experiment data.
+
+
+## Interactive harmonization review — 15 November 2026
+
+The dashboard now opens on a usable MODIS → model → VIIRS experiment. Drag the calibration slider or use Apply calibration, reveal the real VIIRS reading, switch month/region/model, and jump to a pre-VIIRS month. Counts are illustrated with nonspatial tiles; they are never presented as reconstructed fire locations. Explore has a direct route to this comparison alongside original global observations.
+
+### Requirement audit
+
+- **Model borders:** Chrome computed styles report 1 px on all four sides of the summary, scorecard, both detail sections, model table, matched-pass benchmark and coverage audit.
+- **Remove empty status text:** removed the released-accuracy placeholder, publishing checklist, repeated unavailable labels, and redundant pass-level experiment. Monthly regional MAE and unchanged-MODIS comparison are the primary evidence. Technical scope lives with the scores and in expandable protocol details.
+- **Harmonized calendar:** enabled by default, with seasonal scaling and LightGBM, original readings, individual-month error when VIIRS exists, prediction provenance and a downloadable experimental monthly CSV. All 276 Greek months and 12 Chaco months have saved estimates. Selecting historical October 2008 in the demo opens the same 348.8 estimate in the calendar; changing to LightGBM gives 400.5.
+- **Locator jitter and lag:** the old browser reproduction showed Germany → Greece during a flight to Evros and 100–120 ms between rectangle updates. Country resolution now happens when the camera settles; its projection is fitted to the country only. Three rapid zooms retained Greece and one unchanged country SVG path, with 52 rectangle updates, median 16.7 ms and p90 18.2 ms. A Greece → Chaco flight showed only Greece → Argentina. The historical SVG map uses the same immediate transform for its image and viewport, avoiding its former independent 800 ms interpolation.
+- **Dotted Evros rectangle:** removed the analysis-boundary layer from the continuous map and the rectangular overlay from historical scenes. Analysis bounds still constrain the underlying observations.
+- **Real model demonstration:** Evros August 2023 uses MODIS 625 → seasonal estimate 3,359.9 → VIIRS 4,175; error falls from 3,550 to 815.1 detections. Evia August 2021 explicitly shows a worse seasonal prediction. Neither example is selected by model improvement: defaults follow the case event date. Every month, including zero-count months, is selectable.
+- **Phone and keyboard:** Chrome DevTools MCP at 390 × 844 with touch and reduced motion: demo, model view and calendar have 390 px document width; the 848 px calendar grid scrolls within 350 px. The range input reaches 100% using End.
+
+### Monthly model evidence
+
+`pipeline.monthly` fits two distinct monthly-count models in 0.263 seconds on CPU using 324 region-months. It withholds all regions' records from one entire year, repeats over 13 years, and saves predictions plus native final models. Pre-2013 values use the full overlap fit; 2012 is excluded from fitting/scoring because the VIIRS year is partial. Input features exclude VIIRS. Saved predictions reproduce the displayed scores, and exports preserve null historical VIIRS readings and experimental status.
+
+The monthly product predicts archive counts without cloud/overpass normalization. It does not claim a historical/global accuracy percentage, reconstruct fire locations, or change the separate coverage-normalized release policy. Gran Chaco has one year, so its year holdout also withholds the whole region. Full scope and regional errors are in README.
+
+### Verification
+
+Chrome DevTools MCP exercised the complete calibration/reveal/historical/calendar flow, model and case changes, all four border edges, rapid zooms, intercontinental flight, mobile layout and keyboard interaction. Automated checks: 21 frontend tests and 14 pipeline tests, TypeScript, geography consistency and production build. Existing MapLibre chunk-size advisory remains.
+
+Production verification used the final `pyrobridge-b6084a9de26051a9` offline cache (412 files including its manifest; 30.8 MB). After a normal offline reload, the calibration reveal retained the 815.1 error and all three cases remained populated with both monthly models. The private preview showed the same result. Port 4188 was explicitly restarted; production Chrome reported no console warnings/errors. Phone checks above were completed before the instruction to skip further phone tests; no additional phone checks were run afterward.
+
+## Living globe and case expansion — 15 November 2026
+
+The dashboard now opens on a luminous, rotating Earth. One MapLibre camera carries the view into red-tinted continents, then countries, then original detection points. The red scale increases with total reported signals using a logarithmic transform; it is not burned area, fire severity, or an area-normalized density. Dashboard copy uses dates, places and signal counts. Calibration and technical units remain in Models & validation and the detailed investigation workspace.
+
+The green interface applies across all routes, with amber MODIS and red VIIRS observations. Rotation pauses on hover, stops after input, and respects reduced-motion settings. Geographic breadcrumbs change the camera without replacing the canvas. The country locator retains a fixed country shape while the viewport outline moves. Coastal views also consider nearby visible country anchors, so a frame centered over the Aegean does not lose Greece and substitute a global observation list.
+
+Historical case-study pins use sage rings and dated labels, distinct from the current red detections. Nearby pins group at globe scale; selecting a group exposes its dated investigations, and zoom separates the pins. Evros remains the featured entry. The case catalog now contains six regions:
+
+| New study | Featured Aqua imagery | Archive | Official context |
+| --- | --- | --- | --- |
+| Rhodes | 23 July 2023 | 2003–2025 | [NASA: Fires Ignite on Greek Islands](https://science.nasa.gov/earth/earth-observatory/fires-ignite-on-greek-islands-151628/) |
+| Manavgat | 30 July 2021 | 2003–2025 | [NASA MODIS: Fires in Turkey](https://modis.gsfc.nasa.gov/gallery/individual.php?db_date=2021-07-31) |
+| Northern Pantanal | 7 September 2020 | 2020 only | [NASA: Fires Char the Pantanal](https://science.nasa.gov/earth/earth-observatory/fires-char-the-pantanal-147269/) |
+
+These cases reuse checksum-verified country archives, with records from all countries intersecting each scene. Northern Pantanal is an explicit study rectangle, not the entire wetland. Dated GIBS Aqua images, geographic bounds and checksums are recorded in the asset manifests. The Pantanal Aqua image uses September 7 because September 6 had a large swath gap; its date remains distinct from the source article's Terra imagery. No gap was synthesized or filled.
+
+Monthly training now uses 648 overlap region-months and the same 13 whole-year folds. Both final models were refitted, and all calendar estimates and errors regenerated. On the same original evaluation months:
+
+| Study | Seasonal MAE before → after | LightGBM MAE before → after |
+| --- | ---: | ---: |
+| Evros | 14.50 → 14.50 | 156.26 → 91.57 |
+| Evia | 53.70 → 53.70 | 115.96 → 86.24 |
+| Gran Chaco | 10,649.32 → 7,139.67 | 17,531.74 → 16,695.33 |
+
+This is exploratory within-archive evaluation, not a general accuracy percentage or an independent final test. Scaling remains the default; LightGBM still performs worse than the unchanged MODIS baseline in several cases. The two South American studies only supply 2020, and the 2020 fold excludes both entire regions. Adding monthly archives does not add matched fire-mask passes: that separate benchmark still has 48 eligible cell-passes in two Greek regions, and the validated coverage-normalized release remains gated.
+
+Desktop checks use Chrome DevTools MCP; phone testing is intentionally skipped. The rotating overview measured 16.7 ms median and p95 requestAnimationFrame intervals over 60 frames on this machine, which is not a cross-device performance guarantee. Regression checks cover country count conservation, coastal context, calendar contrast, monthly provenance and offline-worker updates. The final handoff must rebuild and restart the configured production preview, verify its asset/cache hashes in the browser, and leave the PR open for review.
+
+The final six-case batch took **44.7 seconds** on CPU with **2.53 GB** peak child-process RSS; monthly fitting and evaluation took **0.292 seconds**. All 14 pipeline tests and 23 frontend tests pass, along with TypeScript, geography consistency and the production build. The rehearsal bundle is **57.1 MB / 529 files**; other monthly partitions load on demand. Existing MapLibre bundle-size advisory remains.
+
+![Glowing Earth and historical case pins](docs/review/living-case-globe.jpeg)
+![Six historical investigations](docs/review/living-six-cases.jpeg)
+![Green model comparison with all cases](docs/review/living-green-models.jpeg)
+
+Final production verification used `pyrobridge-0e36fd8819b9d069`. The restarted localhost and private Tailscale endpoints served identical JS/CSS hashes. Chrome verified 7,031 MODIS + 74,304 VIIRS = 81,335 original global readings, the new Pantanal investigation, and all six model rows. With networking disabled, the app reloaded, all six featured scenes and images loaded, and the six-case harmonized calendar remained available. Reduced motion produced zero automatic rotation. No production console warnings or errors were reported. Network and motion emulation were restored afterward; no phone checks were run.

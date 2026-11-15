@@ -2,7 +2,9 @@
 
 ## Current experience
 
-The dashboard explains MODIS-to-VIIRS count harmonization through four scientific chapters. Global exploration has four geographic depths on one persistent MapLibre canvas: Earth → region → area → observation. Camera movements preserve the layout, breadcrumbs and map controls. Detections use circle clusters and square pixel markers; original readings remain visible. Country insets and Natural Earth place labels preserve context at close zoom.
+The dashboard opens on a slowly rotating Earth with glowing fire signals. One MapLibre canvas carries the camera through Earth → continents → countries → fire signals. Continents and countries use red shading based on total reported detections, with plain-language hover summaries. MODIS and VIIRS filters preserve original observations. The lower-right country locator has a fixed country projection and a moving viewport outline. Nature greens frame the app; fire data uses red/amber. Auto-rotation pauses on hover and stops after interaction; reduced-motion settings disable it and animated flights.
+
+Scientific calibration lives in Models & validation, including the interactive monthly MODIS → estimate → observed VIIRS comparison. The historical calendar and full investigations remain separate destinations.
 
 Global exploration and historical investigations remain distinct datasets with visible dates and sensor labels. The visible navigation opens investigations, calendar, models and sources. Respect reduced motion and retain the region/observation lists alongside canvas interactions. Do not claim that calibration reconstructs subpixel fire locations or that the feasibility score validates a monthly calendar.
 
@@ -22,14 +24,14 @@ The frontend reads generated JSON and local imagery. It never authenticates to E
 
 Use separate branches/worktrees once the team setup is chosen. Assign one integrator to shared schema and release changes. Do not have multiple developers regenerate `web/public/data/` concurrently. Commit generated artifacts with the configuration and model changes that produced them.
 
-Push the branch and open a pull request for review. Merge only when explicitly requested for that pull request. In app handoffs, share the verified localhost URL first and the verified private Tailscale URL second. Each developer chooses the ports and hostname for their own machine.
+Push the branch and open a pull request for review. Merge only when explicitly requested for that pull request. Build and restart the configured local preview before handoff, then verify the actual browser has the new asset hashes and offline cache. Source edits do not update a production preview. In app handoffs, share the verified localhost URL first and the verified private Tailscale URL second. Each developer chooses the ports and hostname for their own machine.
 
 ## What is ready in v0.1
 
 - Real global and regional observations; cross-border counts; original source metadata and checksum manifests.
 - Globe clustering, regional clustering for dense months, point selection, hover details, paginated observation lists, wider boundaries with a pinned point, and day/month playback.
 - Dated satellite comparison with common camera/divider and explicit acquisition-time caveat.
-- Raw-count calendar with stable color scale, sensor toggle, case selection, keyboard navigation, and honest missing/coverage states.
+- Observed and experimental harmonized calendars, two selectable monthly models, case selection, keyboard navigation, measured local error, and CSV downloads.
 - Guided exploration using normal controls; pause, resume, step selection, replay, and reduced motion.
 - Three fitted harmonization candidates plus an unchanged-rate control, geographic and exploratory chronological diagnostics, and native saved models.
 - Aqua-only saved-model inference; candidate-specific geography/feature support; independently qualified fallback selection; monthly publication and export gates.
@@ -37,7 +39,7 @@ Push the branch and open a pull request for review. Merge only when explicitly r
 
 ## Scientific work that remains deliberately unreleased
 
-The current sample has 48 eligible cell-passes across two Greek case regions. It cannot supply complete monthly effort, broad geographic transfer, calibrated intervals, or a defensible historical accuracy claim. Harmonized values, same-month historical comparison, and investigation exports remain unavailable in the public bundle.
+The current sample has 48 eligible cell-passes across two Greek case regions. It cannot supply complete monthly effort, broad geographic transfer, calibrated intervals, or a defensible historical accuracy claim. The matched-pass sample still cannot release a coverage-normalized monthly product. A separate experimental archive-count product is now published by `pipeline.monthly`: 648 region-months, 13 whole-year folds, seasonal scaling and LightGBM. Its public artifact is `monthly-harmonization.json`; see README for measured errors. It does not claim cloud/effort normalization, new pixel locations, calibrated uncertainty intervals, or pre-VIIRS ground truth. Existing validated-product gates remain intact.
 
 The next data milestone is a **monthly validation bundle**, not a larger neural network:
 
@@ -53,7 +55,7 @@ Optional hurdle and active-cell-day experiments remain planned. The latter has a
 
 ## Practical boundaries
 
-- The raw regional calendar currently spans 2003–2025 for Greece and 2020 for Gran Chaco. The global snapshot is separate and newer.
+- The raw regional calendar spans 2003–2025 for Evros, Evia, Rhodes and Manavgat; Gran Chaco and Northern Pantanal have 2020 only. Six historical case pins open their dated investigations. The global snapshot is separate and newer.
 - Observation detail is global. Historical calibration is case-study research; no global historical claim is made.
 - Background imagery stays at its credited date while the observation date changes. Both are displayed.
 - Common coverage uses an approximate nearest-geolocated-pixel calculation and records tighter-distance and timing sensitivity. A footprint/coverage review is required before monthly release.
@@ -62,6 +64,6 @@ Optional hurdle and active-cell-day experiments remain planned. The latter has a
 
 ## Rehearsal and acceptance
 
-Open the production preview online, wait for the offline-ready indicator, and disable networking. Run the tour, switch cases, open the calendar, select an observation, change boundaries, and inspect methods. Confirm unsupported estimates and exports stay disabled. Re-enable networking for uncached months and external official reports.
+Open the production preview online, wait for the offline-ready indicator, and disable networking. Run the tour, switch cases, open the calendar, select an observation, change boundaries, and inspect methods. Apply calibration, reveal VIIRS, select a pre-VIIRS month, switch both monthly models, and export the experimental monthly CSV. Confirm observed values remain original and the monthly estimates retain their experimental label; validated investigation exports still require their separate gate. Re-enable networking for uncached months and external official reports.
 
 The recorded submission and live pitch remain separate from the app tour. Choose the team owners, final data cut, and presentation recording after the multi-developer setup.

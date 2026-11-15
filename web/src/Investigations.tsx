@@ -14,9 +14,9 @@ export default function Investigations({
       <p className="eyebrow">HISTORICAL INVESTIGATIONS</p>
       <h1>From a signal to its context.</h1>
       <p>
-        Explore three documented fire landscapes with dated NASA imagery,
-        original satellite readings, official reports, and a monthly observation
-        archive.
+        Explore {cases.length} documented fire landscapes with dated NASA
+        imagery, original satellite readings, official reports, and a monthly
+        observation archive.
       </p>
       <div className="investigation-cards">
         {cases.map((study) => (

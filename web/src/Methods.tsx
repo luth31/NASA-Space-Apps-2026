@@ -1,16 +1,10 @@
-import {
-  ArrowUpRight,
-  Check,
-  ChevronRight,
-  FlaskConical,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowUpRight, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import type { CoverageReport, Manifest, ModelReport } from "./data";
 import { integer, number } from "./data";
-import HoldoutLab from "./HoldoutLab";
-import BridgeExperiment from "./BridgeExperiment";
+import CalibrationDemo from "./CalibrationDemo";
+import { useMonthlyCalibration } from "./monthly";
 
 export default function Methods({
   report,
@@ -23,6 +17,7 @@ export default function Methods({
   manifest: Manifest;
   onSources: () => void;
 }) {
+  const { data: monthly } = useMonthlyCalibration();
   return (
     <motion.div
       className="methods-view"
@@ -31,212 +26,141 @@ export default function Methods({
     >
       <div className="page-heading">
         <div>
-          <span className="eyebrow">METHODS & VALIDATION</span>
+          <span className="eyebrow">MODELS & VALIDATION</span>
           <h1>
-            Evidence before estimates<span>.</span>
+            Measure the difference<span>.</span>
           </h1>
           <p>
-            One reference sensor. Multiple approaches. Results that have to earn
-            their place.
+            Predictions checked against VIIRS observations excluded from
+            training.
           </p>
         </div>
         <button className="text-button" onClick={onSources}>
           Data provenance <ArrowUpRight size={16} />
         </button>
       </div>
-      <BridgeExperiment />
-      <div className="method-summary">
-        <div className="method-statement">
-          <FlaskConical size={24} />
-          <span className="eyebrow">CURRENT RELEASE STATUS</span>
-          <h2>
-            {manifest.validationStatus === "validated"
-              ? "Validated for the published scope."
-              : "Three models trained.\nMonthly transfer unverified."}
-          </h2>
-          <p>
-            {report?.limitation ??
-              "The calibrated calendar requires verified common usable coverage from the original fire masks. Observations remain available to investigate."}
-          </p>
-        </div>
-        <div className="method-numbers">
-          <div>
-            <span className="mono">TRAINING ROWS</span>
-            <strong>{report ? integer(report.totalRows) : "—"}</strong>
-            <small>{report?.label ?? "Coverage preparation pending"}</small>
-          </div>
-          <div>
-            <span className="mono">TRAINING & EVALUATION</span>
-            <strong>
-              {report ? number(report.seconds) : "—"}
-              <em>s</em>
-            </strong>
-            <small>Measured on this machine · CPU</small>
-          </div>
-          <div>
-            <span className="mono">RELEASED ACCURACY CLAIM</span>
-            <strong className="no-score">
-              {manifest.validationStatus === "validated"
-                ? "See scorecard"
-                : "Not yet established"}
-            </strong>
-            <small>
-              Exploratory fitting does not certify historical estimates.
-            </small>
-          </div>
-        </div>
-      </div>
-      <div className="section-heading">
-        <h2>Five ways to bridge the record</h2>
-        <span className="mono">MAIN + FALLBACK + BASELINE + 2 EXPERIMENTS</span>
-      </div>
-      <div className="model-table">
-        <div className="model-table-head">
-          <span>APPROACH</span>
-          <span>ROLE</span>
-          <span>STATE</span>
-          <span>FIT TIME</span>
-        </div>
-        {[
-          {
-            name: "LightGBM",
-            role: "Main candidate",
-            desc: "Nonlinear count regression · Poisson objective",
-            key: "LightGBM",
-          },
-          {
-            name: "Negative binomial",
-            role: "Fallback candidate",
-            desc: "Regularized count regression · exposure when verified",
-            key: "Negative binomial",
-          },
-          {
-            name: "Seasonal scaling",
-            role: "Transparent baseline",
-            desc: "Seasonal ratio shrunk toward a pooled reference",
-            key: "Seasonal scaling",
-          },
-          {
-            name: "Two-part count model",
-            role: "Experiment",
-            desc: "Separate occurrence probability and positive count",
-            key: "Hurdle",
-          },
-          {
-            name: "Active-cell days",
-            role: "Experiment",
-            desc: "A coarser measure with a distinct unit",
-            key: "Active-cell days",
-          },
-        ].map((m, i) => {
-          const r = report?.models.find((r) => r.name === m.key);
-          return (
-            <div className="model-table-row" key={m.name}>
+      {monthly && (
+        <>
+          <div className="method-summary monthly-summary">
+            <div>
+              <span className="eyebrow">MONTHLY CALIBRATION</span>
+              <h2>
+                {monthly.trainingMonths} months. {monthly.years.length} withheld
+                years.
+              </h2>
+              <p>
+                Hide one complete year, train on the others, then predict the
+                hidden year. Repeat for every year.
+              </p>
+            </div>
+            <div className="method-numbers">
               <div>
-                <span className="model-index mono">0{i + 1}</span>
-                <span>
-                  <strong>{m.name}</strong>
-                  <small>{m.desc}</small>
-                </span>
+                <span className="mono">TRAINING + EVALUATION</span>
+                <strong>
+                  {number(monthly.seconds)}
+                  <em>s</em>
+                </strong>
+                <small>CPU · two fitted approaches</small>
               </div>
-              <span>{m.role}</span>
-              <span className={r ? "model-status" : "muted"}>
-                {r ? (
-                  <>
-                    <Check size={13} />
-                    Fitted · exploratory
-                  </>
-                ) : (
-                  "Planned"
-                )}
-              </span>
+            </div>
+          </div>
+          <section className="monthly-scorecard">
+            <div className="section-heading">
+              <h2>How far off were the predictions?</h2>
               <span className="mono">
-                {r?.seconds !== undefined ? `${r.seconds.toFixed(3)} s` : "—"}
+                AVERAGE ABSOLUTE ERROR · DETECTIONS / MONTH
               </span>
             </div>
-          );
-        })}
-      </div>
-      {report && <Benchmark report={report} />}
-      {report && <HoldoutLab />}
-      {coverage && <CoverageAudit coverage={coverage} manifest={manifest} />}
-      <div className="validation-bottom">
-        <div>
-          <span className="eyebrow">THE VALIDATION DESIGN</span>
-          <h2>
-            Leave places out.
-            <br />
-            Then leave time out.
-          </h2>
-          <p>
-            Hold out entire geographic regions, keep fire episodes together, and
-            reserve a later chronological block. Every candidate sees the same
-            eligible observations. The current feasibility sample covers Evia
-            and Evros. A monthly release needs an independently validated
-            observation-effort conversion and a new locked holdout.
-          </p>
-          <div className="folds" aria-label="Current geographic holdout folds">
-            {(
-              report?.models[0]?.folds?.map((f) => f.region.toUpperCase()) ?? []
-            ).map((r, i, regions) => (
-              <div key={r}>
-                <span className="mono">{r}</span>
-                {regions.map((_, j) => (
-                  <i key={j} className={i === j ? "held-out" : ""} />
-                ))}
-              </div>
-            ))}
-          </div>
-          <div className="fold-legend">
-            <i />
-            Training regions <i className="held-out" />
-            Withheld region
-          </div>
-        </div>
-        <div className="release-gates">
-          <span className="eyebrow">PUBLISHING GATES</span>
-          {[
-            {
-              done: true,
-              title: "Traceable source observations",
-              body: "Timestamped NASA records, processing versions, file checksums and dated scene assets.",
-            },
-            {
-              done: !!report,
-              title: "Reproducible candidate fitting",
-              body: "Main, fallback and baseline saved independently of the dashboard.",
-            },
-            {
-              done: !!coverage,
-              title: "Sampled-pass coverage audit",
-              body: "Fire masks and acquisition times checked for the declared passes. Monthly observing effort remains unverified.",
-            },
-            {
-              done: manifest.validationStatus === "validated",
-              title: "Independent monthly validation",
-              body: "Coverage, absolute error, bias and interval performance must pass the frozen release criteria.",
-            },
-          ].map((g) => (
-            <div className="gate" key={g.title}>
-              <span className={g.done ? "done" : ""}>
-                {g.done ? <Check size={14} /> : <ChevronRight size={14} />}
-              </span>
-              <div>
-                <strong>{g.title}</strong>
-                <p>{g.body}</p>
-              </div>
+            <p>
+              Lower is better. Compare each model with the original MODIS count.
+            </p>
+            <div className="scorecard-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Landscape</th>
+                    <th>Months</th>
+                    <th>Unchanged MODIS</th>
+                    <th>Seasonal scaling</th>
+                    <th>LightGBM</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {manifest.cases.map((c) => {
+                    const r = monthly.cases[c.id];
+                    return (
+                      <tr key={c.id}>
+                        <th>{c.name}</th>
+                        <td>{r.scores["Seasonal scaling"].n}</td>
+                        <td>
+                          {number(r.scores["Seasonal scaling"].baselineMae)}
+                        </td>
+                        <td>{number(r.scores["Seasonal scaling"].mae)}</td>
+                        <td>{number(r.scores.LightGBM.mae)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          ))}
+            <p className="method-footnote">
+              Gran Chaco has one overlap year: its withheld-year test also
+              withholds the entire region. These are archive-count estimates;
+              cloud and overpass effort are not normalized.
+            </p>
+          </section>
+        </>
+      )}
+      <CalibrationDemo cases={manifest.cases} />
+      <details className="method-details">
+        <summary>Inspect the models and evaluation protocol</summary>
+        <div className="model-table">
+          <div className="model-table-head">
+            <span>APPROACH</span>
+            <span>ROLE</span>
+            <span>INPUTS</span>
+            <span>OUTPUT</span>
+          </div>
+          <div className="model-table-row">
+            <strong>Seasonal scaling</strong>
+            <span>Default / simple fallback</span>
+            <span>MODIS, month, region</span>
+            <span>Monthly count</span>
+          </div>
+          <div className="model-table-row">
+            <strong>LightGBM</strong>
+            <span>Nonlinear candidate</span>
+            <span>MODIS, month, location</span>
+            <span>Monthly count</span>
+          </div>
         </div>
-      </div>
-      <div className="evidence-strip">
-        <ShieldCheck size={23} />
         <p>
-          VIIRS-equivalent counts describe the reference sensor’s detections.
-          They do not reconstruct missing ignition locations or establish every
-          fire on the ground.
+          Parameters are fixed before the year folds. Every calendar value from
+          2013 onward is predicted without that year in training. Earlier values
+          use models fitted to the complete overlap archive. Seasonal scaling is
+          the transparent default, not a guarantee of improvement. The 2012
+          partial VIIRS year is excluded from fitting and scoring.
         </p>
-      </div>
+        <p>
+          The monthly model learns reported counts, not missing fire
+          coordinates. Historical estimates assume the sensor relationship
+          transfers backward in time. Source months without detections remain
+          distinct from verified clear-sky no-fire observations.
+        </p>
+      </details>
+      <details className="method-details">
+        <summary>
+          Inspect the separate matched-pass experiment ·{" "}
+          {report?.totalRows ?? 0} cells
+        </summary>
+        <p>
+          This experiment compares near-simultaneous satellite passes over
+          common usable land. Its scores use a different unit from the monthly
+          calendar.
+        </p>
+        {report && <Benchmark report={report} />}
+        {coverage && <CoverageAudit coverage={coverage} manifest={manifest} />}
+      </details>
     </motion.div>
   );
 }

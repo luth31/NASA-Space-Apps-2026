@@ -161,10 +161,6 @@ export default function Dossier({
               <small>reported detections</small>
             </div>
           </div>
-          <div className="coverage-line">
-            <span className="status-dot" />
-            Usable observation coverage unverified
-          </div>
         </>
       )}
       {!study && (
