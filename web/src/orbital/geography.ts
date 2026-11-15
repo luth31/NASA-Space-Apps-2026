@@ -6,6 +6,8 @@ export type Bounds = [number, number, number, number];
 type MapUnit = {
   id: string;
   name: string;
+  adminId?: string;
+  adminName?: string;
   continent: string;
   region: string;
   point: Point;
@@ -21,6 +23,8 @@ export type Geography = {
 export type Area = {
   id: string;
   name: string;
+  adminId?: string;
+  adminName?: string;
   kind: "continent" | "region" | "country" | "sector";
   parent?: string;
   point: Point;
@@ -124,6 +128,8 @@ export function groupGeography(data: Geography, rows: Observation[]) {
     regionGroups.set(region.id, region);
     return {
       ...area(unit.id, unit.name, "country", unit.point, continent.id),
+      adminId: unit.adminId,
+      adminName: unit.adminName,
       geometry: geometry(unit.polygons),
     };
   });

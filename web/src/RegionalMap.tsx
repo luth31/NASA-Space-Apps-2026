@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Crosshair, Layers2, Minus, Plus, ScanLine } from "lucide-react";
+import LocationInset, {
+  viewportCountry,
+  type Viewport,
+} from "./orbital/LocationInset";
+import { groupGeography, type Area, type Point } from "./orbital/geography";
+import geographyUrl from "./orbital/map-units.json?url";
+import { sensorColor } from "./orbital/map-palette";
 import type { CaseStudy, MapMarker, Observation } from "./data";
 import {
   clusterMarkers,
@@ -33,6 +40,18 @@ export default function RegionalMap({
   reset,
   wide,
 }: Props) {
+  const [countries, setCountries] = useState<Area[]>([]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(geographyUrl, { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) throw Error();
+        return r.json();
+      })
+      .then((data) => setCountries(groupGeography(data, []).countries))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [split, setSplit] = useState(50);
@@ -58,6 +77,31 @@ export default function RegionalMap({
   const h = 1000 * ratio;
   const scale = Math.max(size.width / 1000, size.height / h);
   const visibleWidth = size.width / scale;
+  const viewport = useMemo<Viewport>(() => {
+    const [west, south, east, north] = study.sceneBounds;
+    const unproject = (sx: number, sy: number): Point => {
+      const x = 500 + ((sx - size.width / 2) / scale - pan.x) / zoom;
+      const y = h / 2 + ((sy - size.height / 2) / scale - pan.y) / zoom;
+      return [
+        west + (x / 1000) * (east - west),
+        north - (y / h) * (north - south),
+      ];
+    };
+    return {
+      zoom: 5 + Math.log2(zoom),
+      center: unproject(size.width / 2, size.height / 2),
+      corners: [
+        [0, 0],
+        [size.width, 0],
+        [size.width, size.height],
+        [0, size.height],
+      ].map(([x, y]) => unproject(x, y)),
+    };
+  }, [study, size, scale, pan, zoom, h]);
+  const insetCountry = useMemo(
+    () => viewportCountry(countries, viewport),
+    [countries, viewport],
+  );
   const splitX = (1000 - visibleWidth) / 2 + (visibleWidth * split) / 100;
   const xy = (lon: number, lat: number) => {
     const p = project(lon, lat, study.sceneBounds);
@@ -117,7 +161,7 @@ export default function RegionalMap({
     const { o, count } = item;
     const p = [item.x, item.y];
     const active = selected?.id === o.id;
-    const color = o.sensor === "MODIS" ? "#b8d8db" : "#ffa363";
+    const color = sensorColor(o.sensor);
     return (
       <g
         key={item.key}
@@ -261,7 +305,7 @@ export default function RegionalMap({
             height={h}
             preserveAspectRatio="none"
           />
-          <rect width="1000" height={h} fill="#06100c" opacity=".2" />
+          <rect width="1000" height={h} fill="#0a1424" opacity=".2" />
           <rect
             x={corner[0]}
             y={corner[1]}
@@ -329,6 +373,18 @@ export default function RegionalMap({
         )}
       </motion.svg>
       <div className="map-shading" />
+      {insetCountry && (
+        <LocationInset
+          country={insetCountry}
+          viewport={viewport}
+          point={selected}
+          onBack={() => {
+            setZoom(1);
+            setPan({ x: 0, y: 0 });
+          }}
+          overviewLabel="Reset scene view"
+        />
+      )}
       <div className="scene-heading">
         <span className="eyebrow">SATELLITE INVESTIGATION</span>
         <h1>

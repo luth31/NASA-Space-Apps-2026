@@ -10,6 +10,7 @@ import { useState } from "react";
 import type { CoverageReport, Manifest, ModelReport } from "./data";
 import { integer, number } from "./data";
 import HoldoutLab from "./HoldoutLab";
+import BridgeExperiment from "./BridgeExperiment";
 
 export default function Methods({
   report,
@@ -43,6 +44,7 @@ export default function Methods({
           Data provenance <ArrowUpRight size={16} />
         </button>
       </div>
+      <BridgeExperiment />
       <div className="method-summary">
         <div className="method-statement">
           <FlaskConical size={24} />

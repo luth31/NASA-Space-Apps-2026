@@ -27,6 +27,9 @@ import {
   timeLabel,
 } from "../data";
 import type { Area, Bounds } from "./geography";
+import LocationInset, { viewportCountry, type Viewport } from "./LocationInset";
+import { boundsOf } from "./geography";
+import { mapPalette } from "./map-palette";
 import cachedTiles from "./cached-tiles.json";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -83,6 +86,11 @@ export default function ContinuousMap(props: Props) {
   const mapRef = useRef<Map | null>(null);
   const latest = useRef(props);
   latest.current = props;
+  const [viewport, setViewport] = useState<Viewport | null>(null);
+  const insetCountry = useMemo(
+    () => (viewport ? viewportCountry(props.countries, viewport) : null),
+    [props.countries, viewport],
+  );
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [layerBusy, setLayerBusy] = useState(true);
@@ -194,6 +202,31 @@ export default function ContinuousMap(props: Props) {
       return;
     }
     mapRef.current = map;
+    let lastViewport = 0;
+    const updateViewport = () => {
+      const { clientWidth: w, clientHeight: h } = map.getContainer();
+      const center = map.getCenter();
+      setViewport({
+        zoom: map.getZoom(),
+        center: [center.lng, center.lat],
+        corners: [
+          [0, 0],
+          [w, 0],
+          [w, h],
+          [0, h],
+        ].map(([x, y]) => {
+          const p = map.unproject([x, y]);
+          return [p.lng, p.lat];
+        }),
+      });
+    };
+    map.on("move", () => {
+      if (performance.now() - lastViewport < 100) return;
+      lastViewport = performance.now();
+      updateViewport();
+    });
+    map.on("moveend", updateViewport);
+    map.on("load", updateViewport);
     map.on("sourcedata", (event) => {
       if (event.sourceId === "observations" && event.isSourceLoaded)
         setLayerBusy(false);
@@ -247,7 +280,14 @@ export default function ContinuousMap(props: Props) {
             10000,
             17,
           ],
-          "circle-color": "#738c9b",
+          "circle-color": [
+            "case",
+            ["==", ["get", "modis_count"], 0],
+            mapPalette.viirs,
+            ["==", ["get", "viirs_count"], 0],
+            mapPalette.modis,
+            mapPalette.mixed,
+          ],
           "circle-opacity": 0.55,
           "circle-stroke-color": "#dce7ed",
           "circle-stroke-width": 1,
@@ -290,8 +330,8 @@ export default function ContinuousMap(props: Props) {
             "match",
             ["get", "sensor"],
             "MODIS",
-            "#f0b581",
-            "#79d4cd",
+            mapPalette.modis,
+            mapPalette.viirs,
           ],
           "icon-opacity": 0.9,
         },
@@ -307,7 +347,7 @@ export default function ContinuousMap(props: Props) {
         paint: {
           "circle-radius": 14,
           "circle-opacity": 0,
-          "circle-stroke-color": "#fff1d6",
+          "circle-stroke-color": mapPalette.selection,
           "circle-stroke-width": 2,
         },
       });
@@ -606,6 +646,23 @@ export default function ContinuousMap(props: Props) {
   }, [area]);
   return (
     <div className="mission-map" ref={host}>
+      {viewport && insetCountry && (
+        <LocationInset
+          country={insetCountry}
+          viewport={viewport}
+          point={props.selected}
+          onBack={() => {
+            const [w, s, e, n] = boundsOf(insetCountry);
+            mapRef.current?.fitBounds(
+              [
+                [w, s],
+                [e, n],
+              ],
+              { padding: 60, duration: reduced ? 0 : 1100, maxZoom: 7 },
+            );
+          }}
+        />
+      )}
       {layerBusy && !failed && (
         <div className="mission-layer-status" role="status">
           Preparing observation layer…

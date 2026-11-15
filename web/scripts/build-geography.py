@@ -55,6 +55,8 @@ def main():
             {
                 "id": props["GU_A3"],
                 "name": props["GEOUNIT"],
+                "adminId": props["ADM0_A3"],
+                "adminName": props["ADMIN"],
                 "continent": props["CONTINENT"],
                 "region": props["SUBREGION"],
                 "point": [props["LABEL_X"], props["LABEL_Y"]],

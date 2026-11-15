@@ -30,9 +30,9 @@ import type { Geography, Area } from "./geography";
 import geographyUrl from "./map-units.json?url";
 import ContinuousMap from "./ContinuousMap";
 import type { Camera, MapHandle } from "./ContinuousMap";
-import "./mission.css";
 import Navigation from "../Navigation";
-import LocationInset from "./LocationInset";
+import BridgeExperiment from "../BridgeExperiment";
+import { geoContains } from "d3-geo";
 
 type Props = {
   observations: Observation[];
@@ -132,7 +132,8 @@ function Dashboard({
   const [caseRows, setCaseRows] = useState<Observation[]>([]);
   const [caseError, setCaseError] = useState(false);
   const [playing, setPlaying] = useState(false);
-  const [fold, setFold] = useState("macro");
+  const [caseId, setCaseId] = useState("evros");
+  const [caseLoading, setCaseLoading] = useState(false);
   const map = useRef<MapHandle>(null);
   const globalRows = useMemo(
     () =>
@@ -149,10 +150,13 @@ function Dashboard({
     () => groups.regions.filter((a) => a.rows.length),
     [groups],
   );
-  const study = manifest.cases.find((c) => c.id === "evros")!;
+  const study = manifest.cases.find((c) => c.id === caseId)!;
   const inCase = !explore && chapter > 0;
   useEffect(() => {
     let active = true;
+    setCaseRows([]);
+    setCaseLoading(true);
+    setCaseError(false);
     loadObservations(`/data/scenes/${study.id}.json`)
       .then((rows) => {
         if (active)
@@ -167,6 +171,9 @@ function Dashboard({
       })
       .catch(() => {
         if (active) setCaseError(true);
+      })
+      .finally(() => {
+        if (active) setCaseLoading(false);
       });
     return () => {
       active = false;
@@ -224,8 +231,9 @@ function Dashboard({
   const country = useMemo(
     () =>
       point
-        ? (groups.countries.find((c) =>
-            c.rows.some((r) => r.id === point.id),
+        ? (groups.countries.find(
+            (c) =>
+              c.geometry && geoContains(c.geometry, [point.lon, point.lat]),
           ) ?? null)
         : null,
     [point, groups],
@@ -238,6 +246,7 @@ function Dashboard({
   }
   function chooseChapter(next: number, automatic = false) {
     setChapter(next);
+    if (next === 2 && caseId === "chaco") setCaseId("evros");
     setExplore(false);
     clearPlace();
     if (next === 1) setSensor("MODIS");
@@ -278,12 +287,13 @@ function Dashboard({
     }
   }
   const scopeTitle = point
-    ? `${country?.name ?? region?.name ?? (inCase ? "Evros, Greece" : "Observation")} · ${coordinates(point.lon, point.lat)}`
+    ? `${country?.adminName ?? country?.name ?? region?.name ?? (inCase ? `${study.name}, ${study.country}` : "Observation")} · ${coordinates(point.lon, point.lat)}`
     : area
       ? "Local observations"
-      : (region?.name ?? (inCase ? "Evros, Greece" : "Global observations"));
+      : (region?.name ??
+        (inCase ? `${study.name}, ${study.country}` : "Global observations"));
   const range = inCase
-    ? dateLabel(study.date)
+    ? `${chapter === 2 ? "Context image · " : ""}${dateLabel(study.date)}`
     : `${dateLabel(manifest.snapshotStart, { day: "numeric", month: "short" })}–${dateLabel(manifest.snapshotEnd, { day: "numeric", month: "short", year: "numeric" })}`;
   const hasGlobalModis = manifest.globalSensorCounts?.MODIS !== undefined;
   const globalSourceLabel =
@@ -318,8 +328,11 @@ function Dashboard({
               {point ? (
                 <>
                   {inCase
-                    ? "Evros, Greece."
-                    : (country?.name ?? region?.name ?? "Satellite reading.")}
+                    ? `${study.name}, ${study.country}.`
+                    : (country?.adminName ??
+                      country?.name ??
+                      region?.name ??
+                      "Satellite reading.")}
                   <br />
                   <em>One thermal pixel.</em>
                 </>
@@ -382,6 +395,25 @@ function Dashboard({
             )}
             {!explore && !point && chapter === 1 && (
               <>
+                <label className="mission-case-picker">
+                  Explore another landscape
+                  <select
+                    aria-label="Sensor comparison case"
+                    value={caseId}
+                    onChange={(e) => {
+                      setCaseId(e.target.value);
+                      clearPlace();
+                      setPlaying(false);
+                    }}
+                  >
+                    {manifest.cases.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}, {c.country} · {c.date.slice(0, 4)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="mission-case-description">{study.description}</p>
                 <div
                   className="mission-sensors"
                   role="group"
@@ -391,6 +423,7 @@ function Dashboard({
                     <button
                       key={name}
                       className={sensor === name ? "selected" : ""}
+                      aria-pressed={sensor === name}
                       onClick={() => {
                         setSensor(name);
                         setPlaying(false);
@@ -400,26 +433,59 @@ function Dashboard({
                       <span>
                         {name === "MODIS" ? "Aqua · MODIS" : "S-NPP · VIIRS"}
                       </span>
-                      <strong>{caseError ? "—" : integer(counts[name])}</strong>
+                      <strong>
+                        {caseError || caseLoading ? "—" : integer(counts[name])}
+                      </strong>
                       <small>daytime detections</small>
                     </button>
                   ))}
                 </div>
+                {!caseLoading && !caseError && (
+                  <p className="mission-sensor-change" aria-live="polite">
+                    <strong>
+                      {sensor === "MODIS" ? "MODIS · 1 km" : "VIIRS · 375 m"}
+                    </strong>{" "}
+                    nominal pixels at nadir.
+                    <br />
+                    VIIRS reports{" "}
+                    {integer(Math.abs(counts.VIIRS - counts.MODIS))}{" "}
+                    {counts.VIIRS >= counts.MODIS ? "more" : "fewer"} detections
+                    here on this day.
+                  </p>
+                )}
                 <p className="mission-note">
                   {dateLabel(study.date)} · Same analysis boundary. Separate
                   overpasses and sampling. Counts alone do not measure the
                   sensor correction.
                 </p>
+                {study.id === "chaco" && (
+                  <p className="mission-note">
+                    Gran Chaco has no eligible five-minute pairs in this sample.
+                    The next step demonstrates calibration on the Greek cases.
+                  </p>
+                )}
                 <button
                   className="mission-primary"
                   onClick={() => chooseChapter(2)}
                 >
-                  How do we bridge the gap? <ArrowRight size={17} />
+                  See what the model changes <ArrowRight size={17} />
                 </button>
               </>
             )}
             {!explore && !point && chapter === 2 && (
               <>
+                <p className="mission-note">
+                  Switching sensors shows two observations. Here, a trained
+                  model transforms the MODIS count into a VIIRS-scale estimate
+                  and we check it against withheld VIIRS data.
+                </p>
+                {study.id === "chaco" && (
+                  <p className="mission-note">
+                    Gran Chaco has no eligible five-minute pairs in this sample.
+                    The experiment uses the Greek cases with verified common
+                    coverage.
+                  </p>
+                )}
                 <div className="bridge-flow">
                   <span>MODIS observations</span>
                   <ChevronRight />
@@ -453,7 +519,7 @@ function Dashboard({
                 <div className="mission-measure">
                   <strong>{study.years.length}</strong>
                   <span>
-                    years in the Greek case archive
+                    years in this case archive
                     <br />
                     {Math.min(...study.years)}–{Math.max(...study.years)}
                   </span>
@@ -464,12 +530,12 @@ function Dashboard({
                 </p>
                 <button
                   className="mission-primary"
-                  onClick={() => onNavigate("calendar")}
+                  onClick={() => onMonth(study, study.date.slice(0, 7))}
                 >
                   Open the fire calendar <ArrowRight size={17} />
                 </button>
                 <button className="mission-text" onClick={() => onCase(study)}>
-                  Investigate Evros <ArrowUpRight size={15} />
+                  Investigate {study.name} <ArrowUpRight size={15} />
                 </button>
               </>
             )}
@@ -566,7 +632,7 @@ function Dashboard({
           </footer>
         </aside>
         <section
-          className="mission-scene"
+          className={`mission-scene${!explore && chapter === 2 && !point ? " mission-learning-scene" : ""}`}
           aria-label="Interactive Earth and scientific evidence"
         >
           <ContinuousMap
@@ -669,20 +735,25 @@ function Dashboard({
                   ))}
                 </div>
               )}
+              <span className="mission-mixed-key">
+                <i /> Gray = mixed sensors · amber = MODIS · blue = VIIRS
+              </span>
               <small>
-                Circles group detections · squares show individual pixels
+                Circles = groups · squares = pixels · white ring = selection
               </small>
             </div>
           )}
           {!explore && !point && chapter === 2 && (
-            <ModelEvidence
-              report={report}
-              fold={fold}
-              onFold={(value) => {
-                setPlaying(false);
-                setFold(value);
-              }}
-            />
+            <div className="mission-bridge-panel">
+              <BridgeExperiment
+                initialRegion={caseId}
+                onRegion={(id) => {
+                  setCaseId(id);
+                  clearPlace();
+                  setPlaying(false);
+                }}
+              />
+            </div>
           )}
           {!explore && !point && chapter === 3 && (
             <CalendarPreview
@@ -690,13 +761,6 @@ function Dashboard({
               onOpen={(month) =>
                 onMonth(study, month ?? study.date.slice(0, 7))
               }
-            />
-          )}
-          {point && country && (
-            <LocationInset
-              country={country}
-              point={point}
-              onBack={() => backTo(1)}
             />
           )}
           <div className="mission-imagery-note">
@@ -814,64 +878,6 @@ function ObservationReading({
   );
 }
 
-function ModelEvidence({
-  report,
-  fold,
-  onFold,
-}: {
-  report: ModelReport | null;
-  fold: string;
-  onFold: (fold: string) => void;
-}) {
-  const scores =
-    report?.models
-      .map((model) => ({
-        name: model.name,
-        mae:
-          fold === "macro"
-            ? model.mae
-            : model.folds?.find((f) => f.region === fold)?.mae,
-      }))
-      .filter((m) => m.mae !== undefined) ?? [];
-  const max = Math.max(1, ...scores.map((s) => s.mae!));
-  return (
-    <section className="mission-evidence" aria-label="Actual model benchmark">
-      <header>
-        <div>
-          <p className="mission-eyebrow">MEASURED ON WITHHELD DATA</p>
-          <h2>How close did we get?</h2>
-        </div>
-        <select
-          value={fold}
-          onChange={(e) => onFold(e.target.value)}
-          aria-label="Validation region"
-        >
-          <option value="macro">Mean of region holdouts</option>
-          <option value="evia">Withheld Evia</option>
-          <option value="evros">Withheld Evros</option>
-        </select>
-      </header>
-      <p>Mean absolute error · lower is better</p>
-      <div className="mission-scorebars">
-        {scores.map((score) => (
-          <div key={score.name}>
-            <span>{score.name}</span>
-            <div>
-              <i style={{ width: `${(score.mae! / max) * 100}%` }} />
-            </div>
-            <strong>{score.mae?.toFixed(2)}</strong>
-          </div>
-        ))}
-      </div>
-      <p className="mission-note">
-        Hotspot pixels per 0.25° cell and paired pass.{" "}
-        {report?.totalRows ?? "—"} eligible cell-passes in two regions. Monthly
-        and global transfer remain unverified.
-      </p>
-    </section>
-  );
-}
-
 function CalendarPreview({
   study,
   onOpen,
@@ -879,7 +885,8 @@ function CalendarPreview({
   study: CaseStudy;
   onOpen: (month?: string) => void;
 }) {
-  const years = [2021, 2022, 2023];
+  const focusYear = Number(study.date.slice(0, 4));
+  const years = study.years.filter((y) => y >= focusYear - 2 && y <= focusYear);
   const max = Math.max(
     ...study.months
       .filter((m) => years.includes(Number(m.month.slice(0, 4))))
@@ -890,7 +897,9 @@ function CalendarPreview({
     <section className="mission-calendar-preview">
       <header>
         <div>
-          <p className="mission-eyebrow">EVROS · OBSERVED MODIS COUNTS</p>
+          <p className="mission-eyebrow">
+            {study.name.toUpperCase()} · OBSERVED MODIS COUNTS
+          </p>
           <h2>Every season leaves a pattern.</h2>
         </div>
         <Layers2 size={24} />
@@ -919,7 +928,7 @@ function CalendarPreview({
                   background:
                     month?.modis == null
                       ? "#28343e"
-                      : `rgba(235,148,89,${0.07 + Math.sqrt(month.modis / max) * 0.9})`,
+                      : `rgba(117,197,255,${0.07 + Math.sqrt(month.modis / max) * 0.9})`,
                 }}
                 aria-label={`${year} month ${i + 1}: ${month?.modis ?? "unavailable"} MODIS detections. Open this month.`}
               />

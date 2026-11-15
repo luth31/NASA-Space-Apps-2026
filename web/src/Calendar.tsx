@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowDownToLine, ArrowUpRight, Info, ShieldCheck } from "lucide-react";
+import { calendarColors } from "./calendar-colors";
 import type { CaseStudy, Month } from "./data";
 import { dateLabel, historicalMedian, number } from "./data";
 
@@ -63,12 +64,6 @@ export default function Calendar({
   const median = harmonized
     ? historicalMedian(study.months, selectedMonth, "estimate")
     : { value: null, n: 0 };
-  const color = (n: number | null) => {
-    if (n === null) return "#1c2525";
-    if (n === 0) return "#232e2c";
-    const t = Math.log1p(n) / Math.log1p(max);
-    return `hsl(${46 - t * 24} ${22 + t * 55}% ${19 + t * 48}%)`;
-  };
   return (
     <motion.div
       className="calendar-view"
@@ -154,106 +149,117 @@ export default function Calendar({
               {study.years.length} YEARS IN THIS BUNDLE
             </span>
           </div>
+          <p className="calendar-reading-guide">
+            Every cell shows its count. Blue intensity uses a shared logarithmic
+            scale for both sensors. 0 = no reported detections; — = source
+            unavailable.
+          </p>
           <div
-            className="heatmap"
-            role="grid"
-            aria-label="Monthly hotspot count calendar"
+            className="heatmap-scroll"
+            tabIndex={0}
+            aria-label="Monthly calendar, scroll horizontally for all months"
           >
-            <div className="heatmap-row month-labels" role="row">
-              <span role="columnheader" aria-label="Year" />{" "}
-              {names.map((n) => (
-                <span key={n} role="columnheader">
-                  {n}
-                </span>
+            <div
+              className="heatmap"
+              role="grid"
+              aria-label="Monthly hotspot count calendar"
+            >
+              <div className="heatmap-row month-labels" role="row">
+                <span role="columnheader" aria-label="Year" />{" "}
+                {names.map((n) => (
+                  <span key={n} role="columnheader">
+                    {n}
+                  </span>
+                ))}
+              </div>
+              {[...study.years].reverse().map((y, i) => (
+                <motion.div
+                  key={y}
+                  className="heatmap-row"
+                  role="row"
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.018 }}
+                >
+                  <span className="year-label" role="rowheader">
+                    {y}
+                  </span>
+                  {names.map((_, m) => {
+                    const key = `${y}-${String(m + 1).padStart(2, "0")}`;
+                    const cell = study.months.find((v) => v.month === key)!;
+                    const n = cell[field];
+                    return (
+                      <button
+                        key={key}
+                        role="gridcell"
+                        data-month={key}
+                        tabIndex={selectedMonth === key ? 0 : -1}
+                        className={`heat-cell ${selectedMonth === key ? "selected" : ""} ${n === null ? "missing" : ""}`}
+                        style={{
+                          ...calendarColors(n, max),
+                          transitionDelay: `${m * 13}ms`,
+                        }}
+                        onClick={() => onMonth(key)}
+                        onKeyDown={(e) => {
+                          const offsets: Record<string, number> = {
+                            ArrowLeft: -1,
+                            ArrowRight: 1,
+                            ArrowUp: -12,
+                            ArrowDown: 12,
+                          };
+                          const current = orderedMonths.indexOf(key);
+                          const offset =
+                            e.key === "Home"
+                              ? -m
+                              : e.key === "End"
+                                ? 11 - m
+                                : offsets[e.key];
+                          if (offset === undefined) return;
+                          e.preventDefault();
+                          const next =
+                            orderedMonths[
+                              Math.max(
+                                0,
+                                Math.min(
+                                  orderedMonths.length - 1,
+                                  current + offset,
+                                ),
+                              )
+                            ];
+                          onMonth(next);
+                          document
+                            .querySelector<HTMLButtonElement>(
+                              `[data-month="${next}"]`,
+                            )
+                            ?.focus();
+                        }}
+                        onMouseEnter={() => setTip(cell)}
+                        onMouseLeave={() => setTip(null)}
+                        onFocus={() => setTip(cell)}
+                        onBlur={() => setTip(null)}
+                        aria-label={`${names[m]} ${y}: ${n === null ? "data unavailable" : `${n} ${harmonized ? "estimated VIIRS-equivalent hotspots" : "reported detections"}; usable coverage ${cell.coverage}`}`}
+                        aria-selected={selectedMonth === key}
+                      >
+                        <span>{n === null ? "—" : number(n)}</span>
+                      </button>
+                    );
+                  })}
+                </motion.div>
               ))}
             </div>
-            {[...study.years].reverse().map((y, i) => (
-              <motion.div
-                key={y}
-                className="heatmap-row"
-                role="row"
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.018 }}
-              >
-                <span className="year-label" role="rowheader">
-                  {y}
-                </span>
-                {names.map((_, m) => {
-                  const key = `${y}-${String(m + 1).padStart(2, "0")}`;
-                  const cell = study.months.find((v) => v.month === key)!;
-                  const n = cell[field];
-                  return (
-                    <button
-                      key={key}
-                      role="gridcell"
-                      data-month={key}
-                      tabIndex={selectedMonth === key ? 0 : -1}
-                      className={`heat-cell ${selectedMonth === key ? "selected" : ""} ${n === null ? "missing" : ""}`}
-                      style={{
-                        backgroundColor: color(n),
-                        transitionDelay: `${m * 13}ms`,
-                      }}
-                      onClick={() => onMonth(key)}
-                      onKeyDown={(e) => {
-                        const offsets: Record<string, number> = {
-                          ArrowLeft: -1,
-                          ArrowRight: 1,
-                          ArrowUp: -12,
-                          ArrowDown: 12,
-                        };
-                        const current = orderedMonths.indexOf(key);
-                        const offset =
-                          e.key === "Home"
-                            ? -m
-                            : e.key === "End"
-                              ? 11 - m
-                              : offsets[e.key];
-                        if (offset === undefined) return;
-                        e.preventDefault();
-                        const next =
-                          orderedMonths[
-                            Math.max(
-                              0,
-                              Math.min(
-                                orderedMonths.length - 1,
-                                current + offset,
-                              ),
-                            )
-                          ];
-                        onMonth(next);
-                        document
-                          .querySelector<HTMLButtonElement>(
-                            `[data-month="${next}"]`,
-                          )
-                          ?.focus();
-                      }}
-                      onMouseEnter={() => setTip(cell)}
-                      onMouseLeave={() => setTip(null)}
-                      onFocus={() => setTip(cell)}
-                      onBlur={() => setTip(null)}
-                      aria-label={`${names[m]} ${y}: ${n === null ? "data unavailable" : `${n} ${harmonized ? "estimated VIIRS-equivalent hotspots" : "reported detections"}; usable coverage ${cell.coverage}`}`}
-                      aria-selected={selectedMonth === key}
-                    >
-                      <span>{n === null ? "—" : number(n)}</span>
-                    </button>
-                  );
-                })}
-              </motion.div>
-            ))}
           </div>
           <div className="heatmap-footer">
             <span className="mono">
               {tip
                 ? `${dateLabel(tip.month + "-01", { month: "short", year: "numeric" })} · ${tip[field] === null ? "Source unavailable" : number(tip[field]) + " detections"}`
-                : "SELECT A MONTH TO INVESTIGATE"}
+                : "Select a month to investigate"}
             </span>
             <div className="scale">
               <span>0</span>
               <div
                 style={{
                   background:
-                    "linear-gradient(90deg,#232e2c,#706d36,#ce9b51,#edb56c)",
+                    "linear-gradient(90deg,#1b2c40,hsl(210 55% 36%),hsl(210 70% 55%),hsl(210 80% 78%))",
                 }}
               />
               <span>{number(max)}</span>
@@ -295,14 +301,18 @@ export default function Calendar({
               <dt>Usable coverage</dt>
               <dd>{selected?.eligible ? "Verified" : "Not yet verified"}</dd>
             </div>
-            <div>
-              <dt>Historical median</dt>
-              <dd>{number(median.value)}</dd>
-            </div>
-            <div>
-              <dt>Eligible comparison years</dt>
-              <dd>{median.n}</dd>
-            </div>
+            {harmonized && (
+              <>
+                <div>
+                  <dt>Historical median</dt>
+                  <dd>{number(median.value)}</dd>
+                </div>
+                <div>
+                  <dt>Eligible comparison years</dt>
+                  <dd>{median.n}</dd>
+                </div>
+              </>
+            )}
             {harmonized && (
               <>
                 <div>

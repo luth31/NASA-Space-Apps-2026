@@ -1,9 +1,5 @@
 .mission-app {
-  --paper: #edf0e9;
-  --muted: #a4b4bd;
-  --accent: #ecb37e;
-  --teal: #89d0c7;
-  --line: #263640;
+  --teal: var(--viirs);
   color: var(--paper);
   background: #080f16;
   min-height: 100dvh;
@@ -33,10 +29,6 @@
   opacity: 0.35;
 }
 .mission-header {
-  --paper: #edf0e9;
-  --muted: #a4b4bd;
-  --accent: #ecb37e;
-  --line: #263640;
   color: var(--paper);
   height: 82px;
   display: flex;
@@ -81,10 +73,10 @@
 }
 .investigation-cards button {
   text-align: left;
-  border: 1px solid #3d504a;
+  border: 1px solid #3d4650;
   border-radius: 8px;
   overflow: hidden;
-  background: #14211e;
+  background: #141a21;
 }
 .investigation-cards img {
   width: 100%;
@@ -100,8 +92,8 @@
 }
 .investigation-cards span,
 .investigation-cards small {
-  font-size: 11px;
-  color: #a3b9b6;
+  font-size: 13px;
+  color: #a3aeb9;
 }
 .investigation-cards h2 {
   display: flex;
@@ -114,13 +106,13 @@
 .investigation-cards p {
   font-size: 14px;
   line-height: 1.8;
-  color: #bcc9c4;
+  color: #bcc2c9;
 }
 .mission-place-label {
   pointer-events: none;
   color: #f0eee3;
   font:
-    12px "DM Sans",
+    13px "DM Sans",
     sans-serif;
   letter-spacing: 0.02em;
   text-shadow:
@@ -151,7 +143,7 @@
 }
 .mission-location-inset small {
   color: #b8cace;
-  font-size: 10px;
+  font-size: 13px;
 }
 .mission-map-notice {
   position: absolute;
@@ -161,7 +153,7 @@
   background: #152634e8;
   color: #e5c5a8;
   padding: 10px;
-  font-size: 11px;
+  font-size: 13px;
 }
 .mission-brand {
   display: flex;
@@ -225,7 +217,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
   white-space: nowrap;
 }
@@ -259,7 +251,7 @@
 }
 .mission-eyebrow {
   font:
-    10px "IBM Plex Mono",
+    13px "IBM Plex Mono",
     monospace;
   letter-spacing: 0.13em;
   color: var(--accent);
@@ -274,7 +266,7 @@
 }
 .mission-story h1 em {
   font-style: normal;
-  color: #b4c9c8;
+  color: #b4bec9;
 }
 .mission-description {
   font-size: 16px;
@@ -300,7 +292,7 @@
     transform 0.2s;
 }
 .mission-primary:hover {
-  background: #f7c694 !important;
+  background: var(--accent) !important;
   transform: translateY(-1px);
 }
 .mission-text {
@@ -321,7 +313,7 @@
 }
 .mission-purpose > span {
   font:
-    9px "IBM Plex Mono",
+    13px "IBM Plex Mono",
     monospace;
   color: var(--muted);
   letter-spacing: 0.1em;
@@ -338,8 +330,8 @@
   gap: 9px;
   border-top: 1px solid var(--line);
   padding: 16px 26px;
-  font-size: 10px;
-  color: #91a8b7;
+  font-size: 13px;
+  color: #aebfd1;
   min-height: 50px;
 }
 .sensor-footprints {
@@ -368,10 +360,10 @@
   height: 18px;
   width: 18px;
   border-color: var(--teal);
-  background: #89d0c722;
+  background: #89acd022;
 }
 .sensor-footprints span {
-  font-size: 10px;
+  font-size: 13px;
   color: var(--muted);
   display: grid;
   gap: 2px;
@@ -383,14 +375,14 @@
 }
 .sensor-footprints > small {
   flex-basis: 100%;
-  font-size: 10px;
-  color: #839ba8;
+  font-size: 13px;
+  color: #aebfd1;
 }
 .sensor-footprints > svg {
-  color: #617786;
+  color: #aebfd1;
 }
 .mission-note {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.65;
   color: #99aebc;
   margin: 18px 0;
@@ -408,7 +400,7 @@
   font-variant-numeric: tabular-nums;
 }
 .mission-measure > span {
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.6;
   color: var(--muted);
 }
@@ -428,11 +420,11 @@
 }
 .mission-map .maplibregl-ctrl-attrib {
   background: #0b141cbd !important;
-  color: #8ea3ad;
-  font-size: 9px;
+  color: #aebfd1;
+  font-size: 13px;
 }
 .mission-map .maplibregl-ctrl-attrib a {
-  color: #8ea3ad;
+  color: #aebfd1;
 }
 .mission-map .maplibregl-ctrl-group {
   background: #13212cee !important;
@@ -454,7 +446,7 @@
   border-color: #9cb2bd;
   color: #c2d0d8;
   font:
-    10px "IBM Plex Mono",
+    13px "IBM Plex Mono",
     monospace;
 }
 .mission-map .maplibregl-ctrl-bottom-left {
@@ -489,9 +481,9 @@
   align-items: center;
   gap: 8px;
   padding: 0 10px;
-  font-size: 12px;
+  font-size: 13px;
   min-height: 42px;
-  color: #94a8b3;
+  color: #aebfd1;
 }
 .mission-location-bar button.current {
   color: #f6d4ac;
@@ -522,7 +514,7 @@
 }
 .mission-map-caption small {
   font:
-    10px "IBM Plex Mono",
+    13px "IBM Plex Mono",
     monospace;
   color: #b0c2ce;
 }
@@ -565,7 +557,7 @@
   padding: 0 8px;
   border: 1px solid transparent;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 13px;
   white-space: nowrap;
 }
 .mission-sensor-filter button[aria-pressed="true"] {
@@ -575,28 +567,28 @@
 .mission-map-legend i {
   width: 8px;
   height: 8px;
-  border: 1px solid #89d0c7;
-  background: #89d0c733;
+  border: 1px solid #89acd0;
+  background: #89acd033;
 }
 .mission-map-legend i.modis {
   border-color: var(--accent);
-  background: #ecb37e33;
+  background: #f0b58133;
 }
 .mission-map-legend span {
-  font-size: 11px;
+  font-size: 13px;
 }
 .mission-map-legend small {
   flex-basis: 100%;
-  color: #8ba3b2;
-  font-size: 10px;
+  color: #aebfd1;
+  font-size: 13px;
   margin-left: 4px;
 }
 .mission-imagery-note {
   position: absolute;
   bottom: 20px;
   left: 29px;
-  font-size: 9px;
-  color: #91a8b7;
+  font-size: 13px;
+  color: #aebfd1;
   background: #0b151dbb;
   padding: 4px 7px;
   pointer-events: none;
@@ -624,24 +616,24 @@
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 11px;
+  font-size: 13px;
   margin: 7px 0;
 }
 .mission-hover dt {
-  color: #8fa6b6;
+  color: #aebfd1;
 }
 .mission-hover dd {
   margin: 0;
   font-family: "IBM Plex Mono", monospace;
 }
 .mission-hover > span {
-  font-size: 10px;
+  font-size: 13px;
   color: var(--accent);
 }
 .map-failure {
   position: absolute;
   inset: 30%;
-  color: #d6e2df;
+  color: #d6dce2;
   line-height: 1.6;
 }
 .mission-journey {
@@ -658,7 +650,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px !important;
+  font-size: 13px !important;
   min-height: 44px;
   color: #c1d0d8 !important;
 }
@@ -678,8 +670,8 @@
   display: flex;
   flex-direction: column;
   gap: 13px;
-  font-size: 12px;
-  color: #8ea5b3;
+  font-size: 13px;
+  color: #aebfd1;
   min-height: 50px;
   justify-content: center;
 }
@@ -706,7 +698,7 @@
 }
 .mission-explore-hint {
   margin: auto;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
 }
 .mission-sensors {
@@ -725,16 +717,16 @@
     background 0.3s;
 }
 .mission-sensors button.selected {
-  border-color: var(--accent);
-  background: #2c2c29;
+  border-color: var(--modis);
+  background: #2a2530;
 }
 .mission-sensors button:nth-child(2).selected {
   border-color: var(--teal);
-  background: #193130;
+  background: #192531;
 }
 .mission-sensors span,
 .mission-sensors small {
-  font-size: 10px;
+  font-size: 13px;
   color: var(--muted);
   display: block;
 }
@@ -756,13 +748,13 @@
   margin-top: 25px;
 }
 .bridge-flow span {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
 }
 .bridge-flow strong {
   font-size: 15px;
   font-weight: 500;
-  border: 1px solid #7ebbb077;
+  border: 1px solid #7e9cbb77;
   border-radius: 5px;
   color: var(--teal);
   padding: 12px;
@@ -771,7 +763,7 @@
   transform: rotate(90deg);
   width: 15px;
   height: 15px;
-  color: #5c7384;
+  color: #aebfd1;
 }
 .mission-evidence,
 .mission-calendar-preview {
@@ -813,10 +805,10 @@
   padding: 10px;
   border-radius: 5px;
   max-width: 195px;
-  font-size: 11px;
+  font-size: 13px;
 }
 .mission-evidence > p {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
 }
 .mission-scorebars {
@@ -828,7 +820,7 @@
   gap: 15px;
   align-items: center;
   margin: 20px 0;
-  font-size: 12px;
+  font-size: 13px;
 }
 .mission-scorebars > div > div {
   height: 8px;
@@ -866,13 +858,13 @@
 }
 .mini-calendar-head {
   margin-top: 30px;
-  font-size: 10px;
+  font-size: 13px;
   color: var(--muted);
   text-align: center;
 }
 .mini-calendar-row > span {
   font:
-    11px "IBM Plex Mono",
+    13px "IBM Plex Mono",
     monospace;
   color: #b0c3d0;
 }
@@ -917,7 +909,7 @@
   border-bottom: 1px solid #ffffff0c;
   min-height: 43px;
   text-align: left;
-  font-size: 12px;
+  font-size: 13px;
 }
 .mission-places button > span {
   flex: 1;
@@ -925,7 +917,7 @@
 .mission-places small {
   color: var(--muted);
   font:
-    10px "IBM Plex Mono",
+    13px "IBM Plex Mono",
     monospace;
 }
 .mission-places button:hover {
@@ -947,14 +939,14 @@
 }
 .mission-observations button > span {
   font:
-    10px "IBM Plex Mono",
+    13px "IBM Plex Mono",
     monospace;
 }
 .mission-observations small {
   display: block;
-  color: #829dac;
+  color: #aebfd1;
   margin-top: 5px;
-  font-size: 9px;
+  font-size: 13px;
 }
 .mission-observations strong {
   font-size: 15px;
@@ -987,7 +979,7 @@
   gap: 8px;
   align-items: center;
   font:
-    10px "IBM Plex Mono",
+    13px "IBM Plex Mono",
     monospace;
   color: var(--accent);
 }
@@ -997,11 +989,11 @@
   gap: 15px;
   border-bottom: 1px solid #ffffff0b;
   padding: 12px 0;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.5;
 }
 .mission-reading dt {
-  color: #819cac;
+  color: #aebfd1;
 }
 .mission-reading dd {
   margin: 0;
@@ -1015,7 +1007,7 @@
   align-items: center;
   justify-content: center;
   background: #0b131c;
-  color: #cfdfdf;
+  color: #cfd7df;
   gap: 20px;
 }
 .mission-boot h1 {
@@ -1094,7 +1086,7 @@
     padding: 0 22px;
   }
   .mission-chapters button {
-    font-size: 11px;
+    font-size: 13px;
   }
 }
 @media (max-width: 760px) {
@@ -1105,10 +1097,10 @@
     padding: 7px;
   }
   .mission-location-inset > span {
-    font-size: 11px;
+    font-size: 13px;
   }
   .mission-location-inset small {
-    font-size: 8px;
+    font-size: 13px;
   }
   .mission-header {
     height: 108px;
@@ -1138,7 +1130,7 @@
     scrollbar-width: none;
   }
   .mission-header nav button {
-    font-size: 12px;
+    font-size: 13px;
   }
   .mission-workspace {
     display: flex;
@@ -1167,7 +1159,7 @@
     letter-spacing: -1.2px;
   }
   .mission-eyebrow {
-    font-size: 9px;
+    font-size: 13px;
     margin-bottom: 13px;
   }
   .mission-description {
@@ -1208,7 +1200,7 @@
     gap: 10px;
   }
   .mission-chapters button {
-    font-size: 9px;
+    font-size: 13px;
     line-height: 1.4;
     gap: 7px;
   }
@@ -1230,7 +1222,7 @@
   }
   .mission-location-bar button {
     padding: 0 6px;
-    font-size: 10px;
+    font-size: 13px;
     gap: 4px;
   }
   .mission-map-caption {
@@ -1241,7 +1233,7 @@
     font-size: 14px;
   }
   .mission-map-caption small {
-    font-size: 9px;
+    font-size: 13px;
   }
   .mission-map-legend {
     bottom: 77px;
@@ -1276,7 +1268,7 @@
   .mission-imagery-note {
     left: 16px;
     bottom: 14px;
-    font-size: 8px;
+    font-size: 13px;
   }
   .mission-evidence,
   .mission-calendar-preview {
@@ -1292,7 +1284,7 @@
   }
   .mission-evidence header select {
     max-width: 120px;
-    font-size: 9px;
+    font-size: 13px;
     padding: 8px 5px;
   }
   .mission-evidence h2,
@@ -1301,10 +1293,10 @@
   }
   .mission-evidence .mission-eyebrow,
   .mission-calendar-preview .mission-eyebrow {
-    font-size: 8px;
+    font-size: 13px;
   }
   .mission-evidence > p {
-    font-size: 10px;
+    font-size: 13px;
     margin: 9px 0;
   }
   .mission-scorebars {
@@ -1312,16 +1304,16 @@
   }
   .mission-scorebars > div {
     grid-template-columns: 119px 1fr 35px;
-    font-size: 10px;
+    font-size: 13px;
     margin: 13px 0;
     gap: 8px;
   }
   .mission-scorebars strong {
-    font-size: 11px;
+    font-size: 13px;
   }
   .mission-evidence > .mission-note {
     padding-top: 10px;
-    font-size: 9px;
+    font-size: 13px;
   }
   .mini-calendar-head,
   .mini-calendar-row {
@@ -1335,7 +1327,7 @@
     margin-top: 18px;
   }
   .mission-calendar-preview .mission-note {
-    font-size: 10px;
+    font-size: 13px;
     margin: 13px 0;
   }
   .mission-hover {
@@ -1347,7 +1339,7 @@
     overflow: auto;
   }
   .mission-reading dl > div {
-    font-size: 12px;
+    font-size: 13px;
   }
   .mission-reading dd {
     max-width: 200px;
@@ -1373,7 +1365,7 @@
   right: 20px;
   top: 80px;
   padding: 8px 12px;
-  font-size: 11px;
+  font-size: 13px;
   border-radius: 5px;
   background: #0b1823e8;
   color: #d9cbb4;
@@ -1381,9 +1373,9 @@
 .holdout-lab {
   margin: 35px 0;
   padding: 28px;
-  border: 1px solid #354f4c;
+  border: 1px solid #35424f;
   border-radius: 8px;
-  background: #13201e;
+  background: #131920;
 }
 .holdout-lab header {
   display: flex;
@@ -1397,7 +1389,7 @@
   margin: 12px 0;
 }
 .holdout-lab header a {
-  font-size: 12px;
+  font-size: 13px;
   color: #d9bd95;
 }
 .holdout-controls {
@@ -1410,14 +1402,14 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 11px;
-  color: #9eb6b2;
+  font-size: 13px;
+  color: #9eaab6;
 }
 .holdout-controls select {
-  border: 1px solid #49605b;
+  border: 1px solid #495460;
   padding: 12px;
-  color: #dce8df;
-  background: #1a2b26;
+  color: #dce2e8;
+  background: #1a222b;
   border-radius: 5px;
   min-width: 150px;
 }
@@ -1425,7 +1417,7 @@
   margin-left: auto;
   font-size: 13px;
   line-height: 1.8;
-  color: #a7bcb4;
+  color: #a7b2bc;
 }
 .holdout-controls strong {
   color: #eadbc4;
@@ -1433,8 +1425,8 @@
 .holdout-legend {
   display: flex;
   gap: 20px;
-  font-size: 11px;
-  color: #acbeb7;
+  font-size: 13px;
+  color: #acb5be;
   margin-bottom: 24px;
   flex-wrap: wrap;
 }
@@ -1446,10 +1438,10 @@
 .holdout-legend i {
   width: 8px;
   height: 8px;
-  background: #cbd3c6;
+  background: #c6ccd3;
 }
 .holdout-legend span:nth-child(2) i {
-  background: #83c6b7;
+  background: #83a4c6;
 }
 .holdout-legend span:last-child {
   margin-left: auto;
@@ -1463,7 +1455,7 @@
   height: 175px;
   display: flex;
   gap: 5px;
-  border-bottom: 1px solid #5b7268;
+  border-bottom: 1px solid #5b6672;
   background: repeating-linear-gradient(
     to top,
     transparent 0 24.5%,
@@ -1483,18 +1475,18 @@
 }
 .holdout-chart button.selected,
 .holdout-chart button:hover {
-  background: #d4d8b80d;
+  background: #b8c8d80d;
   border-color: #e7bb89;
 }
 .holdout-bar {
   display: block;
   width: 50%;
   min-height: 2px;
-  background: #cbd3c6;
+  background: #c6ccd3;
   transition: height 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .holdout-bar.prediction {
-  background: #83c6b7;
+  background: #83a4c6;
 }
 .holdout-chart small {
   position: absolute;
@@ -1502,9 +1494,9 @@
   right: 0;
   bottom: -22px;
   font:
-    9px "IBM Plex Mono",
+    13px "IBM Plex Mono",
     monospace;
-  color: #9eb5ac;
+  color: #9eaab5;
   text-align: center;
 }
 .holdout-reading {
@@ -1513,13 +1505,13 @@
   align-items: center;
   margin: 18px 0;
   gap: 20px;
-  background: #1a2b27;
+  background: #1a222b;
   padding: 18px;
   border-radius: 5px;
 }
 .holdout-reading > span {
   font:
-    11px "IBM Plex Mono",
+    13px "IBM Plex Mono",
     monospace;
   color: #cfbb9a;
 }
@@ -1528,22 +1520,22 @@
   gap: 32px;
 }
 .holdout-reading > div > span {
-  font-size: 10px;
-  color: #a7bbb1;
+  font-size: 13px;
+  color: #a7b1bb;
 }
 .holdout-reading strong {
   display: block;
   font-size: 27px;
   font-weight: 400;
-  color: #dce9db;
+  color: #dbe2e9;
   margin-top: 7px;
   font-variant-numeric: tabular-nums;
 }
 .holdout-scope,
 .holdout-lab > .mission-note {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.8;
-  color: #a9bcb3;
+  color: #a9b2bc;
 }
 .mission-scorebars i {
   transform-origin: left;
