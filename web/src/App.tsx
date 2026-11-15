@@ -571,7 +571,7 @@ export default function App() {
                       </div>
                       <div className="global-source">
                         <i className="dot fire" />
-                        NOAA-20 VIIRS <span>375 m at nadir</span>
+                        {manifest.globalSensor}
                       </div>
                     </div>
                     <Suspense

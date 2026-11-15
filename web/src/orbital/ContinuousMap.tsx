@@ -49,7 +49,6 @@ type Props = {
   region: Area | null;
   selected: Observation | null;
   study: CaseStudy | null;
-  sensor: "all" | "MODIS" | "VIIRS";
   onRegion: (area: Area) => void;
   onArea: (lon: number, lat: number) => void;
   onPoint: (row: Observation) => void;
@@ -92,6 +91,8 @@ export default function ContinuousMap(props: Props) {
     area?: Area;
     row?: Observation;
     count?: number;
+    modisCount?: number;
+    viirsCount?: number;
     x: number;
     y: number;
   } | null>(null);
@@ -216,6 +217,16 @@ export default function ContinuousMap(props: Props) {
         cluster: true,
         clusterRadius: 22,
         clusterMaxZoom: 6,
+        clusterProperties: {
+          modis_count: [
+            "+",
+            ["case", ["==", ["get", "sensor"], "MODIS"], 1, 0],
+          ],
+          viirs_count: [
+            "+",
+            ["case", ["==", ["get", "sensor"], "MODIS"], 0, 1],
+          ],
+        },
       });
       map.addLayer({
         id: "clusters",
@@ -236,9 +247,9 @@ export default function ContinuousMap(props: Props) {
             10000,
             17,
           ],
-          "circle-color": "#d86738",
-          "circle-opacity": 0.45,
-          "circle-stroke-color": "#f1a56e",
+          "circle-color": "#738c9b",
+          "circle-opacity": 0.55,
+          "circle-stroke-color": "#dce7ed",
           "circle-stroke-width": 1,
         },
       });
@@ -359,6 +370,8 @@ export default function ContinuousMap(props: Props) {
               area,
               row,
               count: found?.properties.point_count,
+              modisCount: found?.properties.modis_count,
+              viirsCount: found?.properties.viirs_count,
               x: event.point.x,
               y: event.point.y,
             }
@@ -483,14 +496,11 @@ export default function ContinuousMap(props: Props) {
     const map = mapRef.current;
     if (!ready || !map) return;
     setLayerBusy(true);
+    setHover(null);
     (map.getSource("observations") as GeoJSONSource).setData(
-      features(
-        props.rows.filter(
-          (r) => props.sensor === "all" || r.sensor === props.sensor,
-        ),
-      ),
+      features(props.rows),
     );
-  }, [ready, props.rows, props.sensor]);
+  }, [ready, props.rows]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -651,40 +661,48 @@ export default function ContinuousMap(props: Props) {
               </dd>
             </div>
             <div>
-              <dt>{area ? "Highest FRP" : "Sensor"}</dt>
+              <dt>
+                {area ? "Highest FRP" : hover.row ? "Sensor" : "Sensor counts"}
+              </dt>
               <dd>
                 {area
                   ? `${number(area.peak?.frp)} MW`
                   : hover.row
                     ? sensorLabel(hover.row.sensor)
-                    : "Grouped observations"}
+                    : `${integer(hover.modisCount ?? 0)} MODIS · ${integer(hover.viirsCount ?? 0)} VIIRS`}
               </dd>
             </div>
-            <div>
-              <dt>Acquisition date</dt>
-              <dd>
-                {area
-                  ? acquiredRange
-                  : hover.row
-                    ? dateLabel(hover.row.time)
-                    : "Select to inspect"}
-              </dd>
-            </div>
-            <div>
-              <dt>{area ? "Daytime detections" : "Acquired"}</dt>
-              <dd>
-                {area
-                  ? integer(area.daytime)
-                  : hover.row
-                    ? timeLabel(hover.row.time)
-                    : "Tap to resolve"}
-              </dd>
-            </div>
+            {(area || hover.row) && (
+              <>
+                <div>
+                  <dt>Acquisition date</dt>
+                  <dd>
+                    {area
+                      ? acquiredRange
+                      : hover.row
+                        ? dateLabel(hover.row.time)
+                        : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{area ? "Daytime detections" : "Acquired"}</dt>
+                  <dd>
+                    {area
+                      ? integer(area.daytime)
+                      : hover.row
+                        ? timeLabel(hover.row.time)
+                        : "—"}
+                  </dd>
+                </div>
+              </>
+            )}
           </dl>
           <span>
             {area
               ? "Select to explore this region"
-              : "Select for the satellite reading"}
+              : hover.row
+                ? "Select for the satellite reading"
+                : "Select to explore this group"}
           </span>
         </div>
       )}

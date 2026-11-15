@@ -6,6 +6,7 @@ WORK = ROOT / "data" / "work"
 PUBLIC = ROOT / "web" / "public" / "data"
 FIRMS_BASE = "https://firms.modaps.eosdis.nasa.gov/data/country/csvs/"
 GLOBAL_URL = "https://firms.modaps.eosdis.nasa.gov/data/active_fire/noaa-20-viirs-c2/csv/J1_VIIRS_C2_Global_24h.csv"
+GLOBAL_MODIS_URL = "https://firms.modaps.eosdis.nasa.gov/data/active_fire/modis-c6.1/csv/MODIS_C6_1_Global_7d.csv"
 COLLECTIONS = {
     "MYD14": "C2278858993-LPCLOUD",
     "MYD03": "C1379841358-LAADS",

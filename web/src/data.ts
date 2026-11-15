@@ -114,6 +114,7 @@ export interface Manifest {
   snapshotEnd: string;
   globalCount: number;
   globalSensor: string;
+  globalSensorCounts?: Partial<Record<Sensor, number>>;
   globalSource: string;
   globalProcessing: string;
   sources: {

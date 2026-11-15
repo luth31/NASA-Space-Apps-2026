@@ -1,5 +1,5 @@
 {
-  "bundleVersion": "20261114T165359Z",
+  "bundleVersion": "20261115T063948Z",
   "sources": [
     {
       "url": "https://firms.modaps.eosdis.nasa.gov/data/country/yearly_summary_files.txt",
@@ -726,6 +726,12 @@
       "file": "global-noaa20-24h.csv",
       "bytes": 6161779,
       "sha256": "74ed38b0d7f2b0c72e8fe24bb29b6ce8e781bb8cf5460b5db5be1bc09580ca4a"
+    },
+    {
+      "url": "https://firms.modaps.eosdis.nasa.gov/data/active_fire/modis-c6.1/csv/MODIS_C6_1_Global_7d.csv",
+      "file": "global-modis-7d.csv",
+      "bytes": 5530246,
+      "sha256": "2b61642c33d4fce2912f95c77923a390d10adbba19957912fe3626347a53a5ef"
     }
   ]
 }

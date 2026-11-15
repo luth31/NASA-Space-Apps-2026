@@ -125,15 +125,25 @@ function Dashboard({
   const [area, setArea] = useState<[number, number] | null>(null);
   const [point, setPoint] = useState<Observation | null>(null);
   const [search, setSearch] = useState("");
-  const [sensor, setSensor] = useState<"all" | "MODIS" | "VIIRS">("MODIS");
+  const [sensor, setSensor] = useState<"MODIS" | "VIIRS">("MODIS");
+  const [globalSensor, setGlobalSensor] = useState<"all" | "MODIS" | "NOAA-20">(
+    "all",
+  );
   const [caseRows, setCaseRows] = useState<Observation[]>([]);
   const [caseError, setCaseError] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [fold, setFold] = useState("macro");
   const map = useRef<MapHandle>(null);
+  const globalRows = useMemo(
+    () =>
+      explore && globalSensor !== "all"
+        ? observations.filter((row) => row.sensor === globalSensor)
+        : observations,
+    [observations, explore, globalSensor],
+  );
   const groups = useMemo(
-    () => groupGeography(geography, observations),
-    [geography, observations],
+    () => groupGeography(geography, globalRows),
+    [geography, globalRows],
   );
   const regions = useMemo(
     () => groups.regions.filter((a) => a.rows.length),
@@ -180,7 +190,11 @@ function Dashboard({
     );
     return () => clearTimeout(timer);
   }, [playing, chapter, sensor]);
-  const rows = inCase ? caseRows : observations;
+  const rows = useMemo(() => {
+    if (!inCase) return globalRows;
+    if (chapter === 1) return caseRows.filter((row) => row.sensor === sensor);
+    return caseRows;
+  }, [inCase, chapter, caseRows, sensor, globalRows]);
   const localRows = useMemo(() => {
     if (area)
       return rows.filter(
@@ -188,8 +202,10 @@ function Dashboard({
           Math.abs(((row.lon - area[0] + 540) % 360) - 180) < 1 &&
           Math.abs(row.lat - area[1]) < 1,
       );
-    return region?.rows ?? rows;
-  }, [rows, region, area]);
+    if (region)
+      return groups.regions.find((entry) => entry.id === region.id)?.rows ?? [];
+    return rows;
+  }, [rows, region, area, groups.regions]);
   const camera = useMemo<Camera>(() => {
     if (point)
       return { id: point.id, center: [point.lon, point.lat], zoom: 9.5 };
@@ -269,6 +285,15 @@ function Dashboard({
   const range = inCase
     ? dateLabel(study.date)
     : `${dateLabel(manifest.snapshotStart, { day: "numeric", month: "short" })}–${dateLabel(manifest.snapshotEnd, { day: "numeric", month: "short", year: "numeric" })}`;
+  const hasGlobalModis = manifest.globalSensorCounts?.MODIS !== undefined;
+  const globalSourceLabel =
+    explore && globalSensor !== "all"
+      ? sensorLabel(globalSensor)
+      : manifest.globalSensor;
+  function changeGlobalSensor(next: "all" | "MODIS" | "NOAA-20") {
+    setGlobalSensor(next);
+    if (next !== "all" && point?.sensor !== next) setPoint(null);
+  }
   return (
     <main className="mission-app">
       <Navigation
@@ -455,9 +480,15 @@ function Dashboard({
                   <span>
                     reported detections
                     <br />
-                    {range}
+                    {globalSourceLabel} · {range}
                   </span>
                 </div>
+                {localRows.length === 0 && (
+                  <p className="mission-note">
+                    No detections reported here for this sensor and snapshot
+                    window. Usable coverage is unknown.
+                  </p>
+                )}
                 {!region && !area && (
                   <>
                     <label className="mission-search">
@@ -503,7 +534,9 @@ function Dashboard({
                         >
                           <span>
                             {coordinates(row.lon, row.lat)}
-                            <small>{timeLabel(row.time)}</small>
+                            <small>
+                              {sensorLabel(row.sensor)} · {timeLabel(row.time)}
+                            </small>
                           </span>
                           <strong>
                             {number(row.frp)} <small>MW</small>
@@ -545,7 +578,6 @@ function Dashboard({
             region={region}
             selected={point}
             study={inCase ? study : null}
-            sensor={inCase && chapter === 1 ? sensor : "all"}
             onRegion={selectRegion}
             onArea={selectArea}
             onPoint={selectPoint}
@@ -581,14 +613,65 @@ function Dashboard({
           <div className="mission-map-caption">
             <span>{scopeTitle}</span>
             <small>
-              {range} · {inCase ? "Aqua & S-NPP" : "NOAA-20 VIIRS"}
+              {range} ·{" "}
+              {inCase
+                ? chapter === 1
+                  ? sensorLabel(sensor)
+                  : "Aqua & S-NPP"
+                : globalSourceLabel}
             </small>
           </div>
           {(!inCase || chapter === 1) && (
-            <div className="mission-map-legend">
-              <i className={inCase && sensor === "MODIS" ? "modis" : "viirs"} />
-              <span>{inCase ? sensor : "VIIRS"} detections</span>
-              <small>Circles group detections · squares are pixels</small>
+            <div
+              className={`mission-map-legend${explore && hasGlobalModis ? " with-filter" : ""}`}
+            >
+              {explore && hasGlobalModis ? (
+                <div
+                  className="mission-sensor-filter"
+                  role="group"
+                  aria-label="Filter observations by sensor"
+                >
+                  {(["all", "MODIS", "NOAA-20"] as const).map((option) => (
+                    <button
+                      key={option}
+                      aria-pressed={globalSensor === option}
+                      onClick={() => changeGlobalSensor(option)}
+                    >
+                      {option !== "all" && (
+                        <i
+                          className={option === "MODIS" ? "modis" : "viirs"}
+                          aria-hidden="true"
+                        />
+                      )}
+                      {option === "all"
+                        ? "Both"
+                        : option === "MODIS"
+                          ? "Aqua MODIS"
+                          : "NOAA-20 VIIRS"}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="mission-legend-symbols">
+                  {(inCase
+                    ? [sensor]
+                    : hasGlobalModis
+                      ? (["MODIS", "NOAA-20"] as const)
+                      : (["NOAA-20"] as const)
+                  ).map((id) => (
+                    <span key={id}>
+                      <i
+                        className={id === "MODIS" ? "modis" : "viirs"}
+                        aria-hidden="true"
+                      />
+                      {sensorLabel(id)}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <small>
+                Circles group detections · squares show individual pixels
+              </small>
             </div>
           )}
           {!explore && !point && chapter === 2 && (

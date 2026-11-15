@@ -27,8 +27,8 @@ export default function Sources({ manifest }: { manifest: Manifest }) {
         <div>
           <h2>NASA Fire Information for Resource Management System</h2>
           <p>
-            Recent global observations use NOAA-20 VIIRS. The historical case
-            records retain Aqua MODIS and S-NPP VIIRS separately.
+            The global snapshot contains {manifest.globalSensor} detections.
+            Historical cases use Aqua MODIS and S-NPP VIIRS.
           </p>
           <a
             href="https://firms.modaps.eosdis.nasa.gov/"
@@ -48,7 +48,12 @@ export default function Sources({ manifest }: { manifest: Manifest }) {
         <div>
           <span className="eyebrow">OBSERVATIONS</span>
           <strong>{integer(manifest.globalCount)}</strong>
-          <small>NOAA-20 · Near real time</small>
+          <small>
+            {manifest.globalSensorCounts?.MODIS !== undefined &&
+            manifest.globalSensorCounts["NOAA-20"] !== undefined
+              ? `${integer(manifest.globalSensorCounts.MODIS)} Aqua MODIS · ${integer(manifest.globalSensorCounts["NOAA-20"])} NOAA-20 VIIRS`
+              : manifest.globalSensor}
+          </small>
         </div>
         <div>
           <span className="eyebrow">SOURCE FILES</span>
@@ -59,6 +64,17 @@ export default function Sources({ manifest }: { manifest: Manifest }) {
       <div className="source-rules">
         <h2>How to read the record</h2>
         <dl>
+          {manifest.globalSensorCounts?.MODIS !== undefined && (
+            <div>
+              <dt>Global snapshot window</dt>
+              <dd>
+                Aqua MODIS is filtered to the first and last acquisition times
+                of the pinned NOAA-20 VIIRS snapshot, inclusive. The satellites
+                have different overpasses and observing conditions. The point
+                counts are raw observations.
+              </dd>
+            </div>
+          )}
           <div>
             <dt>Reported detections</dt>
             <dd>

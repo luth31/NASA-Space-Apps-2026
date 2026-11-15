@@ -129,7 +129,7 @@ The seasonal baseline wins this feasibility sample. That result does not establi
 
 ## Data semantics
 
-The latest pinned global snapshot contains 74,304 NOAA-20 VIIRS detections, with last acquisition on November 14, 2026 at 13:33 UTC. Historical case records keep Aqua MODIS and S-NPP VIIRS separate. Country files from both sides of each rectangular analysis boundary are included. Acquisition timestamps use UTC.
+The pinned global snapshot contains 74,304 NOAA-20 VIIRS detections and 7,031 Aqua MODIS detections from November 13, 2026 at 00:15 UTC through November 14 at 13:33 UTC. The build filters the FIRMS MODIS feed to the VIIRS snapshot's acquisition window and retains Aqua records. Explore can show either sensor or both. These are raw detections from different overpasses. Historical case records keep Aqua MODIS and S-NPP VIIRS separate. Country files from both sides of each rectangular analysis boundary are included. Acquisition timestamps use UTC.
 
 A reported hotspot is a detected thermal pixel. It is not necessarily a separate fire, ignition location, or perimeter. Empty point lists do not establish observed fire-free conditions. Original confidence, footprint, source type, processing version, and FRP units remain visible. Dated background scenes are daily composites, not exact-time pass imagery.
 
