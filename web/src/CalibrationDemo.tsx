@@ -44,7 +44,7 @@ export default function CalibrationDemo({
     revealed && truth != null
       ? truth
       : (source ?? 0) + (((estimate ?? 0) - (source ?? 0)) * progress) / 100;
-  const color = revealed ? "#75c5ff" : progress > 0 ? "#c4a4ff" : "#f0b581";
+  const color = revealed ? "#ff665c" : progress > 0 ? "#d9c585" : "#f7a16b";
   const earlier = [...study.months]
     .filter((m) => m.month < "2012-01" && m.modis != null)
     .sort((a, b) => (b.modis ?? 0) - (a.modis ?? 0))[0];

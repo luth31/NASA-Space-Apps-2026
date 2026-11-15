@@ -21,8 +21,8 @@
 }
 .scientific-workspace :is(select, .case-picker) {
   color: var(--text);
-  background: #172b40;
-  border: 1px solid #3f5872;
+  background: #1b3c27;
+  border: 1px solid #3f7252;
   border-radius: 6px;
   padding: 10px 32px 10px 12px;
 }
@@ -39,12 +39,12 @@ button {
   min-height: 44px;
   height: auto;
   padding: 12px 18px;
-  color: #0b1726;
+  color: #0f2216;
 }
 .primary-button:hover:not(:disabled),
 .mode-control button.selected {
   background: var(--accent);
-  color: #0b1726;
+  color: #0f2216;
 }
 .dot {
   width: 8px;
@@ -66,7 +66,7 @@ button {
 .heat-cell {
   height: 38px;
   min-height: 38px;
-  border: 1px solid #729bc42b;
+  border: 1px solid #76c0912b;
 }
 .heat-cell > span {
   display: inline;
@@ -75,13 +75,13 @@ button {
 }
 .heat-cell.selected {
   outline-color: white;
-  box-shadow: 0 0 0 4px #75c5ff33;
+  box-shadow: 0 0 0 4px #a0d4b333;
 }
 .heat-cell.missing {
   background-image: repeating-linear-gradient(
     135deg,
     transparent 0 4px,
-    #a8c6ea22 4px 5px
+    #b5ddc422 4px 5px
   );
 }
 .calendar-layout {
@@ -102,7 +102,7 @@ button {
 }
 .month-detail {
   padding: 24px;
-  background: #122235;
+  background: #163120;
   border: 1px solid var(--line);
   border-radius: 10px;
   position: sticky;
@@ -140,7 +140,7 @@ button {
 .coverage-audit,
 .benchmark-panel,
 .holdout-lab {
-  background: #101e2d;
+  background: #132a1b;
   border-color: var(--line);
 }
 .holdout-bar,
@@ -179,20 +179,20 @@ button {
 .mission-map-legend i.viirs,
 .sensor-footprints .pixel-viirs {
   border-color: var(--viirs);
-  background: #75c5ff33;
+  background: #a0d4b333;
 }
 .mission-mixed-key {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #c4d4e5;
+  color: #c5e4d0;
   line-height: 1.5;
 }
 .mission-mixed-key i {
   border-radius: 50%;
-  border: 1px solid #dce7ed;
-  background: #b5c5d677;
+  border: 1px solid #dcede2;
+  background: #b5d6c177;
   flex-shrink: 0;
 }
 .mission-map-legend {
@@ -228,8 +228,8 @@ button {
   min-width: 0;
   padding: 12px;
   border-radius: 6px;
-  border: 1px solid #3c536c;
-  background: #14273c;
+  border: 1px solid #3c6c4e;
+  background: #193724;
   color: var(--paper);
 }
 .mission-sensor-change {
@@ -249,11 +249,11 @@ button {
 }
 .mission-sensors button:nth-child(2).selected {
   border-color: var(--viirs);
-  background: #75c5ff12;
+  background: #a0d4b312;
 }
 .bridge-experiment {
-  background: #102136;
-  border: 1px solid #345574;
+  background: #163020;
+  border: 1px solid #35734c;
   border-radius: 14px;
   padding: 28px;
   margin: 30px 0;
@@ -285,8 +285,8 @@ button {
 }
 .bridge-experiment select {
   color: var(--text);
-  background-color: #182f49;
-  border: 1px solid #48627e;
+  background-color: #1f422c;
+  border: 1px solid #487e5c;
   padding: 10px 32px 10px 12px;
   border-radius: 5px;
   width: 100%;
@@ -303,7 +303,7 @@ button {
   flex-direction: column;
   min-width: 0;
   padding-right: 18px;
-  border-right: 1px solid #30465e;
+  border-right: 1px solid #305e41;
   color: var(--modis);
 }
 .bridge-value:last-child {
@@ -329,7 +329,7 @@ button {
   margin-top: 16px;
   height: 8px;
   border-radius: 4px;
-  background: #233b55;
+  background: #265236;
   overflow: hidden;
 }
 .bridge-bar i {
@@ -339,8 +339,8 @@ button {
 }
 .bridge-outcome {
   padding: 14px 16px;
-  background: #1b324b;
-  border: 1px solid #395370;
+  background: #20462e;
+  border: 1px solid #39704d;
   border-radius: 6px;
   font-size: 16px;
 }
@@ -353,20 +353,20 @@ button {
 }
 .bridge-experiment footer {
   padding-top: 14px;
-  border-top: 1px solid #344c66;
+  border-top: 1px solid #346646;
 }
 .mission-bridge-panel {
   position: absolute;
   inset: 175px 28px 260px;
   overflow: auto;
   z-index: 3;
-  scrollbar-color: #526c86 #102136;
+  scrollbar-color: #528665 #163020;
   border-radius: 14px;
   min-height: 280px;
 }
 .mission-bridge-panel .bridge-experiment {
   margin: 0;
-  background: #102136f7;
+  background: #163020f7;
   backdrop-filter: blur(20px);
 }
 .mission-learning-scene {
@@ -564,8 +564,8 @@ button {
   bottom: 90px;
 }
 .scientific-workspace .mission-location-inset {
-  background: #0b1b2deb;
-  color: #e7eff7;
+  background: #122619eb;
+  color: #e9f5ed;
 }
 @media (max-width: 760px) {
   .mission-learning-scene {
@@ -625,7 +625,7 @@ button {
   background: var(--panel);
 }
 .compare-button.selected {
-  color: #0b1726;
+  color: #0f2216;
   background: var(--accent);
   border-color: var(--accent);
 }
@@ -687,9 +687,9 @@ button {
     .monthly-scorecard,
     .method-details
   ) {
-  border: 1px solid #34516e;
+  border: 1px solid #346e49;
   border-radius: 14px;
-  background: #101e2d;
+  background: #132a1b;
   overflow: hidden;
 }
 .methods-view
@@ -747,7 +747,7 @@ button {
 }
 .monthly-scorecard :is(th, td) {
   padding: 18px 14px;
-  border-bottom: 1px solid #30465e;
+  border-bottom: 1px solid #305e41;
   font-weight: 400;
   white-space: nowrap;
 }
@@ -758,7 +758,7 @@ button {
   font-family: "IBM Plex Mono", monospace;
 }
 .monthly-scorecard td:nth-child(4) {
-  color: #c4a4ff;
+  color: #c1e2cd;
 }
 .method-footnote {
   margin-top: 20px;
@@ -767,11 +767,11 @@ button {
 }
 .calibration-demo {
   background:
-    radial-gradient(ellipse at 70% 20%, #27445a88, transparent 65%), #0d1e30f5;
-  border: 1px solid #466681;
+    radial-gradient(ellipse at 70% 20%, #29583a88, transparent 65%), #132a1bf5;
+  border: 1px solid #46815c;
   border-radius: 18px;
   padding: 30px;
-  color: #e7eff7;
+  color: #e9f5ed;
   box-shadow: 0 24px 80px #0004;
 }
 .calibration-demo h2 {
@@ -782,7 +782,7 @@ button {
   margin: 12px 0;
 }
 .calibration-demo header p {
-  color: #b7c7d8;
+  color: #b7d8c3;
   font-size: 16px;
   line-height: 1.6;
   max-width: 60ch;
@@ -797,17 +797,17 @@ button {
   display: grid;
   gap: 8px;
   min-width: 0;
-  color: #b7c7d8;
+  color: #b7d8c3;
   font-size: 14px;
 }
 .demo-selectors select {
   width: 100%;
   min-width: 0;
-  border: 1px solid #496681;
+  border: 1px solid #49815e;
   border-radius: 7px;
   padding: 10px;
-  background-color: #172e46;
-  color: #e7eff7;
+  background-color: #1d402a;
+  color: #e9f5ed;
   font-size: 14px;
 }
 .demo-counts {
@@ -834,27 +834,27 @@ button {
 }
 .demo-counts small {
   display: block;
-  color: #a9bbcd;
+  color: #a9cdb6;
   font-size: 13px;
 }
 .demo-counts .modis {
   color: #f0b581;
 }
 .demo-counts .estimate {
-  color: #c4a4ff;
+  color: #c1e2cd;
 }
 .demo-counts .viirs {
-  color: #75c5ff;
+  color: #a0d4b3;
 }
 .demo-counts > svg {
-  color: #647d95;
+  color: #649576;
   width: 18px;
 }
 .demo-visual {
-  border: 1px solid #334d67;
+  border: 1px solid #336746;
   border-radius: 12px;
   padding: 18px 18px 10px;
-  background: linear-gradient(160deg, #071524cc, #152c4488);
+  background: linear-gradient(160deg, #0e1d13cc, #1c3d2888);
   overflow: hidden;
 }
 .demo-grid-title {
@@ -867,7 +867,7 @@ button {
   color: var(--demo-color);
 }
 .demo-grid-title span:last-child {
-  color: #9eb4ca;
+  color: #9ecaae;
 }
 .demo-visual svg {
   display: block;
@@ -882,7 +882,7 @@ button {
 .demo-visual-note {
   display: block;
   font-size: 12px;
-  color: #a9bbcd;
+  color: #a9cdb6;
   text-align: right;
 }
 .calibration-slider {
@@ -893,18 +893,18 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #b7c7d8;
+  color: #b7d8c3;
   font-size: 13px;
   gap: 12px;
 }
 .calibration-slider strong {
-  color: #c4a4ff;
+  color: #c1e2cd;
   font-weight: 500;
 }
 .calibration-slider input {
   width: 100%;
   margin: 16px 0 0;
-  accent-color: #c4a4ff;
+  accent-color: #c1e2cd;
   cursor: ew-resize;
   min-height: 32px;
 }
@@ -915,18 +915,18 @@ button {
   gap: 20px;
 }
 .demo-actions .primary-button {
-  background: #c4a4ff;
-  color: #171326;
+  background: #c1e2cd;
+  color: #13261a;
   border: 0;
 }
 .demo-actions .text-button {
   margin: 0;
-  color: #9cd5ff;
+  color: #bbe0c9;
 }
 .demo-reset {
-  background: #22384f;
-  color: #b5c8d9;
-  border: 1px solid #4b6075;
+  background: #244d33;
+  color: #b5d9c2;
+  border: 1px solid #4b755a;
   border-radius: 50%;
   width: 38px;
   height: 38px;
@@ -937,8 +937,8 @@ button {
 .demo-result {
   margin-top: 20px;
   padding: 16px 18px;
-  background: #1c3549;
-  border: 1px solid #5a7e97;
+  background: #20452e;
+  border: 1px solid #5a9770;
   border-radius: 8px;
   display: grid;
   gap: 7px;
@@ -949,21 +949,21 @@ button {
 }
 .demo-result span {
   font-size: 14px;
-  color: #bbccdc;
+  color: #bbdcc7;
   line-height: 1.5;
 }
 .calibration-demo footer {
-  border-top: 1px solid #30475e;
+  border-top: 1px solid #305e41;
   padding-top: 18px;
   margin-top: 24px;
   display: grid;
   gap: 8px;
-  color: #a9bbcd;
+  color: #a9cdb6;
   font-size: 13px;
   line-height: 1.6;
 }
 .calibration-demo footer strong {
-  color: #e7eff7;
+  color: #e9f5ed;
 }
 .demo-time-actions {
   display: flex;
@@ -972,7 +972,7 @@ button {
   margin-top: 18px;
 }
 .demo-time-actions .text-button {
-  color: #bfa6ee;
+  color: #b6dec5;
   font-size: 14px;
 }
 .mission-bridge-panel {
@@ -986,11 +986,11 @@ button {
   flex-wrap: wrap;
   align-items: center;
   gap: 18px 24px;
-  border: 1px solid #3b526d;
+  border: 1px solid #3b6d4d;
   border-radius: 10px;
   padding: 18px;
   margin-bottom: 24px;
-  background: #112237;
+  background: #173120;
   font-size: 14px;
 }
 .calendar-calibration-bar label {
@@ -999,13 +999,13 @@ button {
   gap: 12px;
 }
 .calendar-calibration-bar strong {
-  color: #c4a4ff;
+  color: #c1e2cd;
   font-size: 20px;
 }
 .experiment-badge {
-  border: 1px solid #776198;
-  background: #312944;
-  color: #d6bfff;
+  border: 1px solid #619875;
+  background: #294433;
+  color: #d3ebdc;
   padding: 5px 9px;
   border-radius: 5px;
   font-size: 12px;

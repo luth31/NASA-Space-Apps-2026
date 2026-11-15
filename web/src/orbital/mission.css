@@ -1,7 +1,7 @@
 .mission-app {
   --teal: var(--viirs);
   color: var(--paper);
-  background: #080f16;
+  background: #09150e;
   min-height: 100dvh;
   font-family: "DM Sans", sans-serif;
   font-size: 15px;
@@ -36,7 +36,7 @@
   gap: 48px;
   padding: 0 34px;
   border-bottom: 1px solid var(--line);
-  background: #0b131c;
+  background: #0c1b12;
 }
 .mission-header button {
   color: inherit;
@@ -73,10 +73,10 @@
 }
 .investigation-cards button {
   text-align: left;
-  border: 1px solid #3d4650;
+  border: 1px solid #3d5044;
   border-radius: 8px;
   overflow: hidden;
-  background: #141a21;
+  background: #142119;
 }
 .investigation-cards img {
   width: 100%;
@@ -93,7 +93,7 @@
 .investigation-cards span,
 .investigation-cards small {
   font-size: 13px;
-  color: #a3aeb9;
+  color: #a3b9ab;
 }
 .investigation-cards h2 {
   display: flex;
@@ -126,9 +126,9 @@
   right: 70px;
   bottom: 43px;
   width: 210px;
-  border: 1px solid #587079;
+  border: 1px solid #587964;
   border-radius: 7px;
-  background: #0b1b25eb;
+  background: #0f2116eb;
   padding: 12px 8px;
   text-align: center;
 }
@@ -142,7 +142,7 @@
   margin: 5px 0;
 }
 .mission-location-inset small {
-  color: #b8cace;
+  color: #b8cec0;
   font-size: 13px;
 }
 .mission-map-notice {
@@ -150,7 +150,7 @@
   left: 20px;
   right: 20px;
   bottom: 48px;
-  background: #152634e8;
+  background: #173221e8;
   color: #e5c5a8;
   padding: 10px;
   font-size: 13px;
@@ -238,7 +238,7 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--line);
-  background: linear-gradient(145deg, #101c27, #0b131b);
+  background: linear-gradient(145deg, #112619, #0c1a11);
   min-height: 0;
   z-index: 2;
 }
@@ -247,7 +247,7 @@
   overflow: auto;
   flex: 1;
   scrollbar-width: thin;
-  scrollbar-color: #304754 transparent;
+  scrollbar-color: #30543d transparent;
 }
 .mission-eyebrow {
   font:
@@ -266,18 +266,18 @@
 }
 .mission-story h1 em {
   font-style: normal;
-  color: #b4bec9;
+  color: #b4c9bc;
 }
 .mission-description {
   font-size: 16px;
   line-height: 1.65;
-  color: #b2bfc8;
+  color: #b2c8ba;
   margin: 0 0 28px;
 }
 .mission-primary {
   min-height: 48px;
   background: var(--accent) !important;
-  color: #152029 !important;
+  color: #15291c !important;
   border-radius: 5px;
   padding: 13px 15px;
   display: flex;
@@ -331,7 +331,7 @@
   border-top: 1px solid var(--line);
   padding: 16px 26px;
   font-size: 13px;
-  color: #aebfd1;
+  color: #aed1bb;
   min-height: 50px;
 }
 .sensor-footprints {
@@ -360,7 +360,7 @@
   height: 18px;
   width: 18px;
   border-color: var(--teal);
-  background: #89acd022;
+  background: #8ecba422;
 }
 .sensor-footprints span {
   font-size: 13px;
@@ -376,15 +376,15 @@
 .sensor-footprints > small {
   flex-basis: 100%;
   font-size: 13px;
-  color: #aebfd1;
+  color: #aed1bb;
 }
 .sensor-footprints > svg {
-  color: #aebfd1;
+  color: #aed1bb;
 }
 .mission-note {
   font-size: 13px;
   line-height: 1.65;
-  color: #99aebc;
+  color: #99bca6;
   margin: 18px 0;
 }
 .mission-measure {
@@ -409,7 +409,7 @@
   isolation: isolate;
   min-width: 0;
   overflow: hidden;
-  background: radial-gradient(ellipse at 60% 35%, #132638, #080f16 70%);
+  background: radial-gradient(ellipse at 60% 35%, #183322, #09150e 70%);
 }
 .mission-map.maplibregl-map {
   position: absolute;
@@ -419,32 +419,32 @@
   outline: none;
 }
 .mission-map .maplibregl-ctrl-attrib {
-  background: #0b141cbd !important;
-  color: #aebfd1;
+  background: #0c1b12bd !important;
+  color: #aed1bb;
   font-size: 13px;
 }
 .mission-map .maplibregl-ctrl-attrib a {
-  color: #aebfd1;
+  color: #aed1bb;
 }
 .mission-map .maplibregl-ctrl-group {
-  background: #13212cee !important;
-  border: 1px solid #3d5362;
+  background: #142b1cee !important;
+  border: 1px solid #3d624b;
   box-shadow: none;
   border-radius: 5px;
 }
 .mission-map .maplibregl-ctrl-group button {
   width: 36px;
   height: 36px;
-  border-color: #3d5362;
+  border-color: #3d624b;
 }
 .mission-map .maplibregl-ctrl-icon {
   filter: invert(1);
   opacity: 0.7;
 }
 .mission-map .maplibregl-ctrl-scale {
-  background: #101c23ad;
-  border-color: #9cb2bd;
-  color: #c2d0d8;
+  background: #102317ad;
+  border-color: #9cbda8;
+  color: #c2d8ca;
   font:
     13px "IBM Plex Mono",
     monospace;
@@ -470,7 +470,7 @@
 .mission-location-bar nav {
   display: flex;
   padding: 0 9px;
-  background: #0c1721e8;
+  background: #0e1f14e8;
   border: 1px solid #ffffff17;
   border-radius: 6px;
   backdrop-filter: blur(18px);
@@ -483,14 +483,14 @@
   padding: 0 10px;
   font-size: 13px;
   min-height: 42px;
-  color: #aebfd1;
+  color: #aed1bb;
 }
 .mission-location-bar button.current {
   color: #f6d4ac;
 }
 .mission-location-bar > button {
   pointer-events: auto;
-  background: #0c1721d9;
+  background: #0e1f14d9;
   border: 1px solid #ffffff17;
   border-radius: 6px;
   width: 43px;
@@ -516,7 +516,7 @@
   font:
     13px "IBM Plex Mono",
     monospace;
-  color: #b0c2ce;
+  color: #b0cebb;
 }
 .mission-map-legend {
   position: absolute;
@@ -527,7 +527,7 @@
   align-items: center;
   flex-wrap: wrap;
   pointer-events: none;
-  background: #0c1721db;
+  background: #0e1f14db;
   padding: 11px 14px;
   border: 1px solid #ffffff12;
   border-radius: 5px;
@@ -561,14 +561,14 @@
   white-space: nowrap;
 }
 .mission-sensor-filter button[aria-pressed="true"] {
-  border-color: #728899;
-  background: #263a49;
+  border-color: #729980;
+  background: #264933;
 }
 .mission-map-legend i {
   width: 8px;
   height: 8px;
-  border: 1px solid #89acd0;
-  background: #89acd033;
+  border: 1px solid #8ecba4;
+  background: #8ecba433;
 }
 .mission-map-legend i.modis {
   border-color: var(--accent);
@@ -579,7 +579,7 @@
 }
 .mission-map-legend small {
   flex-basis: 100%;
-  color: #aebfd1;
+  color: #aed1bb;
   font-size: 13px;
   margin-left: 4px;
 }
@@ -588,8 +588,8 @@
   bottom: 20px;
   left: 29px;
   font-size: 13px;
-  color: #aebfd1;
-  background: #0b151dbb;
+  color: #aed1bb;
+  background: #0d1b12bb;
   padding: 4px 7px;
   pointer-events: none;
 }
@@ -597,8 +597,8 @@
   position: absolute;
   z-index: 5;
   pointer-events: none;
-  background: #0d1924f2;
-  border: 1px solid #51667799;
+  background: #0f2216f2;
+  border: 1px solid #51775f99;
   border-radius: 7px;
   box-shadow: 0 15px 35px #0006;
   padding: 15px 17px;
@@ -620,7 +620,7 @@
   margin: 7px 0;
 }
 .mission-hover dt {
-  color: #aebfd1;
+  color: #aed1bb;
 }
 .mission-hover dd {
   margin: 0;
@@ -633,7 +633,7 @@
 .map-failure {
   position: absolute;
   inset: 30%;
-  color: #d6dce2;
+  color: #d6e2da;
   line-height: 1.6;
 }
 .mission-journey {
@@ -643,7 +643,7 @@
   gap: 32px;
   padding: 0 34px;
   border-top: 1px solid var(--line);
-  background: #0d1721;
+  background: #0e2015;
 }
 .mission-play {
   min-width: 119px;
@@ -652,7 +652,7 @@
   gap: 10px;
   font-size: 13px !important;
   min-height: 44px;
-  color: #c1d0d8 !important;
+  color: #c1d8c9 !important;
 }
 .mission-play svg {
   color: var(--accent);
@@ -671,14 +671,14 @@
   flex-direction: column;
   gap: 13px;
   font-size: 13px;
-  color: #aebfd1;
+  color: #aed1bb;
   min-height: 50px;
   justify-content: center;
 }
 .mission-chapters .chapter-line {
   height: 2px;
   width: 100%;
-  background: #2a3b48;
+  background: #2a4835;
   transition: background 0.45s;
 }
 .mission-chapters .active {
@@ -692,8 +692,8 @@
   height: 44px;
   display: grid;
   place-items: center;
-  background: #1d2b36;
-  border: 1px solid #344450;
+  background: #1d3626;
+  border: 1px solid #34503e;
   border-radius: 50%;
 }
 .mission-explore-hint {
@@ -707,8 +707,8 @@
   gap: 9px;
 }
 .mission-sensors button {
-  border: 1px solid #364653;
-  background: #172531;
+  border: 1px solid #365341;
+  background: #173121;
   border-radius: 6px;
   padding: 16px 12px;
   text-align: left;
@@ -718,11 +718,11 @@
 }
 .mission-sensors button.selected {
   border-color: var(--modis);
-  background: #2a2530;
+  background: #253029;
 }
 .mission-sensors button:nth-child(2).selected {
   border-color: var(--teal);
-  background: #192531;
+  background: #193122;
 }
 .mission-sensors span,
 .mission-sensors small {
@@ -754,7 +754,7 @@
 .bridge-flow strong {
   font-size: 15px;
   font-weight: 500;
-  border: 1px solid #7e9cbb77;
+  border: 1px solid #7ebb9477;
   border-radius: 5px;
   color: var(--teal);
   padding: 12px;
@@ -763,7 +763,7 @@
   transform: rotate(90deg);
   width: 15px;
   height: 15px;
-  color: #aebfd1;
+  color: #aed1bb;
 }
 .mission-evidence,
 .mission-calendar-preview {
@@ -772,10 +772,10 @@
   left: 7%;
   right: 7%;
   top: 26%;
-  background: #0b1823ed;
+  background: #0e2015ed;
   backdrop-filter: blur(22px);
   padding: 30px 35px;
-  border: 1px solid #5066777a;
+  border: 1px solid #50775e7a;
   border-radius: 10px;
   box-shadow: 0 20px 80px #0005;
   animation: mission-reveal 0.55s ease both;
@@ -799,9 +799,9 @@
   margin: 0;
 }
 .mission-evidence header select {
-  background: #142534;
-  border: 1px solid #354d5f;
-  color: #bdceda;
+  background: #173120;
+  border: 1px solid #355f44;
+  color: #bddac8;
   padding: 10px;
   border-radius: 5px;
   max-width: 195px;
@@ -824,14 +824,14 @@
 }
 .mission-scorebars > div > div {
   height: 8px;
-  background: #1e303e;
+  background: #1e3e2a;
   border-radius: 2px;
   overflow: hidden;
 }
 .mission-scorebars i {
   display: block;
   height: 100%;
-  background: #a4bac7;
+  background: #a4c7b1;
   transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .mission-scorebars > div:nth-child(2) i {
@@ -866,7 +866,7 @@
   font:
     13px "IBM Plex Mono",
     monospace;
-  color: #b0c3d0;
+  color: #b0d0bc;
 }
 .mini-calendar-row button {
   height: 35px;
@@ -886,11 +886,11 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid #3b505f;
+  border: 1px solid #3b5f48;
   border-radius: 5px;
   padding: 0 12px;
   margin: 20px 0 10px;
-  color: #94adbd;
+  color: #94bda3;
 }
 .mission-search input {
   background: transparent;
@@ -944,7 +944,7 @@
 }
 .mission-observations small {
   display: block;
-  color: #aebfd1;
+  color: #aed1bb;
   margin-top: 5px;
   font-size: 13px;
 }
@@ -957,7 +957,7 @@
   display: inline;
 }
 .mission-reading {
-  border-top: 1px solid #3b5262;
+  border-top: 1px solid #3b6249;
   padding-top: 15px;
   margin-top: 22px;
 }
@@ -993,7 +993,7 @@
   line-height: 1.5;
 }
 .mission-reading dt {
-  color: #aebfd1;
+  color: #aed1bb;
 }
 .mission-reading dd {
   margin: 0;
@@ -1006,8 +1006,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #0b131c;
-  color: #cfd7df;
+  background: #0c1b12;
+  color: #cfdfd5;
   gap: 20px;
 }
 .mission-boot h1 {
@@ -1187,7 +1187,7 @@
     height: 76px;
     padding: 0 14px;
     gap: 12px;
-    background: #0d1721f7;
+    background: #0e2015f7;
     backdrop-filter: blur(15px);
   }
   .mission-play {
@@ -1367,15 +1367,15 @@
   padding: 8px 12px;
   font-size: 13px;
   border-radius: 5px;
-  background: #0b1823e8;
+  background: #0e2015e8;
   color: #d9cbb4;
 }
 .holdout-lab {
   margin: 35px 0;
   padding: 28px;
-  border: 1px solid #35424f;
+  border: 1px solid #354f3f;
   border-radius: 8px;
-  background: #131920;
+  background: #132018;
 }
 .holdout-lab header {
   display: flex;
@@ -1403,13 +1403,13 @@
   flex-direction: column;
   gap: 8px;
   font-size: 13px;
-  color: #9eaab6;
+  color: #9eb6a7;
 }
 .holdout-controls select {
-  border: 1px solid #495460;
+  border: 1px solid #496051;
   padding: 12px;
-  color: #dce2e8;
-  background: #1a222b;
+  color: #dce8e0;
+  background: #1a2b20;
   border-radius: 5px;
   min-width: 150px;
 }
@@ -1417,7 +1417,7 @@
   margin-left: auto;
   font-size: 13px;
   line-height: 1.8;
-  color: #a7b2bc;
+  color: #a7bcaf;
 }
 .holdout-controls strong {
   color: #eadbc4;
@@ -1426,7 +1426,7 @@
   display: flex;
   gap: 20px;
   font-size: 13px;
-  color: #acb5be;
+  color: #acbeb3;
   margin-bottom: 24px;
   flex-wrap: wrap;
 }
@@ -1438,10 +1438,10 @@
 .holdout-legend i {
   width: 8px;
   height: 8px;
-  background: #c6ccd3;
+  background: #c6d3cb;
 }
 .holdout-legend span:nth-child(2) i {
-  background: #83a4c6;
+  background: #83c69c;
 }
 .holdout-legend span:last-child {
   margin-left: auto;
@@ -1475,18 +1475,18 @@
 }
 .holdout-chart button.selected,
 .holdout-chart button:hover {
-  background: #b8c8d80d;
+  background: #b8d8c40d;
   border-color: #e7bb89;
 }
 .holdout-bar {
   display: block;
   width: 50%;
   min-height: 2px;
-  background: #c6ccd3;
+  background: #c6d3cb;
   transition: height 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .holdout-bar.prediction {
-  background: #83a4c6;
+  background: #83c69c;
 }
 .holdout-chart small {
   position: absolute;
@@ -1496,7 +1496,7 @@
   font:
     13px "IBM Plex Mono",
     monospace;
-  color: #9eaab5;
+  color: #9eb5a6;
   text-align: center;
 }
 .holdout-reading {
@@ -1505,7 +1505,7 @@
   align-items: center;
   margin: 18px 0;
   gap: 20px;
-  background: #1a222b;
+  background: #1a2b20;
   padding: 18px;
   border-radius: 5px;
 }
@@ -1521,13 +1521,13 @@
 }
 .holdout-reading > div > span {
   font-size: 13px;
-  color: #a7b1bb;
+  color: #a7bbae;
 }
 .holdout-reading strong {
   display: block;
   font-size: 27px;
   font-weight: 400;
-  color: #dbe2e9;
+  color: #dbe9e0;
   margin-top: 7px;
   font-variant-numeric: tabular-nums;
 }
@@ -1535,7 +1535,7 @@
 .holdout-lab > .mission-note {
   font-size: 13px;
   line-height: 1.8;
-  color: #a9b2bc;
+  color: #a9bcb0;
 }
 .mission-scorebars i {
   transform-origin: left;

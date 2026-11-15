@@ -243,7 +243,7 @@ export default function App() {
           setToast(
             navigator.onLine
               ? "This observation partition is unavailable. Try another month."
-              : "This month was not saved offline. The three featured case months remain available.",
+              : "This month was not saved offline. The featured case months remain available.",
           );
         }
       });
