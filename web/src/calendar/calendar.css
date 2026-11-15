@@ -1023,3 +1023,22 @@
   background: var(--sc-amber);
   border-color: var(--sc-amber) !important;
 }
+/* SVG labels scale with the wheel: keep them legible on narrow screens. */
+@media (max-width: 760px) {
+  .sc-month-label {
+    font-size: 15px;
+    letter-spacing: 0.7px;
+  }
+  .sc-center-month {
+    font-size: 12px;
+  }
+  .sc-center-unit {
+    font-size: 10px;
+  }
+  .sc-center-year {
+    font-size: 15px;
+  }
+  .sc-profile-year-label {
+    font-size: 10px;
+  }
+}

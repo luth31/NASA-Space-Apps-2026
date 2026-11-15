@@ -622,7 +622,7 @@ export default function Calendar({
         <div className="sc-profile-scroll">
           <div
             className="sc-profile"
-            style={{ minWidth: Math.max(300, profile.points.length * 31) }}
+            style={{ minWidth: Math.max(300, profile.points.length * 42) }}
           >
             {profile.median !== null && (
               <div
