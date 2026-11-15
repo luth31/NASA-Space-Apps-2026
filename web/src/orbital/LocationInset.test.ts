@@ -39,4 +39,18 @@ describe("camera-driven country context", () => {
     ).toBe("Greece");
     expect(viewportCountry(countries, view([-30, 0]))).toBeNull();
   });
+  it("retains a coastal country when the overview center and corners are water", () => {
+    expect(
+      viewportCountry(countries, {
+        zoom: 6,
+        center: [24, 38],
+        corners: [
+          [19, 34],
+          [29, 34],
+          [29, 43],
+          [19, 43],
+        ],
+      })?.name,
+    ).toBe("Greece");
+  });
 });

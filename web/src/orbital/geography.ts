@@ -241,3 +241,29 @@ export function frameFor(area: Area | null): Bounds {
   const py = Math.max(0.25, (n - s) * 0.14);
   return [w - px, Math.max(-90, s - py), e + px, Math.min(90, n + py)];
 }
+
+/** Combine administrative map units without pulling overseas land into a distant frame. */
+export function administrativeCountries(units: Area[]): Area[] {
+  const grouped = new Map<string, Area>();
+  for (const unit of units) {
+    const id = `${unit.adminId ?? unit.id}:${unit.parent ?? ""}`;
+    let country = grouped.get(id);
+    if (!country) {
+      country = {
+        ...unit,
+        id,
+        name: unit.adminName ?? unit.name,
+        rows: [],
+        peak: null,
+        daytime: 0,
+        geometry: geometry([]),
+      };
+      grouped.set(id, country);
+    }
+    country.geometry!.coordinates.push(...(unit.geometry?.coordinates ?? []));
+    for (const row of unit.rows) add(country, row);
+  }
+  return [...grouped.values()].sort(
+    (a, b) => b.rows.length - a.rows.length || a.name.localeCompare(b.name),
+  );
+}

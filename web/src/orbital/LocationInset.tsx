@@ -10,7 +10,29 @@ export type Viewport = { zoom: number; center: Point; corners: Point[] };
 // global snapshot's observation-to-country assignment table.
 export function viewportCountry(countries: Area[], view: Viewport) {
   if (view.zoom < 4.5) return null;
-  for (const point of [view.center, ...view.corners]) {
+  // An island/coastal country's fitted view can have water at its center and
+  // all four corners. Include visible country anchors, nearest first, so its
+  // overview does not lose context and fall back to unrelated global rows.
+  const near = (lon: number) =>
+    lon + Math.round((view.center[0] - lon) / 360) * 360;
+  const west = Math.min(...view.corners.map((p) => near(p[0])));
+  const east = Math.max(...view.corners.map((p) => near(p[0])));
+  const south = Math.min(...view.corners.map((p) => p[1]));
+  const north = Math.max(...view.corners.map((p) => p[1]));
+  const distance = (p: Point) =>
+    Math.hypot(
+      (near(p[0]) - view.center[0]) *
+        Math.cos((view.center[1] * Math.PI) / 180),
+      p[1] - view.center[1],
+    );
+  const anchors = countries
+    .filter(
+      ({ point: [lon, lat] }) =>
+        near(lon) >= west && near(lon) <= east && lat >= south && lat <= north,
+    )
+    .map((country) => country.point)
+    .sort((a, b) => distance(a) - distance(b));
+  for (const point of [view.center, ...anchors, ...view.corners]) {
     const normalized: Point = [((point[0] + 540) % 360) - 180, point[1]];
     const country = countries.find(
       (c) => c.geometry && geoContains(c.geometry, normalized),
@@ -100,14 +122,14 @@ export default function LocationInset({
         <g clipPath={`url(#${clipId})`}>
           <path
             d={drawing.path ?? ""}
-            fill="#233c55"
-            stroke="#91b1d1"
+            fill="#2a4932"
+            stroke="#a9c39a"
             strokeWidth=".8"
           />
           <polygon
             className="inset-viewport"
             points={drawing.viewport}
-            fill="#75c5ff22"
+            fill="#c1d9a222"
             stroke="#ffffff"
             strokeWidth="1.5"
           />
@@ -117,7 +139,7 @@ export default function LocationInset({
                 cx={drawing.point[0]}
                 cy={drawing.point[1]}
                 r="7"
-                fill="#0b1726"
+                fill="#102016"
                 stroke="white"
                 strokeWidth="1.5"
               />

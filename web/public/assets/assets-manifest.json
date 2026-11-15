@@ -12,7 +12,7 @@
       "title": "Blue Marble: Next Generation with Topography",
       "role": "globe_texture",
       "acquisitionMonth": "2004-08",
-      "credit": "NASA Earth Observatory (Reto Stöckli, NASA GSFC)",
+      "credit": "NASA Earth Observatory (Reto St\u00f6ckli, NASA GSFC)",
       "sourceUrl": "https://assets.science.nasa.gov/content/dam/science/esd/eo/images/bmng/bmng-topography/august/world.topo.200408.3x5400x2700.jpg",
       "contextUrl": "https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-topography/",
       "pixelSize": [
@@ -26,7 +26,7 @@
         180,
         90
       ],
-      "note": "Monthly composite, resized from 5400×2700. Equirectangular texture with the seam at the antimeridian."
+      "note": "Monthly composite, resized from 5400\u00d72700. Equirectangular texture with the seam at the antimeridian."
     },
     {
       "filename": "evros-2023-08-22.jpg",
@@ -129,6 +129,78 @@
         724
       ],
       "note": "Shortwave infrared, near infrared and red (bands 6, 5 and 4). Resized from the publication image. Approximate location only, for the case card."
+    },
+    {
+      "filename": "rhodes-2023-07-23.jpg",
+      "title": "Rhodes",
+      "role": "regional_scene",
+      "acquisitionDate": "2023-07-23",
+      "credit": "NASA EOSDIS GIBS / Aqua MODIS",
+      "sourceUrl": "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&LAYERS=MODIS_Aqua_CorrectedReflectance_TrueColor&SRS=EPSG%3A4326&STYLES=&WIDTH=1600&HEIGHT=1133&BBOX=26.8%2C35.3%2C29.2%2C37.0&TIME=2023-07-23",
+      "contextUrl": "https://science.nasa.gov/earth/earth-observatory/fires-ignite-on-greek-islands-151628/",
+      "layer": "MODIS_Aqua_CorrectedReflectance_TrueColor",
+      "pixelSize": [
+        1600,
+        1133
+      ],
+      "crs": "EPSG:4326",
+      "bbox": [
+        26.8,
+        35.3,
+        29.2,
+        37.0
+      ],
+      "note": "True-color daily composite; may mosaic passes and does not identify an exact hotspot acquisition time.",
+      "sha256": "90c27bdb09ef8a8f9f78e461c6dc1520a37a0b596c5aa27f4e219c70b4d116e3",
+      "bytes": 63760
+    },
+    {
+      "filename": "manavgat-2021-07-30.jpg",
+      "title": "Manavgat",
+      "role": "regional_scene",
+      "acquisitionDate": "2021-07-30",
+      "credit": "NASA EOSDIS GIBS / Aqua MODIS",
+      "sourceUrl": "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&LAYERS=MODIS_Aqua_CorrectedReflectance_TrueColor&SRS=EPSG%3A4326&STYLES=&WIDTH=1600&HEIGHT=1097&BBOX=29.5%2C35.8%2C33.0%2C38.2&TIME=2021-07-30",
+      "contextUrl": "https://modis.gsfc.nasa.gov/gallery/individual.php?db_date=2021-07-31",
+      "layer": "MODIS_Aqua_CorrectedReflectance_TrueColor",
+      "pixelSize": [
+        1600,
+        1097
+      ],
+      "crs": "EPSG:4326",
+      "bbox": [
+        29.5,
+        35.8,
+        33.0,
+        38.2
+      ],
+      "note": "True-color daily composite; may mosaic passes and does not identify an exact hotspot acquisition time.",
+      "sha256": "fa1b73146ba58182b17a6f1c3132fb77f51030084ba97f60cde33048552004ce",
+      "bytes": 165023
+    },
+    {
+      "filename": "pantanal-2020-09-07.jpg",
+      "title": "Northern Pantanal",
+      "role": "regional_scene",
+      "acquisitionDate": "2020-09-07",
+      "credit": "NASA EOSDIS GIBS / Aqua MODIS",
+      "sourceUrl": "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fjpeg&LAYERS=MODIS_Aqua_CorrectedReflectance_TrueColor&SRS=EPSG%3A4326&STYLES=&WIDTH=1600&HEIGHT=1643&BBOX=-58.5%2C-18.8%2C-54.8%2C-15.0&TIME=2020-09-07",
+      "contextUrl": "https://science.nasa.gov/earth/earth-observatory/fires-char-the-pantanal-147269/",
+      "layer": "MODIS_Aqua_CorrectedReflectance_TrueColor",
+      "pixelSize": [
+        1600,
+        1643
+      ],
+      "crs": "EPSG:4326",
+      "bbox": [
+        -58.5,
+        -18.8,
+        -54.8,
+        -15.0
+      ],
+      "note": "True-color daily composite; may mosaic passes and does not identify an exact hotspot acquisition time.",
+      "sha256": "a6e57ae5960d5caff090c9bb0c58ff3afa329c6dab9c6c095433a7a5012b7171",
+      "bytes": 204059
     }
   ]
 }

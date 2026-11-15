@@ -158,8 +158,8 @@ export default function Sources({ manifest }: { manifest: Manifest }) {
           <div>
             <dt>Offline rehearsal</dt>
             <dd>
-              The production app saves the global snapshot, the three featured
-              case months, calendar summaries, science reports and scene imagery
+              The production app saves the global snapshot, the featured case
+              months, calendar summaries, science reports and scene imagery
               locally. The footer confirms when the bundle is ready. Other
               months are saved after viewing them online.
             </dd>

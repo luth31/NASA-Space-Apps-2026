@@ -301,7 +301,7 @@ export default function Calendar({
               <div
                 style={{
                   background:
-                    "linear-gradient(90deg,#1b2c40,hsl(210 55% 36%),hsl(210 70% 55%),hsl(210 80% 78%))",
+                    "linear-gradient(90deg,#1b2d20,hsl(8 55% 36%),hsl(8 70% 55%),hsl(8 80% 78%))",
                 }}
               />
               <span>{number(max)}</span>

@@ -2,9 +2,11 @@
 
 A NASA Space Apps fire observatory with a separate, reproducible MODIS-to-VIIRS modeling pipeline.
 
-The dashboard opens with an interactive MODIS → estimated VIIRS → observed VIIRS comparison. Apply calibration, reveal the withheld reading, switch landscape or model, and jump back before VIIRS. The calendar shows observed counts and experimental monthly estimates. Global exploration and dated investigations retain the original satellite locations; animated count tiles are explicitly nonspatial illustrations.
+The dashboard opens on a rotating Earth with glowing fire signals. One continuous camera moves through continents, countries and individual satellite readings; red shading shows total reported signals, with hover summaries and a country locator. The interface uses nature greens and warm fire colors. Both MODIS and VIIRS remain selectable, with original locations and dates.
 
-**Scientific scope:** the harmonized calendar is an experimental transfer of monthly reported counts, trained separately from the matched-pass experiment. It includes 324 overlapping region-months, 13 whole-year holdouts, two saved models, and measured regional errors. Cloud and overpass effort are not normalized; estimates do not reconstruct missing fire locations. The existing gate for a validated, coverage-normalized monthly product remains unchanged. There is no generic accuracy percentage.
+Models & validation contains the interactive MODIS → estimated VIIRS → observed VIIRS comparison. Apply calibration, reveal the withheld reading, switch landscape or model, and jump back before VIIRS. The calendar shows observed counts and experimental monthly estimates. Animated count tiles are explicitly nonspatial illustrations.
+
+**Scientific scope:** the harmonized calendar is an experimental transfer of monthly reported counts, trained separately from the matched-pass experiment. It includes 648 overlapping region-months, 13 whole-year holdouts, two saved models, and measured regional errors. Cloud and overpass effort are not normalized; estimates do not reconstruct missing fire locations. The existing gate for a validated, coverage-normalized monthly product remains unchanged. There is no generic accuracy percentage.
 
 ## Run the dashboard
 
@@ -23,11 +25,11 @@ npm run build
 npm run preview -- --port 4173
 ```
 
-Open http://127.0.0.1:4173/ while online. The dashboard reports **Core data saved on this device** once the rehearsal cache is saved. It includes the global snapshot, atlas geography, featured month for all three cases, complete calendar summaries, imagery, and science reports; the build prints its measured size. Other monthly point partitions are cached after viewing them online. A browser hard reload deliberately bypasses its offline cache; use normal navigation/reload when rehearsing offline.
+Open http://127.0.0.1:4173/ while online. The dashboard reports **Saved for offline exploring** once the rehearsal cache is saved. It includes the global snapshot, atlas geography, featured month for all six cases, complete calendar summaries, imagery, and science reports; the build prints its measured size. Other monthly point partitions are cached after viewing them online. A browser hard reload deliberately bypasses its offline cache; use normal navigation/reload when rehearsing offline.
 
 ### Receiving preview updates
 
-The preview server reads `web/dist`, so rebuild after changing the app. Restart the preview when its configuration changes. Production tabs check for a new build every 30 seconds while visible, when returning to a tab, and when reconnecting. The new service worker saves the complete offline bundle before activating and refreshing open app tabs together. A failed download leaves the previous version usable. First visits do not reload themselves.
+The preview server reads `web/dist`, so source edits alone do not update it. Before handing off changes, build the app, restart your local preview process, and verify the running page and its offline cache match the new build. Keep any service-manager commands in your local setup; developers may use different ports and process managers. Production tabs check for a new build every 30 seconds while visible, when returning to a tab, and when reconnecting. The new service worker saves the complete offline bundle before activating and refreshing open app tabs together. A failed download leaves the previous version usable. First visits do not reload themselves.
 
 For a tab opened before this update mechanism existed, reload once while online to discover the updated worker. It then refreshes the tab after caching the new bundle. Closing every app tab or clearing site data is no longer part of the normal update workflow.
 
@@ -95,7 +97,7 @@ The generator pins Natural Earth v5.1.2, assigns observations using full map-uni
 uv run --with pillow python web/scripts/build-map-context.py
 ```
 
-This resamples the dated NASA browse scenes from EPSG:4326 to Web Mercator, pins 340 GIBS background tiles (3.4 MB), and records Natural Earth v5.1.2 place labels. Checksums, source URLs, bounds and resampling details are in `web/public/assets/map-context/provenance.json`. The global low-resolution base and backgrounds around the three cases are available offline. More detailed global background tiles require a connection. Enlarging context imagery does not create finer source resolution.
+This resamples the dated NASA browse scenes from EPSG:4326 to Web Mercator, pins 442 GIBS background tiles (4.45 MB), and records Natural Earth v5.1.2 place labels. Checksums, source URLs, bounds and resampling details are in `web/public/assets/map-context/provenance.json`. The global low-resolution base and backgrounds around all six cases are available offline. More detailed global background tiles require a connection. Enlarging context imagery does not create finer source resolution.
 
 ## Checks
 
@@ -123,17 +125,20 @@ Use Chrome DevTools MCP for browser interactions and app testing, as requested f
 
 ## Experimental monthly calendar
 
-Rebuild only this artifact with `uv run python -m pipeline.monthly`; the saved monthly archive is sufficient and no new NASA downloads are required. It fits seasonal scaling and LightGBM in about 0.26 seconds on CPU. Native fitted models and the evaluation artifact are saved in `models/monthly/`; `web/public/data/monthly-harmonization.json` is the app input and is included in the offline cache.
+Rebuild only this artifact with `uv run python -m pipeline.monthly`; the saved monthly archive is sufficient and no new NASA downloads are required. It fits seasonal scaling and LightGBM in about 0.3 seconds on CPU. Native fitted models and the evaluation artifact are saved in `models/monthly/`; `web/public/data/monthly-harmonization.json` is the app input and is included in the offline cache.
 
 The fixed evaluation protocol excludes 2012 (a partial VIIRS year), withholds each entire year across all regions, and uses only MODIS, season and location as predictors. Every overlapping calendar value from 2013 onward is a held-out-year prediction. Earlier estimates come from the final fit on all overlapping years. This evaluates within-archive year transfer, not future operational or pre-VIIRS accuracy. Parameters were fixed before generating folds; these exploratory folds are not a locked prospective test.
 
 | Landscape | Withheld months | Original MODIS MAE | Seasonal scaling MAE | LightGBM MAE |
 | --- | ---: | ---: | ---: | ---: |
-| Evros | 156 | 50.78 | 14.50 | 156.26 |
-| Evia | 156 | 49.12 | 53.70 | 115.96 |
-| Gran Chaco | 12 | 16,004.00 | 10,649.32 | 17,531.74 |
+| Evros | 156 | 50.78 | 14.50 | 91.57 |
+| Evia | 156 | 49.12 | 53.70 | 86.24 |
+| Gran Chaco | 12 | 16,004.00 | 7,139.67 | 16,695.33 |
+| Rhodes | 156 | 7.76 | 2.36 | 95.15 |
+| Manavgat | 156 | 30.45 | 17.42 | 112.32 |
+| Northern Pantanal | 12 | 10,351.83 | 1,069.44 | 10,293.18 |
 
-Errors are detections per region-month. Gran Chaco has only 2020 in this bundle, so excluding that year also excludes its entire region. Its transfer is much less supported. Seasonal scaling is the transparent default; both approaches and the original MODIS baseline remain visible, including where calibration is worse. The demo is initialized to the case's dated event month, not selected by model improvement. All months, including zeros, are selectable.
+Errors are detections per region-month across 648 overlap months and 13 whole-year folds. Gran Chaco and Northern Pantanal have only 2020, so excluding that year excludes both regions entirely. Their transfer is much less supported. Seasonal scaling is the transparent default; both approaches and the original MODIS baseline remain visible, including where calibration is worse. The demo is initialized to the case's dated event month, not selected by model improvement. All months, including zeros, are selectable.
 
 Calendar CSVs include original readings, estimates, model, experimental status, withheld-year versus historical-fit provenance, local MAE, coverage caveat, and input hash. A null VIIRS value stays null; historical estimates never become observations.
 

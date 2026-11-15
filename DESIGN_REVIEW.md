@@ -125,3 +125,39 @@ The monthly product predicts archive counts without cloud/overpass normalization
 Chrome DevTools MCP exercised the complete calibration/reveal/historical/calendar flow, model and case changes, all four border edges, rapid zooms, intercontinental flight, mobile layout and keyboard interaction. Automated checks: 21 frontend tests and 14 pipeline tests, TypeScript, geography consistency and production build. Existing MapLibre chunk-size advisory remains.
 
 Production verification used the final `pyrobridge-b6084a9de26051a9` offline cache (412 files including its manifest; 30.8 MB). After a normal offline reload, the calibration reveal retained the 815.1 error and all three cases remained populated with both monthly models. The private preview showed the same result. Port 4188 was explicitly restarted; production Chrome reported no console warnings/errors. Phone checks above were completed before the instruction to skip further phone tests; no additional phone checks were run afterward.
+
+## Living globe and case expansion — 15 November 2026
+
+The dashboard now opens on a luminous, rotating Earth. One MapLibre camera carries the view into red-tinted continents, then countries, then original detection points. The red scale increases with total reported signals using a logarithmic transform; it is not burned area, fire severity, or an area-normalized density. Dashboard copy uses dates, places and signal counts. Calibration and technical units remain in Models & validation and the detailed investigation workspace.
+
+The green interface applies across all routes, with amber MODIS and red VIIRS observations. Rotation pauses on hover, stops after input, and respects reduced-motion settings. Geographic breadcrumbs change the camera without replacing the canvas. The country locator retains a fixed country shape while the viewport outline moves. Coastal views also consider nearby visible country anchors, so a frame centered over the Aegean does not lose Greece and substitute a global observation list.
+
+Historical case-study pins use sage rings and dated labels, distinct from the current red detections. Nearby pins group at globe scale; selecting a group exposes its dated investigations, and zoom separates the pins. Evros remains the featured entry. The case catalog now contains six regions:
+
+| New study | Featured Aqua imagery | Archive | Official context |
+| --- | --- | --- | --- |
+| Rhodes | 23 July 2023 | 2003–2025 | [NASA: Fires Ignite on Greek Islands](https://science.nasa.gov/earth/earth-observatory/fires-ignite-on-greek-islands-151628/) |
+| Manavgat | 30 July 2021 | 2003–2025 | [NASA MODIS: Fires in Turkey](https://modis.gsfc.nasa.gov/gallery/individual.php?db_date=2021-07-31) |
+| Northern Pantanal | 7 September 2020 | 2020 only | [NASA: Fires Char the Pantanal](https://science.nasa.gov/earth/earth-observatory/fires-char-the-pantanal-147269/) |
+
+These cases reuse checksum-verified country archives, with records from all countries intersecting each scene. Northern Pantanal is an explicit study rectangle, not the entire wetland. Dated GIBS Aqua images, geographic bounds and checksums are recorded in the asset manifests. The Pantanal Aqua image uses September 7 because September 6 had a large swath gap; its date remains distinct from the source article's Terra imagery. No gap was synthesized or filled.
+
+Monthly training now uses 648 overlap region-months and the same 13 whole-year folds. Both final models were refitted, and all calendar estimates and errors regenerated. On the same original evaluation months:
+
+| Study | Seasonal MAE before → after | LightGBM MAE before → after |
+| --- | ---: | ---: |
+| Evros | 14.50 → 14.50 | 156.26 → 91.57 |
+| Evia | 53.70 → 53.70 | 115.96 → 86.24 |
+| Gran Chaco | 10,649.32 → 7,139.67 | 17,531.74 → 16,695.33 |
+
+This is exploratory within-archive evaluation, not a general accuracy percentage or an independent final test. Scaling remains the default; LightGBM still performs worse than the unchanged MODIS baseline in several cases. The two South American studies only supply 2020, and the 2020 fold excludes both entire regions. Adding monthly archives does not add matched fire-mask passes: that separate benchmark still has 48 eligible cell-passes in two Greek regions, and the validated coverage-normalized release remains gated.
+
+Desktop checks use Chrome DevTools MCP; phone testing is intentionally skipped. The rotating overview measured 16.7 ms median and p95 requestAnimationFrame intervals over 60 frames on this machine, which is not a cross-device performance guarantee. Regression checks cover country count conservation, coastal context, calendar contrast, monthly provenance and offline-worker updates. The final handoff must rebuild and restart the configured production preview, verify its asset/cache hashes in the browser, and leave the PR open for review.
+
+The final six-case batch took **44.7 seconds** on CPU with **2.53 GB** peak child-process RSS; monthly fitting and evaluation took **0.292 seconds**. All 14 pipeline tests and 23 frontend tests pass, along with TypeScript, geography consistency and the production build. The rehearsal bundle is **57.1 MB / 529 files**; other monthly partitions load on demand. Existing MapLibre bundle-size advisory remains.
+
+![Glowing Earth and historical case pins](docs/review/living-case-globe.jpeg)
+![Six historical investigations](docs/review/living-six-cases.jpeg)
+![Green model comparison with all cases](docs/review/living-green-models.jpeg)
+
+Final production verification used `pyrobridge-0e36fd8819b9d069`. The restarted localhost and private Tailscale endpoints served identical JS/CSS hashes. Chrome verified 7,031 MODIS + 74,304 VIIRS = 81,335 original global readings, the new Pantanal investigation, and all six model rows. With networking disabled, the app reloaded, all six featured scenes and images loaded, and the six-case harmonized calendar remained available. Reduced motion produced zero automatic rotation. No production console warnings or errors were reported. Network and motion emulation were restored afterward; no phone checks were run.
