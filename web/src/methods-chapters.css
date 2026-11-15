@@ -1,0 +1,594 @@
+.methods-view.methods-chapters {
+  --chapter-bg: #0d1821;
+  --chapter-panel: #11222e;
+  --chapter-line: #2c414e;
+  --chapter-muted: #a7bac5;
+  position: relative;
+  width: 100%;
+  height: var(--workspace-height, calc(100dvh - 82px));
+  min-height: 0;
+  max-width: none;
+  flex: none;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  background: var(--chapter-bg);
+  color: #edf2ee;
+}
+.methods-chapters .method-chapter-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+.methods-chapters .method-chapter-scroll::-webkit-scrollbar {
+  display: none;
+}
+.methods-chapters .method-chapter {
+  height: 100%;
+  min-height: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  padding: 24px 78px 22px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 100% 0%, #1b344152, transparent 65%);
+}
+.methods-chapters .method-chapter-heading {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 66px;
+}
+.methods-chapters .method-chapter-heading .eyebrow {
+  color: #c1a17e;
+  font-size: 10px;
+  letter-spacing: 1.8px;
+}
+.methods-chapters .method-chapter-heading :is(h1, h2) {
+  margin: 7px 0 0;
+  font-size: clamp(25px, 2.35vw, 36px);
+  font-weight: 400;
+  letter-spacing: -1px;
+  line-height: 1.15;
+}
+.methods-chapters .method-chapter-heading .text-button {
+  color: #bac9d1;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.methods-chapters .method-unit {
+  max-width: 250px;
+  color: var(--chapter-muted);
+  font-size: 12px;
+  text-align: right;
+  line-height: 1.5;
+}
+.methods-chapters .method-chapter-nav {
+  position: absolute;
+  z-index: 8;
+  right: 21px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 4px;
+  border: 1px solid #304654;
+  border-radius: 24px;
+  background: #0c1824e8;
+  backdrop-filter: blur(14px);
+}
+.methods-chapters .method-chapter-nav button {
+  width: 29px;
+  height: 33px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  border-radius: 50%;
+}
+.methods-chapters .chapter-dot {
+  width: 7px;
+  height: 7px;
+  border: 1px solid #8095a3;
+  border-radius: 50%;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+.methods-chapters .method-chapter-nav button.active .chapter-dot {
+  background: #f1b981;
+  border-color: #f1b981;
+  transform: scale(1.3);
+  box-shadow: 0 0 15px #f1b98140;
+}
+.methods-chapters .chapter-dot-label {
+  position: absolute;
+  right: 42px;
+  padding: 8px 12px;
+  background: #122633;
+  border: 1px solid #3c5666;
+  color: #e8eef1;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(4px);
+  transition: 0.15s;
+}
+.methods-chapters
+  .method-chapter-nav
+  button:is(:hover, :focus-visible)
+  .chapter-dot-label {
+  opacity: 1;
+  transform: none;
+}
+.methods-chapters .method-animation-chapter {
+  gap: 10px;
+}
+.methods-chapters .method-animation-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.methods-chapters .method-animation-body > .calibration-demo {
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+}
+.methods-chapters .method-next-chapter {
+  flex: 0 0 auto;
+  align-self: center;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--chapter-muted);
+  font-size: 11px;
+  line-height: 18px;
+}
+.methods-chapters .chapter-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  border-top: 1px solid var(--chapter-line);
+  border-bottom: 1px solid var(--chapter-line);
+  padding: 14px 0;
+}
+.methods-chapters .chapter-metrics > div {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.methods-chapters .chapter-metrics strong {
+  font-size: 30px;
+  font-weight: 400;
+  white-space: nowrap;
+  letter-spacing: -1px;
+}
+.methods-chapters .chapter-metrics strong small {
+  font-size: 17px;
+}
+.methods-chapters .chapter-metrics span {
+  color: var(--chapter-muted);
+  font-size: 12px;
+  max-width: 150px;
+  line-height: 1.4;
+}
+.methods-chapters .chapter-scorecard {
+  border: 1px solid var(--chapter-line);
+  border-radius: 12px;
+  background: var(--chapter-panel);
+  padding: 10px 20px 0;
+  overflow: hidden;
+}
+.methods-chapters .chapter-scorecard table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+.methods-chapters .chapter-scorecard caption {
+  caption-side: top;
+  text-align: left;
+  padding: 3px 0 12px;
+  color: var(--chapter-muted);
+  font-size: 12px;
+}
+.methods-chapters .chapter-scorecard :is(th, td) {
+  padding: 13px 12px;
+  border-top: 1px solid var(--chapter-line);
+  text-align: right;
+  line-height: 1.2;
+  font-weight: 400;
+}
+.methods-chapters .chapter-scorecard th:first-child {
+  text-align: left;
+  width: 28%;
+  padding-left: 0;
+}
+.methods-chapters .chapter-scorecard :is(th, td):last-child {
+  padding-right: 0;
+}
+.methods-chapters .chapter-scorecard th:nth-child(2) {
+  width: 11%;
+}
+.methods-chapters .chapter-scorecard thead th {
+  color: var(--chapter-muted);
+  font-size: 11px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+.methods-chapters .chapter-scorecard tbody td,
+.methods-chapters .chapter-scorecard tfoot td {
+  font-family: "IBM Plex Mono", monospace;
+}
+.methods-chapters .chapter-scorecard sup {
+  color: var(--chapter-muted);
+  padding-left: 3px;
+}
+.methods-chapters .chapter-scorecard .score-modis {
+  color: #f7a16b;
+}
+.methods-chapters .chapter-scorecard .score-scaling {
+  color: #e5cf7d;
+}
+.methods-chapters .chapter-scorecard tfoot {
+  background: #172c39;
+}
+.methods-chapters .chapter-scorecard tfoot :is(th, td) {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  font-weight: 500;
+}
+.methods-chapters p.chapter-science-note {
+  margin: 0;
+  color: var(--chapter-muted);
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 1100px;
+}
+.methods-chapters .chapter-model-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.methods-chapters .chapter-model-cards article {
+  padding: 22px 24px;
+  border: 1px solid var(--chapter-line);
+  border-radius: 12px;
+  background: var(--chapter-panel);
+}
+.methods-chapters .chapter-model-role {
+  color: #d8be82;
+  font-size: 10px;
+  letter-spacing: 1.4px;
+}
+.methods-chapters .chapter-model-cards h3 {
+  margin: 8px 0 12px;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+}
+.methods-chapters .chapter-model-cards p {
+  color: var(--chapter-muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0 0 18px;
+  max-width: 48ch;
+}
+.methods-chapters .chapter-model-cards dl {
+  border-top: 1px solid var(--chapter-line);
+  margin: 0;
+  padding-top: 12px;
+}
+.methods-chapters .chapter-model-cards dl > div {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 12px;
+  margin-top: 5px;
+  font-size: 12px;
+}
+.methods-chapters .chapter-model-cards dt {
+  color: var(--chapter-muted);
+}
+.methods-chapters .chapter-model-cards dd {
+  margin: 0;
+}
+.methods-chapters .chapter-protocol-steps {
+  list-style: none;
+  padding: 18px 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  border-block: 1px solid var(--chapter-line);
+}
+.methods-chapters .chapter-protocol-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+}
+.methods-chapters .chapter-protocol-steps li > span {
+  font:
+    12px "IBM Plex Mono",
+    monospace;
+  color: #f1b981;
+  padding-top: 3px;
+}
+.methods-chapters .chapter-protocol-steps h3 {
+  margin: 0 0 7px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.methods-chapters .chapter-protocol-steps p {
+  color: var(--chapter-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+.methods-chapters .chapter-protocol-notes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 34px;
+}
+.methods-chapters .chapter-protocol-notes h3 {
+  margin: 0 0 5px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.methods-chapters .chapter-protocol-notes p {
+  font-size: 12px;
+  color: var(--chapter-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+.methods-chapters .chapter-pass-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 18px;
+  min-height: 0;
+}
+.methods-chapters :is(.chapter-pass-benchmark, .chapter-pass-coverage) {
+  background: var(--chapter-panel);
+  border: 1px solid var(--chapter-line);
+  border-radius: 12px;
+  padding: 22px;
+  min-width: 0;
+}
+.methods-chapters .chapter-panel-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 16px;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 17px;
+}
+.methods-chapters .chapter-panel-heading h3 {
+  font-size: 18px;
+  font-weight: 400;
+  margin: 0;
+}
+.methods-chapters .chapter-panel-heading span {
+  font-size: 11px;
+  color: var(--chapter-muted);
+}
+.methods-chapters .chapter-pass-grid select {
+  width: 100%;
+  background-color: #182e3c;
+  border: 1px solid #385365;
+  border-radius: 7px;
+  padding: 9px 30px 9px 12px;
+  font-size: 12px;
+  color: #e6eef2;
+}
+.methods-chapters p.pass-unit {
+  font-size: 11px;
+  color: var(--chapter-muted);
+  margin: 13px 0;
+}
+.methods-chapters :is(.pass-result-head, .pass-result-row) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 77px 65px;
+  gap: 12px;
+  align-items: center;
+}
+.methods-chapters .pass-result-head {
+  color: var(--chapter-muted);
+  font-size: 10px;
+  padding: 0 0 11px;
+}
+.methods-chapters .pass-result-head > :not(:first-child) {
+  text-align: right;
+}
+.methods-chapters .pass-result-row {
+  padding: 13px 0;
+  border-top: 1px solid var(--chapter-line);
+  min-height: 58px;
+  font-size: 12px;
+}
+.methods-chapters .pass-result-row > :not(:first-child) {
+  text-align: right;
+  font:
+    13px "IBM Plex Mono",
+    monospace;
+}
+.methods-chapters .pass-result-row.best {
+  color: #e5cf7d;
+}
+.methods-chapters .pass-error-track {
+  display: block;
+  height: 3px;
+  background: #223b4b;
+  margin-top: 8px;
+  border-radius: 2px;
+  overflow: hidden;
+  max-width: 220px;
+}
+.methods-chapters .pass-error-track > i {
+  display: block;
+  height: 100%;
+  background: #718a9a;
+  transition: width 0.45s ease;
+}
+.methods-chapters .pass-result-row.best .pass-error-track > i {
+  background: #e5cf7d;
+}
+.methods-chapters p.pass-result-note {
+  font-size: 11px;
+  color: var(--chapter-muted);
+  line-height: 1.55;
+  margin: 13px 0 0;
+}
+.methods-chapters .pass-result-note strong {
+  font-weight: 500;
+  color: #e9dfbc;
+}
+.methods-chapters .pass-coverage-stats {
+  margin: 16px 0;
+}
+.methods-chapters .pass-coverage-stats > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--chapter-line);
+}
+.methods-chapters .pass-coverage-stats dt {
+  font-size: 12px;
+  color: var(--chapter-muted);
+}
+.methods-chapters .pass-coverage-stats dd {
+  font:
+    20px "IBM Plex Mono",
+    monospace;
+  margin: 0;
+}
+.methods-chapters .pass-coverage-stats dd small {
+  font-size: 12px;
+  color: var(--chapter-muted);
+}
+.methods-chapters .pass-eligibility h4 {
+  font-weight: 500;
+  font-size: 12px;
+  margin: 0 0 6px;
+}
+.methods-chapters .pass-eligibility p {
+  font-size: 12px;
+  color: var(--chapter-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+.methods-chapters p.pass-audit-error {
+  color: #f4b498;
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 8px 0;
+}
+.methods-chapters .pass-audit-link {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  margin-top: 15px;
+  color: #d5bf91;
+  font-size: 11px;
+}
+.methods-chapters .chapter-empty {
+  padding: 35px;
+  color: var(--chapter-muted);
+  font-size: 14px;
+}
+@media (max-height: 820px) and (min-width: 900px) {
+  .methods-chapters .method-chapter {
+    padding-top: 18px;
+    padding-bottom: 16px;
+    gap: 14px;
+  }
+  .methods-chapters .method-animation-chapter {
+    gap: 8px;
+  }
+  .methods-chapters .method-chapter-heading {
+    min-height: 56px;
+  }
+  .methods-chapters .method-chapter-heading :is(h1, h2) {
+    font-size: 28px;
+  }
+  .methods-chapters .chapter-model-cards article {
+    padding: 18px 20px;
+  }
+  .methods-chapters .chapter-model-cards h3 {
+    font-size: 23px;
+  }
+  .methods-chapters .chapter-model-cards p {
+    margin-bottom: 13px;
+  }
+  .methods-chapters .chapter-scorecard :is(th, td) {
+    padding-top: 11px;
+    padding-bottom: 11px;
+  }
+  .methods-chapters :is(.chapter-pass-benchmark, .chapter-pass-coverage) {
+    padding: 18px;
+  }
+}
+@media (max-width: 899px) {
+  .methods-chapters .method-chapter {
+    padding: 20px 52px 20px 20px;
+    overflow-y: auto;
+  }
+  .methods-chapters .method-chapter-nav {
+    right: 9px;
+  }
+  .methods-chapters .method-chapter-heading {
+    align-items: flex-start;
+  }
+  .methods-chapters .method-chapter-heading :is(h1, h2) {
+    font-size: 25px;
+  }
+  .methods-chapters .method-unit {
+    display: none;
+  }
+  .methods-chapters .chapter-model-cards,
+  .methods-chapters .chapter-pass-grid {
+    grid-template-columns: 1fr;
+  }
+  .methods-chapters .chapter-protocol-steps {
+    grid-template-columns: 1fr;
+  }
+  .methods-chapters .chapter-metrics {
+    gap: 10px;
+  }
+  .methods-chapters .chapter-metrics > div {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .methods-chapters .chapter-metrics strong {
+    font-size: 24px;
+  }
+  .methods-chapters .chapter-scorecard {
+    overflow-x: auto;
+    padding-inline: 14px;
+    flex-shrink: 0;
+  }
+  .methods-chapters .chapter-scorecard table {
+    min-width: 590px;
+  }
+  .methods-chapters .method-animation-body {
+    min-height: 520px;
+  }
+  .methods-chapters .chapter-protocol-notes {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .methods-chapters .pass-error-track > i,
+  .methods-chapters .chapter-dot {
+    transition: none;
+  }
+}

@@ -1,0 +1,230 @@
+.investigations-page.investigations-compact {
+  height: var(--workspace-height, calc(100dvh - 82px));
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  margin: 0;
+  padding: 24px 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 60% 0%, #18324266, transparent 65%), #0d1821;
+  color: #edf2ee;
+}
+.investigations-compact .investigations-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  flex: 0 0 auto;
+}
+.investigations-compact .investigations-heading .eyebrow {
+  color: #c1a17e;
+  font-size: 10px;
+  letter-spacing: 1.8px;
+}
+.investigations-compact .investigations-heading h1 {
+  font-size: clamp(26px, 2.5vw, 36px);
+  font-weight: 400;
+  letter-spacing: -1px;
+  margin: 7px 0 0;
+  line-height: 1.15;
+}
+.investigations-compact .investigations-heading p {
+  font-size: 12px;
+  color: #a7bac5;
+  line-height: 1.55;
+  text-align: right;
+  max-width: 280px;
+  margin: 0;
+}
+.investigations-compact .compact-case-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.investigations-compact .compact-case-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  text-align: left;
+  border: 1px solid #344b58;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #11232e;
+  position: relative;
+  transition:
+    border-color 0.25s,
+    box-shadow 0.25s;
+}
+.investigations-compact .compact-case-card:hover {
+  border-color: #b8a37e;
+  box-shadow: 0 8px 32px #0003;
+}
+.investigations-compact .compact-case-image {
+  position: relative;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  background: #172d39;
+}
+.investigations-compact .compact-case-image::after {
+  position: absolute;
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    #06101c55 0%,
+    transparent 40%,
+    #06101c80 100%
+  );
+}
+.investigations-compact .compact-case-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.65s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.investigations-compact .compact-case-card:hover img {
+  transform: scale(1.035);
+}
+.investigations-compact .compact-case-number {
+  position: absolute;
+  z-index: 1;
+  left: 14px;
+  top: 12px;
+  color: #fff;
+  font:
+    11px "IBM Plex Mono",
+    monospace;
+  background: #0b1a24b3;
+  padding: 5px 7px;
+  border: 1px solid #a2b1b733;
+  border-radius: 4px;
+}
+.investigations-compact .compact-case-date {
+  position: absolute;
+  z-index: 1;
+  right: 14px;
+  top: 14px;
+  color: #fff;
+  font-size: 11px;
+  text-shadow: 0 1px 5px #000;
+}
+.investigations-compact .compact-case-source {
+  position: absolute;
+  z-index: 1;
+  left: 15px;
+  bottom: 10px;
+  color: #e2e9e9;
+  font-size: 9px;
+  letter-spacing: 0.4px;
+}
+.investigations-compact .compact-case-copy {
+  flex: 0 0 auto;
+  padding: 13px 18px 15px;
+}
+.investigations-compact .compact-case-country {
+  font-size: 10px;
+  letter-spacing: 0.7px;
+  color: #a7bac5;
+  text-transform: uppercase;
+}
+.investigations-compact .compact-case-copy h2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: clamp(20px, 1.8vw, 27px);
+  font-weight: 400;
+  letter-spacing: -0.55px;
+  margin: 5px 0 12px;
+  line-height: 1.1;
+}
+.investigations-compact .compact-case-copy h2 svg {
+  color: #e1b785;
+  flex: 0 0 auto;
+  transition: transform 0.2s;
+}
+.investigations-compact .compact-case-card:hover h2 svg {
+  transform: translate(2px, -2px);
+}
+.investigations-compact .compact-case-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #a7bac5;
+  font-size: 11px;
+  border-top: 1px solid #304450;
+  padding-top: 10px;
+}
+.investigations-compact .compact-case-stats strong {
+  color: #dce5e9;
+  font-weight: 400;
+  font-family: "IBM Plex Mono", monospace;
+}
+@media (max-height: 820px) and (min-width: 900px) {
+  .investigations-page.investigations-compact {
+    padding: 19px 28px 22px;
+    gap: 16px;
+  }
+  .investigations-compact .compact-case-grid {
+    gap: 14px;
+  }
+  .investigations-compact .compact-case-copy {
+    padding: 11px 16px 12px;
+  }
+  .investigations-compact .compact-case-copy h2 {
+    margin-bottom: 10px;
+    font-size: 23px;
+  }
+}
+@media (max-width: 899px) {
+  .investigations-page.investigations-compact {
+    height: auto;
+    min-height: var(--workspace-height, calc(100dvh - 82px));
+    overflow: visible;
+    padding: 22px;
+  }
+  .investigations-compact .investigations-heading {
+    align-items: flex-start;
+  }
+  .investigations-compact .investigations-heading p {
+    max-width: 220px;
+  }
+  .investigations-compact .compact-case-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+  }
+  .investigations-compact .compact-case-image {
+    height: 160px;
+    flex: none;
+  }
+}
+@media (max-width: 560px) {
+  .investigations-compact .investigations-heading {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .investigations-compact .investigations-heading p {
+    text-align: left;
+    max-width: none;
+  }
+  .investigations-compact .compact-case-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .investigations-compact .compact-case-image img,
+  .investigations-compact .compact-case-copy h2 svg {
+    transition: none;
+  }
+}

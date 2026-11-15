@@ -11,6 +11,7 @@ import "./style.css";
 import "./orbital/mission.css";
 import "./readability.css";
 import "./orbital/living.css";
+import "./workspace-compact.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

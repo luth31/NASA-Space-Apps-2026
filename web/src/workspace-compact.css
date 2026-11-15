@@ -1,0 +1,28 @@
+.scientific-workspace {
+  --workspace-height: calc(100dvh - 82px);
+}
+
+.scientific-workspace > .mission-header {
+  flex: 0 0 82px;
+}
+
+@media (min-width: 901px) {
+  .scientific-workspace:is(
+    .workspace-calendar,
+    .workspace-methods,
+    .workspace-investigations
+  ) {
+    height: 100dvh;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .scientific-workspace {
+    --workspace-height: calc(100dvh - 108px);
+  }
+
+  .scientific-workspace > .mission-header {
+    flex-basis: 108px;
+  }
+}

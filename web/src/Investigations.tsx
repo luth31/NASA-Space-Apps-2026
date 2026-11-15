@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import type { CaseStudy } from "./data";
 import { dateLabel, integer } from "./data";
+import "./investigations-compact.css";
 
 export default function Investigations({
   cases,
@@ -10,44 +11,52 @@ export default function Investigations({
   onCase: (study: CaseStudy) => void;
 }) {
   return (
-    <section className="investigations-page">
-      <p className="eyebrow">HISTORICAL INVESTIGATIONS</p>
-      <h1>From a signal to its context.</h1>
-      <p>
-        Explore {cases.length} documented fire landscapes with dated NASA
-        imagery, original satellite readings, official reports, and a monthly
-        observation archive.
-      </p>
-      <div className="investigation-cards">
-        {cases.map((study) => (
-          <button key={study.id} onClick={() => onCase(study)}>
-            <img
-              src={`/assets/${study.image}`}
-              alt={`NASA Aqua MODIS daily composite of ${study.name} on ${dateLabel(study.date)}`}
-            />
-            <div>
-              <span>
-                {study.country} · {dateLabel(study.date)}
-              </span>
+    <section className="investigations-page investigations-compact">
+      <header className="investigations-heading">
+        <div>
+          <span className="eyebrow">HISTORICAL INVESTIGATIONS</span>
+          <h1>Every fire has a story.</h1>
+        </div>
+        <p>
+          {cases.length} landscapes · satellite readings, monthly records &
+          official reports
+        </p>
+      </header>
+      <div className="compact-case-grid">
+        {cases.map((study, index) => (
+          <button
+            className="compact-case-card"
+            key={study.id}
+            onClick={() => onCase(study)}
+          >
+            <div className="compact-case-image">
+              <img
+                src={`/assets/${study.image}`}
+                alt={`NASA Aqua MODIS daily composite of ${study.name} on ${dateLabel(study.date)}`}
+              />
+              <span className="compact-case-number">0{index + 1}</span>
+              <span className="compact-case-date">{dateLabel(study.date)}</span>
+              <span className="compact-case-source">NASA Aqua · MODIS</span>
+            </div>
+            <div className="compact-case-copy">
+              <span className="compact-case-country">{study.country}</span>
               <h2>
                 {study.name}
-                <ArrowUpRight size={23} />
+                <ArrowUpRight size={21} aria-hidden="true" />
               </h2>
-              <p>{study.description}</p>
-              <small>
-                {integer(study.rawCount)} archived detections ·{" "}
-                {study.years.length}{" "}
-                {study.years.length === 1 ? "year" : "years"}
-              </small>
+              <div className="compact-case-stats">
+                <span>
+                  <strong>{integer(study.rawCount)}</strong> detections
+                </span>
+                <span>
+                  {study.years.length}{" "}
+                  {study.years.length === 1 ? "year" : "years"} archived
+                </span>
+              </div>
             </div>
           </button>
         ))}
       </div>
-      <p className="mission-note">
-        These cases were selected for feasibility and demonstration. They are
-        not a representative global validation sample. All calendar counts
-        retain their original sensor.
-      </p>
     </section>
   );
 }

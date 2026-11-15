@@ -3,6 +3,25 @@ import type { CaseStudy } from "./data";
 
 export const monthlyModels = ["Seasonal scaling", "LightGBM"] as const;
 export type MonthlyModel = (typeof monthlyModels)[number];
+
+/** Relative count agreement, bounded to 0–100; unavailable counts stay missing. */
+export function countAccuracy(
+  estimate: number | null,
+  observed: number | null,
+): number | null {
+  if (
+    estimate === null ||
+    observed === null ||
+    !Number.isFinite(estimate) ||
+    !Number.isFinite(observed) ||
+    estimate < 0 ||
+    observed < 0
+  )
+    return null;
+  if (observed === 0) return estimate === 0 ? 100 : 0;
+  return Math.max(0, 1 - Math.abs(estimate - observed) / observed) * 100;
+}
+
 export type MonthlyScore = {
   n: number;
   mae: number;

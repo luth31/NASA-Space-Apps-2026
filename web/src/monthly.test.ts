@@ -1,10 +1,25 @@
 import { describe, expect, it } from "vitest";
 import saved from "../public/data/monthly-harmonization.json";
 import manifest from "../public/data/manifest.json";
-import { monthlyCsv, monthlyModels, type MonthlyCalibration } from "./monthly";
+import {
+  countAccuracy,
+  monthlyCsv,
+  monthlyModels,
+  type MonthlyCalibration,
+} from "./monthly";
 import type { CaseStudy } from "./data";
 
 describe("monthly calibration evidence", () => {
+  it("reports count accuracy without treating missing or zero observations as ordinary denominators", () => {
+    expect(countAccuracy(90, 100)).toBe(90);
+    expect(countAccuracy(110, 100)).toBe(90);
+    expect(countAccuracy(250, 100)).toBe(0);
+    expect(countAccuracy(0, 0)).toBe(100);
+    expect(countAccuracy(5, 0)).toBe(0);
+    expect(countAccuracy(20, null)).toBeNull();
+    expect(countAccuracy(null, 20)).toBeNull();
+    expect(countAccuracy(Infinity, 20)).toBeNull();
+  });
   it("reproduces displayed errors using only complete withheld years", () => {
     let n = 0;
     for (const study of manifest.cases) {

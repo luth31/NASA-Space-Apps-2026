@@ -1,16 +1,15 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { motion } from "motion/react";
-import { ArrowDownToLine, ArrowUpRight, Info, Sparkles } from "lucide-react";
-import { calendarColors } from "./calendar-colors";
-import type { CaseStudy, Month } from "./data";
+import { ArrowDownToLine, ArrowUpRight, ArrowRight, Info } from "lucide-react";
+import type { CaseStudy } from "./data";
 import { dateLabel, number } from "./data";
-
 import {
   downloadMonthly,
   monthlyModels,
   useMonthlyCalibration,
   type MonthlyModel,
 } from "./monthly";
+import "./calendar-compact.css";
 
 const names = [
   "JAN",
@@ -26,6 +25,27 @@ const names = [
   "NOV",
   "DEC",
 ];
+const series = [
+  {
+    key: "modis",
+    name: "Original MODIS",
+    subtitle: "Aqua · reported detections",
+    color: "#f7a16b",
+  },
+  {
+    key: "estimate",
+    name: "Estimated VIIRS",
+    subtitle: "Model · experimental counts",
+    color: "#f2d46b",
+  },
+  {
+    key: "viirs",
+    name: "Observed VIIRS",
+    subtitle: "S-NPP · reference detections",
+    color: "#ff665c",
+  },
+] as const;
+
 interface Props {
   study: CaseStudy;
   cases: CaseStudy[];
@@ -36,6 +56,51 @@ interface Props {
   onExport: (format: "csv" | "pdf") => void;
   onMethods: () => void;
 }
+
+function Flame({ count, maximum }: { count: number | null; maximum: number }) {
+  if (count === null)
+    return (
+      <span className="flame-no-source" aria-hidden="true">
+        —
+      </span>
+    );
+  if (count === 0)
+    return (
+      <span className="flame-zero" aria-hidden="true">
+        0
+      </span>
+    );
+  const intensity = Math.min(1, Math.log1p(count) / Math.log1p(maximum));
+  return (
+    <svg
+      className="calendar-flame"
+      viewBox="0 0 24 32"
+      aria-hidden="true"
+      style={{
+        opacity: 0.38 + intensity * 0.62,
+        transform: `scale(${0.38 + intensity * 0.62})`,
+      }}
+    >
+      <path
+        d="M13.1 1C15 9 4 11.2 4.1 20.1 1.7 17.5 2.6 14 2.6 14S-2 21.4 2.8 27.3C7.4 33 17 33.5 21.5 26.8c4.8-7.2-.4-13.5-3-16.5.8 4.8-1.3 6.2-1.3 6.2C19.3 9.9 14.4 3 13.1 1Z"
+        fill="currentColor"
+      />
+      <path
+        d="M12.5 18c.7 4.6-4.8 5-4.6 8.6.1 2.6 2.3 4 4.7 3.9 4-.2 5.5-3.8 3.8-6.4-.1 2-1.3 2.1-1.3 2.1.6-3.5-1.9-6.5-2.6-8.2Z"
+        fill="#fff7df"
+        opacity=".65"
+      />
+    </svg>
+  );
+}
+
+function errorChange(original: number, estimated: number) {
+  if (original === estimated) return "Same error";
+  if (original === 0) return `${number(estimated)} more error`;
+  const percentage = Math.abs((original - estimated) / original) * 100;
+  return `${number(percentage)}% ${estimated < original ? "less" : "more"} error`;
+}
+
 export default function Calendar({
   study,
   cases,
@@ -45,361 +110,365 @@ export default function Calendar({
   onExplore,
   onMethods,
 }: Props) {
-  const [sensor, setSensor] = useState<"modis" | "viirs">("modis");
-  const [harmonized, setHarmonized] = useState(true);
   const [model, setModel] = useState<MonthlyModel>("Seasonal scaling");
+  const [hoveredMonth, setHoveredMonth] = useState<string | null>(null);
   const { data: calibration, failed } = useMonthlyCalibration();
   const monthly = calibration?.cases[study.id];
-  const months = useMemo(
-    () =>
-      study.months.map((m) => ({
-        ...m,
-        estimate:
-          monthly?.months.find((r) => r.month === m.month)?.estimates[model] ??
-          null,
-      })),
-    [study, monthly, model],
-  );
-  const score = monthly?.scores[model];
-  const [tip, setTip] = useState<Month | null>(null);
-  const field = harmonized ? "estimate" : sensor;
-  const max = useMemo(
-    () =>
-      Math.max(
-        1,
-        ...months.flatMap((m) => [m.modis ?? 0, m.viirs ?? 0, m.estimate ?? 0]),
-      ),
+  const months = useMemo(() => {
+    const estimates = new Map(monthly?.months.map((m) => [m.month, m]));
+    return study.months.map((month) => ({
+      ...month,
+      estimate: estimates.get(month.month)?.estimates[model] ?? null,
+      evaluation: estimates.get(month.month)?.evaluation,
+    }));
+  }, [study, monthly, model]);
+  const byMonth = useMemo(
+    () => new Map(months.map((m) => [m.month, m])),
     [months],
   );
-  const selected = months.find((m) => m.month === selectedMonth);
-  const orderedMonths = [...study.years]
-    .reverse()
-    .flatMap((y) =>
-      names.map((_, m) => `${y}-${String(m + 1).padStart(2, "0")}`),
-    );
+  const years = [...study.years].sort((a, b) => b - a);
+  const orderedMonths = years.flatMap((year) =>
+    names.map((_, month) => `${year}-${String(month + 1).padStart(2, "0")}`),
+  );
+  const selectedKey = byMonth.has(selectedMonth)
+    ? selectedMonth
+    : months[months.length - 1]?.month;
+  const displayed =
+    byMonth.get(hoveredMonth ?? selectedKey) ?? byMonth.get(selectedKey);
+  const maximum = Math.max(
+    1,
+    ...months.flatMap((m) => [m.modis ?? 0, m.estimate ?? 0, m.viirs ?? 0]),
+  );
+  const baselineError =
+    displayed?.modis != null && displayed.viirs != null
+      ? Math.abs(displayed.modis - displayed.viirs)
+      : null;
+  const modelError =
+    displayed?.estimate != null && displayed.viirs != null
+      ? Math.abs(displayed.estimate - displayed.viirs)
+      : null;
+  const score = monthly?.scores[model];
+  const visibleMonth = displayed
+    ? dateLabel(`${displayed.month}-01`, { month: "long", year: "numeric" })
+    : "Select a month";
+  const monthTitle = (key: string) => {
+    const row = byMonth.get(key);
+    return `${dateLabel(`${key}-01`, { month: "long", year: "numeric" })} · MODIS ${row?.modis == null ? "unavailable" : number(row.modis)} · Estimated VIIRS ${row?.estimate == null ? "unavailable" : number(row.estimate)} · Observed VIIRS ${row?.viirs == null ? "unavailable" : number(row.viirs)}`;
+  };
+
   return (
     <motion.div
-      className="calendar-view"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      className="calendar-view calendar-story"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
     >
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">THE FIRE ACTIVITY CALENDAR</span>
-          <h1>
-            A longer perspective<span>.</span>
-          </h1>
-          <p>
+      <header className="calendar-story-heading">
+        <div className="calendar-story-title">
+          <span className="calendar-kicker">THE FIRE ACTIVITY CALENDAR</span>
+          <h1>One history. Three perspectives.</h1>
+        </div>
+        <div className="calendar-story-controls">
+          <label>
+            <span>Investigation</span>
             <select
-              className="case-picker"
               aria-label="Calendar investigation"
               value={study.id}
-              onChange={(e) =>
-                onStudy(cases.find((c) => c.id === e.target.value)!)
-              }
+              onChange={(event) => {
+                setHoveredMonth(null);
+                onStudy(cases.find((c) => c.id === event.target.value)!);
+              }}
             >
               {cases.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}, {c.country}
                 </option>
               ))}
-            </select>{" "}
-            <span className="muted">/</span> Monthly satellite detections · UTC
-          </p>
-        </div>
-        <button className="text-button" onClick={onExplore}>
-          Back to the scene <ArrowUpRight size={16} />
-        </button>
-      </div>
-      <div className="calendar-top">
-        <div className="mode-control">
-          <button
-            className={!harmonized ? "selected" : ""}
-            onClick={() => setHarmonized(false)}
-          >
-            Observed counts
-          </button>
-          <button
-            className={harmonized ? "selected" : ""}
-            onClick={() => setHarmonized(true)}
-          >
-            Harmonized <Sparkles size={13} />
-          </button>
-        </div>
-        {!harmonized && (
-          <div className="sensor-options" aria-label="Calendar sensor">
-            <button
-              className={sensor === "modis" ? "selected" : ""}
-              onClick={() => setSensor("modis")}
-              disabled={harmonized}
-            >
-              <i className="dot aqua" />
-              Aqua MODIS
-            </button>
-            <button
-              className={sensor === "viirs" ? "selected" : ""}
-              onClick={() => setSensor("viirs")}
-              disabled={harmonized}
-            >
-              <i className="dot fire" />
-              S-NPP VIIRS
-            </button>
-          </div>
-        )}
-      </div>
-      {harmonized && (
-        <div className="calendar-calibration-bar">
+            </select>
+          </label>
           <label>
-            Calibration{" "}
+            <span>Calibration model</span>
             <select
               aria-label="Calendar calibration model"
               value={model}
-              onChange={(e) => setModel(e.target.value as MonthlyModel)}
+              onChange={(event) => setModel(event.target.value as MonthlyModel)}
             >
-              {monthlyModels.map((m) => (
-                <option key={m}>{m}</option>
+              {monthlyModels.map((name) => (
+                <option key={name}>{name}</option>
               ))}
             </select>
           </label>
-          <span className="experiment-badge">Experimental estimates</span>
-          {score && (
-            <span>
-              <strong>{number(score.mae)}</strong> average error / month ·{" "}
-              {score.n} withheld months
-            </span>
-          )}
-          <button className="text-button" onClick={onMethods}>
-            Compare model scores <ArrowUpRight size={15} />
-          </button>
-        </div>
-      )}
-      {harmonized && !calibration && (
-        <p role="status">
-          {failed
-            ? "Calibration data could not load. Reload to retry."
-            : "Loading monthly estimates…"}
-        </p>
-      )}
-      <div className="calendar-layout">
-        <div className="heatmap-panel">
-          <div className="heatmap-title">
-            <h2>
-              {harmonized ? "VIIRS-equivalent activity" : "The observed record"}
-            </h2>
-            <span className="mono">
-              {study.years.length} YEARS IN THIS BUNDLE
-            </span>
-          </div>
-          <p className="calendar-reading-guide">
-            {harmonized
-              ? "Estimated monthly counts on the VIIRS scale, including years before VIIRS. Switch to Observed counts to see the original record."
-              : "Monthly counts reported by the selected satellite. 0 = no detections in the source; — = source unavailable."}
-          </p>
-          <div
-            className="heatmap-scroll"
-            tabIndex={0}
-            aria-label="Monthly calendar, scroll horizontally for all months"
+          <button
+            className="calendar-export"
+            disabled={!monthly || !calibration}
+            onClick={() =>
+              calibration && downloadMonthly(study, calibration, model)
+            }
+            title="Download original counts, estimates and validation provenance"
           >
-            <div
-              className="heatmap"
-              role="grid"
-              aria-label="Monthly hotspot count calendar"
-            >
-              <div className="heatmap-row month-labels" role="row">
-                <span role="columnheader" aria-label="Year" />{" "}
-                {names.map((n) => (
-                  <span key={n} role="columnheader">
-                    {n}
-                  </span>
-                ))}
-              </div>
-              {[...study.years].reverse().map((y, i) => (
-                <motion.div
-                  key={y}
-                  className="heatmap-row"
-                  role="row"
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.018 }}
-                >
-                  <span className="year-label" role="rowheader">
-                    {y}
-                  </span>
-                  {names.map((_, m) => {
-                    const key = `${y}-${String(m + 1).padStart(2, "0")}`;
-                    const cell = months.find((v) => v.month === key)!;
-                    const n = cell[field];
-                    return (
-                      <button
-                        key={key}
-                        role="gridcell"
-                        data-month={key}
-                        tabIndex={selectedMonth === key ? 0 : -1}
-                        className={`heat-cell ${selectedMonth === key ? "selected" : ""} ${n === null ? "missing" : ""}`}
-                        style={{
-                          ...calendarColors(n, max),
-                          transitionDelay: `${m * 13}ms`,
-                        }}
-                        onClick={() => onMonth(key)}
-                        onKeyDown={(e) => {
-                          const offsets: Record<string, number> = {
-                            ArrowLeft: -1,
-                            ArrowRight: 1,
-                            ArrowUp: -12,
-                            ArrowDown: 12,
-                          };
-                          const current = orderedMonths.indexOf(key);
-                          const offset =
-                            e.key === "Home"
-                              ? -m
-                              : e.key === "End"
-                                ? 11 - m
-                                : offsets[e.key];
-                          if (offset === undefined) return;
-                          e.preventDefault();
-                          const next =
-                            orderedMonths[
-                              Math.max(
-                                0,
-                                Math.min(
-                                  orderedMonths.length - 1,
-                                  current + offset,
-                                ),
-                              )
-                            ];
-                          onMonth(next);
-                          document
-                            .querySelector<HTMLButtonElement>(
-                              `[data-month="${next}"]`,
-                            )
-                            ?.focus();
-                        }}
-                        onMouseEnter={() => setTip(cell)}
-                        onMouseLeave={() => setTip(null)}
-                        onFocus={() => setTip(cell)}
-                        onBlur={() => setTip(null)}
-                        aria-label={`${names[m]} ${y}: ${n === null ? "data unavailable" : `${n} ${harmonized ? "estimated VIIRS-equivalent hotspots" : "reported detections"}`}`}
-                        aria-selected={selectedMonth === key}
-                      >
-                        <span>{n === null ? "—" : number(n)}</span>
-                      </button>
-                    );
-                  })}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-          <div className="heatmap-footer">
-            <span className="mono">
-              {tip
-                ? `${dateLabel(tip.month + "-01", { month: "short", year: "numeric" })} · ${tip[field] === null ? "Source unavailable" : number(tip[field]) + " detections"}`
-                : "Select a month to investigate"}
-            </span>
-            <div className="scale">
-              <span>0</span>
-              <div
-                style={{
-                  background:
-                    "linear-gradient(90deg,#1b2d20,hsl(8 55% 36%),hsl(8 70% 55%),hsl(8 80% 78%))",
-                }}
-              />
-              <span>{number(max)}</span>
-              <span className="missing-swatch" />
-              No source
-            </div>
-          </div>
-        </div>
-        <aside className="month-detail">
-          <span className="eyebrow">SELECTED MONTH</span>
-          <h2>
-            {dateLabel(selectedMonth + "-01", {
-              month: "long",
-              year: "numeric",
-            })}
-          </h2>
-          <div className="big-number">{number(selected?.[field])}</div>
-          <p>
-            {harmonized
-              ? "Estimated VIIRS-equivalent hotspots"
-              : "Reported hotspot detections"}
-          </p>
-          <dl>
-            <div>
-              <dt>Platform</dt>
-              <dd>
-                {harmonized
-                  ? "S-NPP VIIRS reference"
-                  : sensor === "modis"
-                    ? "Aqua MODIS"
-                    : "S-NPP VIIRS"}
-              </dd>
-            </div>
-            <div>
-              <dt>Analysis area</dt>
-              <dd>{study.name} case boundary</dd>
-            </div>
-            {harmonized && (
-              <>
-                <div>
-                  <dt>Original MODIS</dt>
-                  <dd>{number(selected?.modis)}</dd>
-                </div>
-                <div>
-                  <dt>Observed VIIRS</dt>
-                  <dd>
-                    {selected?.viirs == null
-                      ? "Before VIIRS"
-                      : number(selected.viirs)}
-                  </dd>
-                </div>
-                {selected?.viirs != null && selected.estimate != null && (
-                  <div>
-                    <dt>This month's error</dt>
-                    <dd>
-                      {number(Math.abs(selected.estimate - selected.viirs))}{" "}
-                      detections
-                    </dd>
-                  </div>
-                )}
-                <div>
-                  <dt>Model</dt>
-                  <dd>{model}</dd>
-                </div>
-                <div>
-                  <dt>Prediction</dt>
-                  <dd>
-                    {monthly?.months.find((r) => r.month === selectedMonth)
-                      ?.evaluation === "withheld-year"
-                      ? "Year excluded from training"
-                      : "Historical estimate"}
-                  </dd>
-                </div>
-              </>
-            )}
-          </dl>
-          <button className="primary-button" onClick={onExplore}>
-            Investigate this month <ArrowUpRight size={16} />
+            <ArrowDownToLine size={15} />
+            <span>CSV</span>
           </button>
-          {calibration && (
-            <div className="export-row">
-              <button
-                onClick={() => downloadMonthly(study, calibration, model)}
-              >
-                <ArrowDownToLine size={14} /> Download monthly CSV
-              </button>
-            </div>
-          )}
-          <div className="calendar-note">
-            <Info size={16} />
-            <p>
-              {harmonized
-                ? "Estimates of reported counts, not fire locations. Cloud and overpass effort are not normalized."
-                : "Clouds and satellite passes affect reported counts. Zero detections does not establish no fire."}
-            </p>
+        </div>
+      </header>
+
+      <section
+        className="calendar-month-story"
+        aria-label="Monthly sensor and model comparison"
+      >
+        <div className="calendar-month-identity">
+          <span className="calendar-kicker">
+            {hoveredMonth ? "MONTH PREVIEW" : "SELECTED MONTH"}
+          </span>
+          <h2>{visibleMonth}</h2>
+          <button onClick={onExplore}>
+            Investigate selection <ArrowUpRight size={13} />
+          </button>
+        </div>
+        {series.map((sensor) => (
+          <div
+            className={`calendar-month-value ${sensor.key}`}
+            key={sensor.key}
+            style={{ "--series-color": sensor.color } as CSSProperties}
+          >
+            <span>{sensor.name}</span>
+            <strong>{number(displayed?.[sensor.key])}</strong>
+            <small>
+              {displayed?.[sensor.key] == null
+                ? "Source unavailable"
+                : "monthly detections"}
+            </small>
           </div>
-        </aside>
+        ))}
+        <div
+          className={`calendar-month-error ${baselineError != null && modelError != null && modelError > baselineError ? "is-worse" : ""}`}
+        >
+          <span className="calendar-kicker">ABSOLUTE ERROR VS VIIRS</span>
+          {baselineError != null && modelError != null ? (
+            <>
+              <div className="calendar-error-values">
+                <span>
+                  {number(baselineError)}
+                  <small>original</small>
+                </span>
+                <ArrowRight size={17} />
+                <span>
+                  {number(modelError)}
+                  <small>model</small>
+                </span>
+              </div>
+              <strong>{errorChange(baselineError, modelError)}</strong>
+            </>
+          ) : (
+            <>
+              <strong>
+                {!calibration
+                  ? failed
+                    ? "Estimates unavailable"
+                    : "Loading estimates…"
+                  : displayed?.viirs == null
+                    ? "No VIIRS comparison"
+                    : "No model comparison"}
+              </strong>
+              <small>
+                {!calibration
+                  ? "Original observations remain visible"
+                  : "No error claimed for missing data"}
+              </small>
+            </>
+          )}
+          <small className="calendar-prediction-origin">
+            {displayed?.evaluation === "withheld-year"
+              ? "This year excluded from training"
+              : displayed?.estimate != null
+                ? "Historical estimate · not validated here"
+                : ""}
+          </small>
+        </div>
+      </section>
+
+      <div
+        className={`calendar-matrices ${years.length <= 2 ? "short-record" : ""}`}
+      >
+        {series.map((sensor, seriesIndex) => {
+          const available = months.filter(
+            (month) => month[sensor.key] !== null,
+          );
+          const total = available.reduce(
+            (sum, month) => sum + (month[sensor.key] ?? 0),
+            0,
+          );
+          return (
+            <section
+              className={`calendar-matrix ${sensor.key}`}
+              key={sensor.key}
+              style={
+                {
+                  "--series-color": sensor.color,
+                  "--year-count": years.length,
+                } as CSSProperties
+              }
+              aria-label={sensor.name}
+            >
+              <div className="calendar-matrix-heading">
+                <div>
+                  <h2>
+                    <span>{String(seriesIndex + 1).padStart(2, "0")}</span>
+                    {sensor.name}
+                  </h2>
+                  <p>{sensor.subtitle}</p>
+                </div>
+                <Flame count={maximum} maximum={maximum} />
+              </div>
+              <div
+                className="calendar-flame-grid"
+                role="grid"
+                aria-label={`${sensor.name}, monthly detection counts`}
+              >
+                <div
+                  className="calendar-flame-row calendar-month-labels"
+                  role="row"
+                >
+                  <span role="columnheader">YEAR</span>
+                  {names.map((name) => (
+                    <span role="columnheader" key={name}>
+                      {name}
+                    </span>
+                  ))}
+                </div>
+                <div className="calendar-year-rows" role="rowgroup">
+                  {years.map((year) => (
+                    <div className="calendar-flame-row" role="row" key={year}>
+                      <span className="calendar-year-label" role="rowheader">
+                        {year}
+                      </span>
+                      {names.map((_, monthIndex) => {
+                        const key = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
+                        const count = byMonth.get(key)?.[sensor.key] ?? null;
+                        return (
+                          <button
+                            role="gridcell"
+                            key={key}
+                            data-month={key}
+                            data-calendar-series={sensor.key}
+                            aria-selected={selectedKey === key}
+                            aria-label={`${sensor.name}: ${monthTitle(key)}`}
+                            title={monthTitle(key)}
+                            tabIndex={selectedKey === key ? 0 : -1}
+                            className={`calendar-flame-cell ${selectedKey === key ? "selected" : ""} ${hoveredMonth === key ? "preview" : ""} ${count == null ? "missing" : count === 0 ? "zero" : "active"}`}
+                            onClick={() => onMonth(key)}
+                            onMouseEnter={() => setHoveredMonth(key)}
+                            onMouseLeave={() => setHoveredMonth(null)}
+                            onFocus={() => setHoveredMonth(key)}
+                            onBlur={() => setHoveredMonth(null)}
+                            onKeyDown={(event) => {
+                              const offsets: Record<string, number> = {
+                                ArrowLeft: -1,
+                                ArrowRight: 1,
+                                ArrowUp: -12,
+                                ArrowDown: 12,
+                              };
+                              const offset =
+                                event.key === "Home"
+                                  ? -monthIndex
+                                  : event.key === "End"
+                                    ? 11 - monthIndex
+                                    : offsets[event.key];
+                              if (offset === undefined) return;
+                              event.preventDefault();
+                              const next =
+                                orderedMonths[
+                                  Math.max(
+                                    0,
+                                    Math.min(
+                                      orderedMonths.length - 1,
+                                      orderedMonths.indexOf(key) + offset,
+                                    ),
+                                  )
+                                ];
+                              onMonth(next);
+                              document
+                                .querySelector<HTMLButtonElement>(
+                                  `[data-calendar-series="${sensor.key}"][data-month="${next}"]`,
+                                )
+                                ?.focus();
+                            }}
+                          >
+                            <Flame count={count} maximum={maximum} />
+                            {years.length <= 2 && (
+                              <span className="calendar-short-value">
+                                {number(count)}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="calendar-matrix-total">
+                <span>
+                  {number(total)}{" "}
+                  <small>
+                    {sensor.key === "estimate" ? "estimated" : "reported"}{" "}
+                    detections
+                  </small>
+                </span>
+                <small>
+                  {available.length}/{months.length} months
+                </small>
+              </div>
+            </section>
+          );
+        })}
       </div>
+
+      <footer className="calendar-story-footer">
+        <div className="calendar-glyph-legend">
+          <span className="calendar-legend-flames">
+            <Flame count={1} maximum={maximum} />
+            <Flame count={Math.sqrt(maximum)} maximum={maximum} />
+            <Flame count={maximum} maximum={maximum} />
+          </span>
+          <span>Shared log scale · 1–{number(maximum)}</span>
+          <span>
+            <b>0</b> no detections
+          </span>
+          <span>
+            <b>—</b> unavailable
+          </span>
+          <span
+            className="calendar-context-note"
+            title="Monthly reported detections, not fire area or number of fires. Clouds and satellite overpasses are not normalized. Zero detections does not establish no fire."
+          >
+            <Info size={13} /> Counts, not fire area
+          </span>
+        </div>
+        <div className="calendar-validation-summary">
+          {score ? (
+            <>
+              <span>{score.n} withheld months · average error</span>
+              <strong>
+                {number(score.baselineMae)} <ArrowRight size={12} />{" "}
+                {number(score.mae)}
+              </strong>
+              <span className={score.mae > score.baselineMae ? "is-worse" : ""}>
+                {errorChange(score.baselineMae, score.mae)}
+              </span>
+            </>
+          ) : (
+            <span role="status">
+              {failed
+                ? "Calibration unavailable. Reload to retry."
+                : "Loading validation…"}
+            </span>
+          )}
+          <button onClick={onMethods}>
+            Model evidence <ArrowUpRight size={13} />
+          </button>
+        </div>
+      </footer>
     </motion.div>
   );
 }

@@ -448,7 +448,7 @@ export default function App() {
         Skip to the observatory
       </a>
       <main
-        className="app-main scientific-workspace"
+        className={`app-main scientific-workspace workspace-${view}`}
         id="main-content"
         tabIndex={-1}
       >
@@ -931,19 +931,6 @@ export default function App() {
           )}{" "}
           {view === "sources" && <Sources key="sources" manifest={manifest} />}
         </AnimatePresence>
-        <footer className="app-footer">
-          <span>
-            <span className="footer-status" />
-            {offlineReady ? "OFFLINE BUNDLE READY" : "PINNED NASA DATA BUNDLE"}
-          </span>
-          <button onClick={() => navigate("sources")}>
-            GLOBAL SNAPSHOT {dateLabel(manifest.snapshotEnd).toUpperCase()} ·{" "}
-            {timeLabel(manifest.snapshotEnd)}
-          </button>
-          <span>
-            BUILT FOR NASA SPACE APPS <span className="footer-year">2026</span>
-          </span>
-        </footer>
       </main>
 
       <AnimatePresence>
