@@ -12,3 +12,5 @@ artifacts/
 !.env.example
 *.tar.gz
 *.tsbuildinfo
+.presentation-build/
+.chart-data-*/
