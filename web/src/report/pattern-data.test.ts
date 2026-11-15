@@ -98,6 +98,21 @@ describe("report patterns and direct exploration", () => {
         (r) => r.kind === "Reporting",
       ),
     ).toHaveLength(3);
+    expect(
+      relatedReadings("evros", 2023, "2023-08", false, "2023-08-01").every(
+        (r) => r.kind !== "Reporting",
+      ),
+    ).toBe(true);
+    expect(
+      relatedReadings("evros", 2023, "2023-08", false, "2023-08-22").filter(
+        (r) => r.kind === "Reporting",
+      ),
+    ).toHaveLength(2);
+    expect(
+      relatedReadings("evia", 2021, "2021-08", false, "2021-08-31").every(
+        (r) => r.kind !== "Reporting",
+      ),
+    ).toBe(true);
   });
   it("requires a deliberate pinch and supports both zoom directions", () => {
     expect(zoomDirection(1.1)).toBe(0);
