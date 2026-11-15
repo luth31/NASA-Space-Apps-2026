@@ -5,6 +5,7 @@ import {
   coordinate,
   countryBounds,
   inBounds,
+  localWindow,
   sectors,
 } from "./geography";
 import type { Country } from "./geography";
@@ -29,6 +30,27 @@ describe("atlas geographic invariants", () => {
     );
     for (const bin of bins)
       for (const row of bin.rows) expect(inBounds(row, bin.bounds)).toBe(true);
+  });
+  it("opens bounded ocean windows at the selected location, including the seam and poles", () => {
+    const atlantic = localWindow(-35, 10);
+    expect(atlantic).toEqual([-41, 5, -29, 15]);
+    expect(inBounds(o(-35, 10), atlantic)).toBe(true);
+    for (const [lon, lat] of [
+      [179, 89],
+      [-179, -89],
+      [540, 95],
+      [-540, -95],
+    ]) {
+      const b = localWindow(lon, lat);
+      expect(b[0]).toBeGreaterThanOrEqual(-180);
+      expect(b[2]).toBeLessThanOrEqual(180);
+      expect(b[1]).toBeGreaterThanOrEqual(-90);
+      expect(b[3]).toBeLessThanOrEqual(90);
+      expect(b[2] - b[0]).toBe(12);
+      expect(b[3] - b[1]).toBe(10);
+    }
+    expect(localWindow(179, 0)).toEqual([168, -5, 180, 5]);
+    expect(localWindow(-179, 0)).toEqual([-180, -5, -168, 5]);
   });
   it("calculates spherical rectangular area and latitude contraction", () => {
     expect(areaKm2([-180, -90, 180, 90])).toBeCloseTo(510065880.973, 0);
