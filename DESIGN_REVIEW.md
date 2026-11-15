@@ -86,3 +86,15 @@ The 17 frontend tests, 12 pipeline tests, TypeScript, geography/source consisten
 ![Country context and sensor comparison](docs/review/sensor-context.jpeg)
 ![Calendar with visible counts](docs/review/calendar-readable.jpeg)
 ![Model experiment at phone width](docs/review/bridge-phone.jpeg)
+
+
+## Cached-tab update regression — 15 November 2026
+
+A fresh browser could see the blue interface while an existing browser stayed on the green build after refresh. Chrome DevTools MCP reproduced the exact upgrade from the previous commit: the server returned the new HTML, but the active worker served cached old HTML and the new worker remained installed/waiting. The old Models page retained `rgb(16, 21, 20)` and lacked the calibration experiment. Ordinary HTTP caching and an incorrect preview build directory were ruled out by inspecting the two stylesheet hashes and matching server files against `dist`.
+
+Production updates now precache the entire bundle, activate immediately, and refresh existing app windows onto the complete bundle. Navigation is started without awaiting it inside activation because its fetch depends on activation finishing. First installation leaves the current page alone; failed core downloads keep the old worker active. Visible tabs check for updates every 30 seconds, and returning online or returning to a tab triggers another check.
+
+The real cached-tab upgrade now loads `rgb(11, 19, 30)` and the calibration experiment after the same ordinary reload. Five worker lifecycle regression tests cover completed updates with old tabs open, every app window refreshing, activation without a navigation deadlock, first visits, and failed downloads.
+
+A second browser test changed the served build with two upgraded tabs left open and no manual update or reload calls: both received the new build automatically in 17.3 seconds. The preview process on port 4188 was explicitly restarted, and both local and private preview endpoints returned the current build. All 22 frontend tests pass.
+The restarted localhost preview was also tested with networking disabled: reloading the app, opening Models & validation, and opening the 276-cell Greek calendar all retained the new blue UI and saved experiment data.

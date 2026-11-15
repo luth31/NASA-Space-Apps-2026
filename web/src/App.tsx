@@ -152,7 +152,31 @@ export default function App() {
       .catch(() => {});
   }, []);
   useEffect(() => {
-    const update = () => setOnline(navigator.onLine);
+    let registration: ServiceWorkerRegistration | null = null;
+    let disposed = false;
+    let checking = false;
+    const checkForUpdate = () => {
+      if (
+        disposed ||
+        checking ||
+        !registration ||
+        registration.installing ||
+        !navigator.onLine ||
+        document.visibilityState !== "visible"
+      )
+        return;
+      checking = true;
+      registration
+        .update()
+        .catch(() => {})
+        .finally(() => {
+          checking = false;
+        });
+    };
+    const update = () => {
+      setOnline(navigator.onLine);
+      checkForUpdate();
+    };
     const status = (event: MessageEvent) => {
       if (event.data?.type === "PYROBRIDGE_OFFLINE_STATUS") {
         setOfflineReady(
@@ -163,16 +187,29 @@ export default function App() {
     };
     window.addEventListener("online", update);
     window.addEventListener("offline", update);
-    if ("serviceWorker" in navigator && import.meta.env.PROD) {
+    const productionWorker =
+      "serviceWorker" in navigator && import.meta.env.PROD;
+    const updateTimer = productionWorker
+      ? window.setInterval(checkForUpdate, 30_000)
+      : undefined;
+    if (productionWorker) {
+      document.addEventListener("visibilitychange", checkForUpdate);
+      window.addEventListener("pageshow", checkForUpdate);
       navigator.serviceWorker.addEventListener("message", status);
       navigator.serviceWorker
-        .register("/service-worker.js")
+        .register("/service-worker.js", { updateViaCache: "none" })
         .then((r) => {
+          if (disposed) return;
+          registration = r;
           r.active?.postMessage({ type: "OFFLINE_STATUS" });
         })
         .catch(() => {});
     }
     return () => {
+      disposed = true;
+      window.clearInterval(updateTimer);
+      document.removeEventListener("visibilitychange", checkForUpdate);
+      window.removeEventListener("pageshow", checkForUpdate);
       window.removeEventListener("online", update);
       window.removeEventListener("offline", update);
       navigator.serviceWorker?.removeEventListener("message", status);

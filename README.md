@@ -25,6 +25,12 @@ npm run preview -- --port 4173
 
 Open http://127.0.0.1:4173/ while online. The dashboard reports **Core data saved on this device** once the rehearsal cache is saved. It includes the global snapshot, atlas geography, featured month for all three cases, complete calendar summaries, imagery, and science reports; the build prints its measured size. Other monthly point partitions are cached after viewing them online. A browser hard reload deliberately bypasses its offline cache; use normal navigation/reload when rehearsing offline.
 
+### Receiving preview updates
+
+The preview server reads `web/dist`, so rebuild after changing the app. Restart the preview when its configuration changes. Production tabs check for a new build every 30 seconds while visible, when returning to a tab, and when reconnecting. The new service worker saves the complete offline bundle before activating and refreshing open app tabs together. A failed download leaves the previous version usable. First visits do not reload themselves.
+
+For a tab opened before this update mechanism existed, reload once while online to discover the updated worker. It then refreshes the tab after caching the new bundle. Closing every app tab or clearing site data is no longer part of the normal update workflow.
+
 ### Phone preview on Tailscale
 
 Keep the private Tailscale preview enabled alongside localhost during development. Maintain a Serve mapping on your development machine so the production preview is also available from your phone. Find your hostname in `Self.DNSName` from `tailscale status --json` and drop the trailing dot. Use `tailscale serve status` to check existing mappings, then choose an unused local preview port and an unused Serve HTTPS port. The ports below are examples. [Tailscale Serve reference](https://tailscale.com/docs/reference/tailscale-cli/serve)
