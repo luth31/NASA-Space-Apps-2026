@@ -20,6 +20,7 @@ interface Props {
   period: string;
   reset: number;
   wide: boolean;
+  recordStatus?: string;
 }
 
 export default function RegionalMap({
@@ -32,6 +33,7 @@ export default function RegionalMap({
   period,
   reset,
   wide,
+  recordStatus,
 }: Props) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -214,7 +216,7 @@ export default function RegionalMap({
         viewBox={`0 0 1000 ${h}`}
         preserveAspectRatio="xMidYMid slice"
         role="img"
-        aria-label={`NASA satellite scene of ${study.name}. ${observations.length} observations from ${periodLabel}. Select individual records in the observation list.`}
+        aria-label={`NASA satellite scene of ${study.name}. ${recordStatus || `${observations.length} observations from ${periodLabel}`}. Select individual records in the observation list.`}
         onWheel={(e) => {
           setHover(null);
           setZoom((z) =>
@@ -336,8 +338,7 @@ export default function RegionalMap({
           <span>, {study.country}</span>
         </h1>
         <p>
-          {periodLabel} <span>·</span> {observations.length.toLocaleString()}{" "}
-          reported detections
+          {periodLabel} <span>·</span> {recordStatus || `${observations.length.toLocaleString()} reported detections`}
         </p>
       </div>
       {compare && (

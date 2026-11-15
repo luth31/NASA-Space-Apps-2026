@@ -29,6 +29,8 @@ interface Props {
   onExport: (format: "csv" | "pdf") => void;
   wide: boolean;
   onWide: () => void;
+  countStatus?: { modis: string; viirs: string };
+  recordStatus?: string;
 }
 export default function Dossier({
   study,
@@ -41,6 +43,8 @@ export default function Dossier({
   onExport,
   wide,
   onWide,
+  countStatus,
+  recordStatus,
 }: Props) {
   const [page, setPage] = useState(0);
   useEffect(() => setPage(0), [observations, o?.id]);
@@ -148,8 +152,10 @@ export default function Dossier({
                   <i className="dot aqua" />
                   AQUA MODIS
                 </span>
-                <strong>{number(counts.modis)}</strong>
-                <small>reported detections</small>
+                <strong>
+                  {number(countStatus?.modis ? null : counts.modis)}
+                </strong>
+                <small>{countStatus?.modis || "reported detections"}</small>
               </div>
             )}
             <div>
@@ -157,8 +163,10 @@ export default function Dossier({
                 <i className="dot fire" />
                 {study ? "S-NPP VIIRS" : "NOAA-20 VIIRS"}
               </span>
-              <strong>{number(counts.viirs)}</strong>
-              <small>reported detections</small>
+              <strong>
+                {number(countStatus?.viirs ? null : counts.viirs)}
+              </strong>
+              <small>{countStatus?.viirs || "reported detections"}</small>
             </div>
           </div>
           <div className="coverage-line">
@@ -215,7 +223,9 @@ export default function Dossier({
       )}
       <div className="nearby-heading">
         <h3>{o ? "Nearby observations" : "In this selection"}</h3>
-        <span className="mono">{number(observations.length)}</span>
+        <span className="mono">
+          {number(recordStatus ? null : observations.length)}
+        </span>
       </div>
       <div className="observation-list">
         {nearby.length ? (
@@ -245,8 +255,8 @@ export default function Dossier({
           ))
         ) : (
           <p className="empty-copy">
-            No detections reported in this selection. Usable coverage is
-            unknown.
+            {recordStatus ||
+              "No detections reported in this selection. Usable coverage is unknown."}
           </p>
         )}
       </div>
@@ -274,7 +284,11 @@ export default function Dossier({
       )}
       {study && (
         <div className="related-context">
-          <h3>From the field</h3>
+          <h3>Featured-event reading</h3>
+          <p className="empty-copy">
+            Curated context for {study.date}. These links do not track the
+            selected month or identify individual detections.
+          </p>
           {study.context.map((c) => (
             <a key={c.url} href={c.url} target="_blank" rel="noreferrer">
               <span className="mono">{c.publisher}</span>

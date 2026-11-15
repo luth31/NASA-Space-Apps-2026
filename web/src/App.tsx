@@ -46,15 +46,18 @@ import Calendar from "./Calendar";
 import Methods from "./Methods";
 import Sources from "./Sources";
 import { exportInvestigation } from "./exports";
+import { brand } from "./brand";
+import { readRoute, sectionPurpose, monthlyAvailability } from "./navigation";
+import type { View } from "./navigation";
+import type { ReportContext } from "./Report";
 
 const Globe = lazy(() => import("./Globe"));
 const Report = lazy(() => import("./Report"));
-type View = "explore" | "report" | "calendar" | "methods" | "sources";
 const demoSteps = [
   "A global perspective",
   "An event, up close",
   "Two ways of seeing",
-  "The longer record",
+  "What the season reveals",
   "Behind the estimate",
 ];
 
@@ -75,8 +78,9 @@ function Brand() {
         />
       </svg>
       <span>
-        pyro<span>bridge</span>
-        <small>A CONTINUOUS VIEW OF FIRE</small>
+        {brand.wordmark[0]}
+        <span>{brand.wordmark[1]}</span>
+        <small>{brand.tagline}</small>
       </span>
     </span>
   );
@@ -89,7 +93,13 @@ export default function App() {
     [error, setError] = useState("");
   const [coverage, setCoverage] = useState<CoverageReport | null>(null);
   const [browseGlobal, setBrowseGlobal] = useState(false);
-  const [view, setView] = useState<View>(() => new URLSearchParams(location.search).get("tab") === "report" ? "report" : "explore"),
+  const initialRoute = useRef(readRoute(location.search));
+  const [reportContext, setReportContext] = useState<
+    ReportContext | undefined
+  >();
+  const [partitionError, setPartitionError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const [view, setView] = useState<View>(() => readRoute(location.search).view),
     [study, setStudy] = useState<CaseStudy | null>(null),
     [selected, setSelected] = useState<Observation | null>(null);
   const [month, setMonth] = useState("2023-08"),
@@ -114,14 +124,25 @@ export default function App() {
   const [destination, setDestination] = useState<CaseStudy | null>(null);
   const flightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (!manifest) return;
     const url = new URL(location.href);
-    if (view === "report") url.searchParams.set("tab", "report");
-    else if (url.searchParams.get("tab") === "report") {
-      url.searchParams.delete("tab");
-      url.searchParams.delete("concept");
-    }
+    url.searchParams.set("tab", view);
+    if (view !== "report") url.searchParams.delete("concept");
+    const context =
+      view === "report"
+        ? reportContext
+        : study
+          ? { caseId: study.id, month, sensor: sensor.toLowerCase() }
+          : undefined;
+    if (context) {
+      url.searchParams.set("case", context.caseId);
+      url.searchParams.set("month", context.month);
+      url.searchParams.set("sensor", context.sensor ?? "viirs");
+    } else
+      ["case", "month", "sensor"].forEach((k) => url.searchParams.delete(k));
     history.replaceState(null, "", url);
-  }, [view]);
+    document.title = `${brand.name} — ${view === "methods" ? "The science" : view[0].toUpperCase() + view.slice(1)}`;
+  }, [view, manifest, study, month, sensor, reportContext]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -160,6 +181,26 @@ export default function App() {
       .then(([m, g]) => {
         setManifest(m);
         setGlobal(g);
+        const route = initialRoute.current;
+        const target = m.cases.find((c: CaseStudy) => c.id === route.caseId);
+        if (target) {
+          setStudy(target);
+          setMonth(route.month ?? target.date.slice(0, 7));
+          setDay(null);
+          setSensor(
+            route.sensor === "all" ? "all" : route.sensor.toUpperCase(),
+          );
+        }
+        if (route.view === "report" && route.caseId)
+          setReportContext({
+            caseId: route.caseId,
+            month: route.month ?? target?.date.slice(0, 7) ?? "2023-08",
+            sensor: route.sensor,
+          });
+        if (route.view === "calendar" && !target) {
+          setStudy(m.cases[0]);
+          setMonth(m.cases[0].date.slice(0, 7));
+        }
       })
       .catch((e) => setError(String(e.message)));
     fetch("/data/models.json")
@@ -202,12 +243,20 @@ export default function App() {
     if (!study) return;
     let active = true;
     setLoading(true);
+    setPartitionError("");
     setCaseRows([]);
     setSelected(null);
     const m = (study.contextMonths ?? study.months).find(
       (m) => m.month === month,
     );
-    if (m && (m.modis ?? 0) + (m.viirs ?? 0) === 0) {
+    if (!m || (m.modis === null && m.viirs === null)) {
+      setLoading(false);
+      setPartitionError(
+        "No source record is bundled for this month. Missing records are not zero detections.",
+      );
+      return;
+    }
+    if ((m.modis ?? 0) + (m.viirs ?? 0) === 0) {
       setLoading(false);
       return;
     }
@@ -223,17 +272,17 @@ export default function App() {
       .catch(() => {
         if (active) {
           setLoading(false);
-          setToast(
+          setPartitionError(
             navigator.onLine
-              ? "This observation partition is unavailable. Try another month."
-              : "This month was not saved offline. The three featured case months remain available.",
+              ? "This observation partition could not be loaded. Retry, or open the featured month."
+              : "This month was not saved offline. Reconnect and retry, or open the featured month.",
           );
         }
       });
     return () => {
       active = false;
     };
-  }, [study, month]);
+  }, [study, month, retry]);
   useEffect(() => {
     if (!toast) return;
     const id = setTimeout(() => setToast(""), 5500);
@@ -308,6 +357,23 @@ export default function App() {
   function navigate(v: View) {
     window.scrollTo(0, 0);
     cancelFlight();
+    if (v === "report" && (view === "explore" || view === "calendar")) {
+      setReportContext(
+        study
+          ? {
+              caseId: study.id,
+              month,
+              sensor: sensor.toLowerCase() as ReportContext["sensor"],
+            }
+          : selected
+            ? {
+                caseId: "global-snapshot",
+                month: selected.time.slice(0, 7),
+                sensor: "viirs",
+              }
+            : undefined,
+      );
+    }
     setView(v);
     setPlaying(false);
     if (v === "calendar") setWide(false);
@@ -333,7 +399,8 @@ export default function App() {
     }
     if (step === 3) {
       commitCase(manifest.cases[0]);
-      navigate("calendar");
+      setReportContext(undefined);
+      setView("report");
       setDay(null);
     }
     if (step === 4) {
@@ -449,14 +516,18 @@ export default function App() {
         <button
           className="rail-logo"
           onClick={toGlobal}
-          aria-label="PyroBridge home"
+          aria-label={`${brand.name} home`}
         >
           <Brand />
         </button>
         <div className="rail-nav">
           {[
             { id: "explore" as View, icon: Globe2, label: "Explore Earth" },
-            { id: "report" as View, icon: ChartNoAxesCombined, label: "Report" },
+            {
+              id: "report" as View,
+              icon: ChartNoAxesCombined,
+              label: "Report",
+            },
             {
               id: "calendar" as View,
               icon: CalendarDays,
@@ -509,6 +580,8 @@ export default function App() {
             <button
               className={view === "explore" ? "active" : ""}
               onClick={() => navigate("explore")}
+              aria-current={view === "explore" ? "page" : undefined}
+              title={sectionPurpose.explore}
             >
               Explore
             </button>
@@ -522,14 +595,26 @@ export default function App() {
             <button
               className={view === "calendar" ? "active" : ""}
               onClick={() => navigate("calendar")}
+              aria-current={view === "calendar" ? "page" : undefined}
+              title={sectionPurpose.calendar}
             >
               Fire calendar
             </button>
             <button
               className={view === "methods" ? "active" : ""}
               onClick={() => navigate("methods")}
+              aria-current={view === "methods" ? "page" : undefined}
+              title={sectionPurpose.methods}
             >
               The science
+            </button>
+            <button
+              className={view === "sources" ? "active" : ""}
+              onClick={() => navigate("sources")}
+              aria-current={view === "sources" ? "page" : undefined}
+              title={sectionPurpose.sources}
+            >
+              Sources
             </button>
           </nav>
           <div className="topbar-right">
@@ -541,7 +626,7 @@ export default function App() {
               className="demo-button"
               onClick={() => {
                 demoAction(0);
-                setDemoPlaying(true);
+                setDemoPlaying(!reduced);
               }}
             >
               <Play size={12} fill="currentColor" />
@@ -651,6 +736,7 @@ export default function App() {
                       setSensor("all");
                     }}
                     period={day ?? month}
+                    recordStatus={loading ? "Loading observations…" : partitionError ? "Observations unavailable" : monthlyAvailability(study, month, sensor) === "missing" ? "No source record" : undefined}
                     reset={reset}
                     wide={wide}
                   />
@@ -666,7 +752,7 @@ export default function App() {
                       <h1>
                         A changing planet.
                         <br />
-                        <em>A continuous record.</em>
+                        <em>Every observation matters.</em>
                       </h1>
                       <p>
                         Find the signal.
@@ -773,6 +859,43 @@ export default function App() {
                   observation={selected}
                   observations={displayRows}
                   onSelect={selectObservation}
+                  recordStatus={
+                    study
+                      ? loading
+                        ? "Loading observations…"
+                        : partitionError ||
+                          (monthlyAvailability(study, month, sensor) ===
+                          "missing"
+                            ? "No source record for this sensor and month."
+                            : "")
+                      : undefined
+                  }
+                  countStatus={
+                    study
+                      ? {
+                          modis: loading
+                            ? "Loading…"
+                            : partitionError
+                              ? "Unavailable"
+                              : sensor === "VIIRS"
+                                ? "Not selected"
+                                : monthlyAvailability(study, month, "MODIS") ===
+                                    "missing"
+                                  ? "No source record"
+                                  : "",
+                          viirs: loading
+                            ? "Loading…"
+                            : partitionError
+                              ? "Unavailable"
+                              : sensor === "MODIS"
+                                ? "Not selected"
+                                : monthlyAvailability(study, month, "VIIRS") ===
+                                    "missing"
+                                  ? "No source record"
+                                  : "",
+                        }
+                      : undefined
+                  }
                   onClose={() => {
                     setSelected(null);
                     setBrowseGlobal(false);
@@ -839,8 +962,55 @@ export default function App() {
                 </aside>
               )}
             </div>
+            {study && (
+              <div className="investigation-context">
+                <span>
+                  <strong>{study.name}</strong> · {day ?? month} ·{" "}
+                  {sensor === "all" ? "Aqua MODIS + S-NPP VIIRS" : sensor} ·{" "}
+                  {wide ? "Wider scene" : "Study rectangle"}
+                </span>
+                <button
+                  className="text-button"
+                  onClick={() => navigate("report")}
+                >
+                  <ChartNoAxesCombined size={15} /> Discover this period in
+                  Report <ArrowRight size={14} />
+                </button>
+              </div>
+            )}
+            {study &&
+              (partitionError ||
+                monthlyAvailability(study, month, sensor) === "missing") && (
+                <div className="partition-state" role="status">
+                  <strong>Observations unavailable for this selection</strong>
+                  <p>
+                    {partitionError ||
+                      "This sensor has no source record here in this month. Missing records are not zero detections."}
+                  </p>
+                  <button onClick={() => setRetry((v) => v + 1)}>
+                    Retry loading
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMonth(study.date.slice(0, 7));
+                      setDay(study.date);
+                      setSensor("all");
+                    }}
+                  >
+                    Open featured month
+                  </button>
+                </div>
+              )}
+            {study &&
+              !partitionError &&
+              monthlyAvailability(study, month, sensor) === "partial" && (
+                <p className="coverage-note">
+                  Only one sensor has a source record in this month. Counts are
+                  partial, and observing effort has not been normalized.
+                </p>
+              )}
             {study ? (
-              <div className="timeline">
+              <div className="timeline" aria-busy={loading}>
                 <button
                   className="playback-button"
                   aria-label={
@@ -889,7 +1059,13 @@ export default function App() {
                     {dayCounts.map((n, i) => (
                       <button
                         key={dates[i]}
-                        aria-label={`${dates[i]}, ${n} reported detections`}
+                        disabled={
+                          loading ||
+                          Boolean(partitionError) ||
+                          monthlyAvailability(study, month, sensor) ===
+                            "missing"
+                        }
+                        aria-label={`${dates[i]}, ${loading || partitionError ? "observations unavailable" : n + " reported detections"}`}
                         title={`${dateLabel(dates[i])} · ${integer(n)} detections`}
                         className={day === dates[i] ? "selected" : ""}
                         onClick={() => {
@@ -981,8 +1157,32 @@ export default function App() {
         )}
         <AnimatePresence mode="wait">
           {view === "report" && (
-            <Suspense key="report" fallback={<div className="boot" role="status">Opening the report…</div>}>
-              <Report manifest={manifest} />
+            <Suspense
+              key="report"
+              fallback={
+                <div className="boot" role="status">
+                  Opening the report…
+                </div>
+              }
+            >
+              <Report
+                manifest={manifest}
+                context={reportContext}
+                onExplore={(context) => {
+                  const target = manifest.cases.find(
+                    (c) => c.id === context.caseId,
+                  );
+                  if (!target) return;
+                  commitCase(target);
+                  setMonth(context.month);
+                  setDay(null);
+                  setSensor(
+                    context.sensor === "all"
+                      ? "all"
+                      : (context.sensor ?? "viirs").toUpperCase(),
+                  );
+                }}
+              />
             </Suspense>
           )}
           {view === "calendar" && study && (
@@ -1090,7 +1290,7 @@ export default function App() {
               aria-label="Replay tour"
               onClick={() => {
                 demoAction(0);
-                setDemoPlaying(true);
+                setDemoPlaying(!reduced);
               }}
             >
               <RotateCcw size={15} />
