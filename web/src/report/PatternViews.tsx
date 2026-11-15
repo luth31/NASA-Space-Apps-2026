@@ -37,6 +37,15 @@ export function PatternWeave({
         <span>Color = share of that year’s detections</span>
       </div>
       <div
+        className="jy-share-legend"
+        aria-label="Fixed monthly share color scale: 0 to 100 percent"
+      >
+        <span>0%</span>
+        <i />
+        <span>100%</span>
+        <small>of available annual detections</small>
+      </div>
+      <div
         className="jy-weave-grid"
         role="group"
         aria-label="Monthly patterns across available years"
@@ -177,6 +186,7 @@ export function SatelliteFlow({
         ? model.sensorCounts[sensor === "Aqua MODIS" ? "modis" : "viirs"]
         : buckets.reduce((n, b) => n + (b.value ?? 0), 0),
       has = buckets.some((b) => b.value !== null);
+    const maskId = sensor === "Aqua MODIS" ? "jy-modis-mask" : "jy-viirs-mask";
     return (
       <div className="jy-sensor-flow">
         <header>
@@ -199,6 +209,22 @@ export function SatelliteFlow({
             preserveAspectRatio="none"
             aria-hidden="true"
           >
+            <defs>
+              <mask id={maskId}>
+                <rect width="1000" height="300" fill="white" />
+                {buckets.map((b, i) =>
+                  b.value === null ? (
+                    <rect
+                      key={b.key}
+                      x={70 + (i / buckets.length) * 860}
+                      width={860 / buckets.length}
+                      height="300"
+                      fill="black"
+                    />
+                  ) : null,
+                )}
+              </mask>
+            </defs>
             <line x1="70" x2="930" y1="249" y2="249" stroke="#aabda32b" />
             <motion.path
               initial={false}
@@ -207,6 +233,7 @@ export function SatelliteFlow({
               fill={color}
               fillOpacity=".15"
               opacity={has ? 1 : 0}
+              mask={`url(#${maskId})`}
             />
             <motion.path
               initial={false}
@@ -217,6 +244,7 @@ export function SatelliteFlow({
               strokeWidth="2"
               vectorEffect="non-scaling-stroke"
               opacity={has ? 1 : 0}
+              mask={`url(#${maskId})`}
             />
           </svg>
           <div className="jy-sensor-bins">
@@ -251,6 +279,7 @@ export function SatelliteFlow({
         {model.selection.hour
           ? "SURROUNDING UTC HOURS · SELECTED HOUR HIGHLIGHTED"
           : "SAME PERIODS · SAME LINEAR COUNT SCALE · RAW OBSERVATIONS"}
+        {` · 0–${integer(max)} DETECTIONS`}
       </div>
       {render(modis, "Aqua MODIS", "#a6d4cb")}
       {render(viirs, "S-NPP VIIRS", "#efc58b")}
@@ -326,6 +355,12 @@ export function ReadingCards({
             <span className="jy-reading-publisher">{r.publisher}</span>
             <p>{r.summary}</p>
             <p className="jy-reading-why">{r.why}</p>
+            {r.contextFrom && r.contextTo && (
+              <p className="jy-reading-dates">
+                Article context: {r.contextFrom} to {r.contextTo}. No individual
+                detection attribution.
+              </p>
+            )}
             {r.year && r.month && (
               <button
                 className="jy-text-action"

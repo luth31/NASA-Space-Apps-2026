@@ -29,12 +29,13 @@ import {
   ZoomOut,
   MoveHorizontal,
   Layers3,
+  GitCompareArrows,
 } from "lucide-react";
 import type { Manifest } from "../data";
 import { integer } from "../data";
 import { useReport } from "./use-report";
 import { geoChildren, geoNames, geoPaths, monthName } from "./report-data";
-import type { Bucket, Geography, ReportSensor } from "./report-data";
+import type { Bucket, Geography, ReportSensor, Selection } from "./report-data";
 import { Counter, bucketName } from "./primitives";
 import {
   journeyInitial,
@@ -54,6 +55,9 @@ import { PatternWeave, SatelliteFlow, ReadingCards } from "./PatternViews";
 import { useChartZoom } from "./use-chart-zoom";
 import "./journey.css";
 import "./patterns.css";
+import PeriodComparison from "./PeriodComparison";
+import { exploreContextForSelection } from "./report-context";
+import type { ReportContext } from "./report-context";
 
 type Drawer =
   | "where"
@@ -61,6 +65,7 @@ type Drawer =
   | "observations"
   | "reading"
   | "patterns"
+  | "compare"
   | null;
 const placeLabels: Record<Geography, string> = {
   all: "All study areas",
@@ -127,9 +132,18 @@ function Panel({
   );
 }
 
-export default function YearInFire({ manifest }: { manifest: Manifest }) {
-  const model = useReport(manifest, journeyInitial);
+export default function YearInFire({
+  manifest,
+  initial = journeyInitial,
+  onExplore,
+}: {
+  manifest: Manifest;
+  initial?: Selection;
+  onExplore?: (context: ReportContext) => void;
+}) {
+  const model = useReport(manifest, initial);
   const s = model.selection;
+  const mapContext = exploreContextForSelection(manifest.cases, s);
   const prefersReduced = useReducedMotion();
   const [reduceMotion, setReduceMotion] = useState(false);
   const reduced = prefersReduced || reduceMotion;
@@ -166,7 +180,7 @@ export default function YearInFire({ manifest }: { manifest: Manifest }) {
     () => seasonalPatterns(model.cases, s.sensor),
     [model.cases, s.sensor],
   );
-  const reading = relatedReadings(s.geo, s.year, s.month, s.record);
+  const reading = relatedReadings(s.geo, s.year, s.month, s.record, s.day);
   const patternMonth =
     patterns.peakMonth === null
       ? null
@@ -192,12 +206,10 @@ export default function YearInFire({ manifest }: { manifest: Manifest }) {
     if (pendingFocus.current && !model.busy) {
       heading.current?.focus({ preventScroll: true });
       if (window.matchMedia("(max-width: 760px)").matches) {
-        heading.current
-          ?.closest(".fire-journey")
-          ?.scrollIntoView({
-            block: "start",
-            behavior: reduced ? "instant" : "smooth",
-          });
+        heading.current?.closest(".fire-journey")?.scrollIntoView({
+          block: "start",
+          behavior: reduced ? "instant" : "smooth",
+        });
       }
       pendingFocus.current = false;
     }
@@ -419,6 +431,16 @@ export default function YearInFire({ manifest }: { manifest: Manifest }) {
               <span>{placeLabels[s.geo]}</span>
               <ChevronDown size={12} />
             </button>
+            {onExplore && mapContext && (
+              <button
+                className="jy-map-return"
+                onClick={() => onExplore(mapContext)}
+              >
+                <MapPin size={14} />
+                Open {monthName(mapContext.month)}{" "}
+                {mapContext.month.slice(0, 4)} in Explore
+              </button>
+            )}
             <button
               className="jy-icon"
               aria-label="Report details and satellite settings"
@@ -560,6 +582,7 @@ export default function YearInFire({ manifest }: { manifest: Manifest }) {
           >
             {s.record ? (
               <PatternWeave
+                key={`${s.geo}:${s.sensor}`}
                 rows={patterns.rows}
                 selectedYear={s.year}
                 onSelect={(key) => {
@@ -914,6 +937,13 @@ export default function YearInFire({ manifest }: { manifest: Manifest }) {
             </div>
             <div className="jy-next-actions">
               <button
+                className="jy-compare-trigger"
+                onClick={() => setDrawer("compare")}
+                aria-haspopup="dialog"
+              >
+                <GitCompareArrows size={16} /> Compare periods
+              </button>
+              <button
                 className="jy-wider"
                 onClick={() =>
                   navigate(
@@ -996,6 +1026,14 @@ export default function YearInFire({ manifest }: { manifest: Manifest }) {
           {notice}
         </span>
 
+        {drawer === "compare" && (
+          <Panel
+            title="What changed between periods?"
+            close={() => setDrawer(null)}
+          >
+            <PeriodComparison model={model} onOpen={() => setDrawer(null)} />
+          </Panel>
+        )}
         {drawer === "where" && (
           <Panel title="Where does it stand out?" close={() => setDrawer(null)}>
             <p className="jy-panel-intro">
@@ -1178,7 +1216,7 @@ export default function YearInFire({ manifest }: { manifest: Manifest }) {
             <p className="jy-reading-scope">
               Reporting supplies context, not automatic confirmation that a
               detection belongs to a specific incident. Imagery keeps its
-              original date.
+              original date. This is a curated collection, not a live feed.
             </p>
             <ReadingCards
               items={reading}

@@ -15,6 +15,7 @@ import {
   Grid2X2,
   Heart,
   Layers3,
+  MapPin,
   LoaderCircle,
   Pause,
   Play,
@@ -42,6 +43,9 @@ import type { ParticleShape } from "./report/particle-layout";
 import { useReport } from "./report/use-report";
 import type { ReportModel } from "./report/use-report";
 import "./report/report.css";
+import type { ReportContext } from "./report/report-context";
+import { selectionFromContext } from "./report/report-context";
+export type { ReportContext } from "./report/report-context";
 import "./report/experiments.css";
 import { concepts, parseConcept } from "./report/concepts";
 import { Counter, bucketName, readout } from "./report/primitives";
@@ -545,12 +549,52 @@ function Wave({ buckets, active }: { buckets: Bucket[]; active: number }) {
   );
 }
 
-export default function Report({ manifest }: { manifest: Manifest }) {
+export default function Report({
+  manifest,
+  context,
+  onExplore,
+}: {
+  manifest: Manifest;
+  context?: ReportContext;
+  onExplore?: (context: ReportContext) => void;
+}) {
+  const [dismissedContext, setDismissedContext] = useState("");
+  const contextKey = context
+    ? `${context.caseId}:${context.month}:${context.sensor ?? "viirs"}`
+    : "";
+  const incoming = contextKey === dismissedContext ? undefined : context;
+  const initial = selectionFromContext(manifest.cases, incoming);
   const concept = new URLSearchParams(location.search).get("concept");
+  if (!initial)
+    return (
+      <section
+        className="x-report-context-gap"
+        aria-label="Unsupported report context"
+      >
+        <MapPin size={30} />
+        <h1>This place has no bundled historical report.</h1>
+        <p>
+          The global snapshot and the Evros, Evia, and Gran Chaco historical
+          studies are separate records. We cannot carry this selection into a
+          national or global history.
+        </p>
+        <button
+          className="x-primary"
+          onClick={() => setDismissedContext(contextKey)}
+        >
+          Open the Greece 2023 study overview <ArrowRight size={16} />
+        </button>
+      </section>
+    );
   return concept && concept !== "journey" ? (
     <PrototypeReport manifest={manifest} />
   ) : (
-    <YearInFire manifest={manifest} />
+    <YearInFire
+      key={contextKey}
+      manifest={manifest}
+      initial={initial}
+      onExplore={onExplore}
+    />
   );
 }
 
@@ -1449,7 +1493,9 @@ function PrototypeReport({ manifest }: { manifest: Manifest }) {
         <button onClick={() => switchConcept("gallery")}>
           All ideas & your picks <ArrowUpRight size={14} />
         </button>
-        <a href="?tab=report">A Year in Fire <ArrowUpRight size={14} /></a>
+        <a href="?tab=report">
+          A Year in Fire <ArrowUpRight size={14} />
+        </a>
         <a href="#main-content">Back to top ↑</a>
       </footer>
       {modal && (

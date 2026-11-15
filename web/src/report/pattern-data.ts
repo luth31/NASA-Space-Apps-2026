@@ -86,6 +86,9 @@ export interface Reading {
   regions?: string[];
   image?: string;
   imageDate?: string;
+  /** Dates discussed by the article, not an inferred incident/detection match. */
+  contextFrom?: string;
+  contextTo?: string;
 }
 // Curated primary sources, verified 2026-11-15. These are context, not linked incident classifications.
 export const readings: Reading[] = [
@@ -97,13 +100,15 @@ export const readings: Reading[] = [
     kind: "Reporting",
     year: 2023,
     month: 8,
+    contextFrom: "2023-08-22",
+    contextTo: "2023-08-23",
     regions: ["all", "europe", "greece", "evros"],
     url: "https://science.nasa.gov/earth/earth-observatory/wildfires-rage-in-greece-151736/",
     summary:
       "Satellite imagery documents the smoke plume from northeastern Greece on 22 August 2023.",
     why: "Adds regional context to the August peak. The article covers a wider area than our study boundaries.",
     image: "/assets/evros-2023-08-22.jpg",
-    imageDate: "22 Aug 2023 · NASA GIBS / Aqua MODIS",
+    imageDate: "Local context image · 22 Aug 2023 · NASA GIBS / Aqua MODIS",
   },
   {
     id: "cams-2023",
@@ -113,6 +118,8 @@ export const readings: Reading[] = [
     kind: "Reporting",
     year: 2023,
     month: 8,
+    contextFrom: "2023-08-20",
+    contextTo: "2023-08-23",
     regions: ["all", "europe", "greece", "evros"],
     url: "https://atmosphere.copernicus.eu/august-wildfires-ravage-northern-central-greece",
     summary:
@@ -127,13 +134,15 @@ export const readings: Reading[] = [
     kind: "Reporting",
     year: 2021,
     month: 8,
+    contextFrom: "2021-08-01",
+    contextTo: "2021-08-12",
     regions: ["all", "europe", "greece", "evia"],
     url: "https://science.nasa.gov/earth/earth-observatory/fire-consumes-large-swaths-of-greece-148682/",
     summary:
       "NASA’s imagery and reporting document the fires on Evia in August 2021.",
     why: "A historical counterpart for exploring the timing of the recorded activity.",
     image: "/assets/evia-2021-08-10.jpg",
-    imageDate: "10 Aug 2021 · NASA GIBS / Aqua MODIS",
+    imageDate: "Local context image · 10 Aug 2021 · NASA GIBS / Aqua MODIS",
   },
   {
     id: "viirs-paper",
@@ -150,7 +159,7 @@ export const readings: Reading[] = [
     id: "viirs-methods",
     title: "How VIIRS sees active fire",
     publisher: "NASA Goddard",
-    date: "Product documentation",
+    date: "Undated · checked 15 Nov 2026",
     kind: "Methods",
     url: "https://viirsland.gsfc.nasa.gov/Products/NASA/FireESDR.html",
     summary:
@@ -163,12 +172,16 @@ export function relatedReadings(
   year: number,
   month: string | null,
   archive: boolean,
+  day: string | null = null,
 ) {
   return readings.filter(
     (r) =>
       !r.year ||
       (r.regions?.includes(geo) &&
         (archive || r.year === year) &&
-        (!month || r.month === Number(month.slice(5)))),
+        (!month || r.month === Number(month.slice(5))) &&
+        (!day ||
+          ((!r.contextFrom || day >= r.contextFrom) &&
+            (!r.contextTo || day <= r.contextTo)))),
   );
 }

@@ -2713,3 +2713,14 @@
     animation: none !important;
   }
 }
+
+.x-report-context-gap {
+  margin: auto;
+  max-width: 680px;
+  padding: 60px 30px;
+  color: #d9e0c9;
+}
+.x-report-context-gap p {
+  line-height: 1.7;
+  margin: 20px 0 28px;
+}
