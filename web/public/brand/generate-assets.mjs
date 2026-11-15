@@ -9,7 +9,7 @@ const concepts = [
 ];
 const esc = s => s.replaceAll('&','&amp;').replaceAll('<','&lt;');
 function icon(c, fg, bg, small=false) {
-  if(c.id === 'ashkey') return `<path fill="${fg}" fill-rule="evenodd" d="M10 35C10 18 24 8 45 7C48 24 43 39 31 44L51 59L57 51L50 46L46 50L39 44C49 33 49 18 45 7C24 8 10 18 10 35ZM22 29a7 7 0 1 0 14 0a7 7 0 1 0-14 0Z"/><path d="M19 43L35 39L46 49L42 54Z" fill="${fg}"/>`;
+  if(c.id === 'ashkey') return `<path fill="${fg}" fill-rule="evenodd" d="M11 35C11 18 26 8 45 7C49 23 44 38 31 44L51 59L57 51L50 46L46 50L37 41C30 46 18 47 11 43ZM22 29a7 7 0 1 0 14 0a7 7 0 1 0-14 0Z"/>`;
   if(c.id === 'brasa') return `<path d="M34 5C31 18 14 22 12 37C10 52 21 61 34 60C50 59 58 45 50 32C44 22 39 19 34 5Z" fill="${fg}"/><path d="M22 38Q32 26 44 35${small?'':'M21 47Q34 38 47 44'}" fill="none" stroke="${bg}" stroke-width="${small?6:4}" stroke-linecap="round"/>`;
   return small ? `<path d="M8 14L29 57L57 8" fill="none" stroke="${fg}" stroke-width="9" stroke-linejoin="round"/><circle cx="15" cy="7" r="5" fill="${fg}"/>` : `<path d="M7 17L29 58L58 7M21 20L30 38L47 9" fill="none" stroke="${fg}" stroke-width="5" stroke-linejoin="round"/><circle cx="11" cy="7" r="4" fill="${fg}"/>`;
 }
