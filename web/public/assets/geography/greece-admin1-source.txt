@@ -1,0 +1,5 @@
+Natural Earth 1:10m Admin 1 states/provinces, public domain. Downloaded 2026-11-15. Source URL: https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson
+Original SHA256: 22d0e3ad85eb3e27f17cabf8ba2d50e554fbc27a87796ff891d958185da62fb5
+Derivative: Greece only, 13 regions and Mount Athos; retained English name, subdivision identifier, type, label coordinate; geometric coordinates rounded to 5 decimals. Generalized geographic context, not an official legal boundary. Natural Earth notes this dataset is beta and may not reflect every administrative change.
+License: https://www.naturalearthdata.com/about/terms-of-use/
+Dataset: https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/

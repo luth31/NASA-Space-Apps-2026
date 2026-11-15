@@ -3,7 +3,12 @@ import type { Observation } from "../data";
 export type Bounds = [number, number, number, number];
 export interface Country {
   type: "Feature";
-  properties: { NAME_EN: string; CONTINENT: string; ISO_A3: string };
+  properties: {
+    NAME_EN: string;
+    CONTINENT: string;
+    ISO_A3: string;
+    SUBREGION?: string;
+  };
   geometry: {
     type: "Polygon" | "MultiPolygon";
     coordinates: number[][][] | number[][][][];

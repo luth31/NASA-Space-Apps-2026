@@ -1,3 +1,3 @@
 Natural Earth Admin 0 countries, 1:110 million, public domain. Downloaded 2026-11-15 from https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson
 Original SHA256: 6866c877d39cba9c357620878839b336d569f8c662d3cfab4cb1dbe2d39c977f
-Derived file retains NAME_EN, CONTINENT, ISO_A3; coordinates rounded to 4 decimal places. Boundaries are generalized and represent Natural Earth de facto conventions, not a position on sovereignty. Source: https://www.naturalearthdata.com/downloads/110m-cultural-vectors/ ; terms: https://www.naturalearthdata.com/about/terms-of-use/
+Derived file retains NAME_EN, CONTINENT, ISO_A3, SUBREGION; coordinates rounded to 4 decimal places. Boundaries are generalized and represent Natural Earth de facto conventions, not a position on sovereignty. Source: https://www.naturalearthdata.com/downloads/110m-cultural-vectors/ ; terms: https://www.naturalearthdata.com/about/terms-of-use/
