@@ -10,7 +10,7 @@
   gap: 20px;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 60% 0%, #18324266, transparent 65%), #0d1821;
+    radial-gradient(ellipse at 60% 0%, #25402c66, transparent 65%), #0b1510;
   color: #edf2ee;
 }
 .investigations-compact .investigations-heading {
@@ -34,7 +34,7 @@
 }
 .investigations-compact .investigations-heading p {
   font-size: 12px;
-  color: #a7bac5;
+  color: #a8b8a5;
   line-height: 1.55;
   text-align: right;
   max-width: 280px;
@@ -53,10 +53,10 @@
   flex-direction: column;
   min-height: 0;
   text-align: left;
-  border: 1px solid #344b58;
+  border: 1px solid #304335;
   border-radius: 12px;
   overflow: hidden;
-  background: #11232e;
+  background: #122018;
   position: relative;
   transition:
     border-color 0.25s,
@@ -71,7 +71,7 @@
   min-height: 0;
   flex: 1 1 auto;
   overflow: hidden;
-  background: #172d39;
+  background: #192b1e;
 }
 .investigations-compact .compact-case-image::after {
   position: absolute;
@@ -80,9 +80,9 @@
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    #06101c55 0%,
+    #07100b55 0%,
     transparent 40%,
-    #06101c80 100%
+    #07100b80 100%
   );
 }
 .investigations-compact .compact-case-image img {
@@ -104,9 +104,9 @@
   font:
     11px "IBM Plex Mono",
     monospace;
-  background: #0b1a24b3;
+  background: #0d1c11b3;
   padding: 5px 7px;
-  border: 1px solid #a2b1b733;
+  border: 1px solid #a7b89b33;
   border-radius: 4px;
 }
 .investigations-compact .compact-case-date {
@@ -123,7 +123,7 @@
   z-index: 1;
   left: 15px;
   bottom: 10px;
-  color: #e2e9e9;
+  color: #e2eadd;
   font-size: 9px;
   letter-spacing: 0.4px;
 }
@@ -134,7 +134,7 @@
 .investigations-compact .compact-case-country {
   font-size: 10px;
   letter-spacing: 0.7px;
-  color: #a7bac5;
+  color: #a8b8a5;
   text-transform: uppercase;
 }
 .investigations-compact .compact-case-copy h2 {
@@ -161,13 +161,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  color: #a7bac5;
+  color: #a8b8a5;
   font-size: 11px;
-  border-top: 1px solid #304450;
+  border-top: 1px solid #304335;
   padding-top: 10px;
 }
 .investigations-compact .compact-case-stats strong {
-  color: #dce5e9;
+  color: #e1eadb;
   font-weight: 400;
   font-family: "IBM Plex Mono", monospace;
 }

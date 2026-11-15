@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import { ArrowRight, Eye, Info, Pause, Play, RotateCcw } from "lucide-react";
 import { dateLabel, number, type CaseStudy } from "./data";
@@ -15,35 +15,41 @@ const TILES = 96;
 const ACCURACY_DEFINITION =
   "Count accuracy = max(0, 1 − |estimate − observed VIIRS| / observed VIIRS) × 100. If observed VIIRS is zero, an estimate of zero scores 100%; any nonzero estimate scores 0%. Missing observations have no score.";
 
-function revealProgress(progress: number, start: number, end: number) {
-  const fraction = Math.min(1, Math.max(0, (progress - start) / (end - start)));
-  return 1 - (1 - fraction) ** 3;
-}
-
-function CountPanel({
+// Static tiles render only when counts change. Native animations reveal eight rows
+// per panel; the progress bar stays independent of React reconciliation.
+const CountPanel = memo(function CountPanel({
   name,
   kind,
   count,
   unit,
-  progress,
+  revealed,
   detail,
 }: {
   name: string;
   kind: "modis" | "estimate" | "viirs";
   count: number | null | undefined;
   unit: number;
-  progress: number;
+  revealed: boolean;
   detail: string;
 }) {
-  const visibleCount = (count ?? 0) * progress;
+  const rect = (index: number, opacity: number) => (
+    <rect
+      key={index}
+      x={3 + (index % 12) * 20}
+      y={3 + Math.floor(index / 12) * 20}
+      width="14"
+      height="14"
+      rx="2"
+      fill="currentColor"
+      opacity={opacity}
+    />
+  );
   return (
     <div className={`calibration-panel calibration-panel-${kind}`}>
       <span className="calibration-panel-label">
         <span aria-hidden="true" /> {name}
       </span>
-      <strong>
-        {count == null ? "—" : progress > 0 ? number(count) : "…"}
-      </strong>
+      <strong>{count == null ? "—" : revealed ? number(count) : "…"}</strong>
       <small>{detail}</small>
       <svg
         viewBox="0 0 240 160"
@@ -54,26 +60,30 @@ function CountPanel({
             : `${name}: ${number(count)} monthly detections. Each full tile represents ${number(unit)} detections.`
         }
       >
-        {Array.from({ length: TILES }, (_, i) => {
-          const fill = Math.min(1, Math.max(0, visibleCount / unit - i));
-          return (
-            <rect
-              key={i}
-              x={3 + (i % 12) * 20}
-              y={3 + Math.floor(i / 12) * 20}
-              width="14"
-              height="14"
-              rx="2"
-              fill="currentColor"
-              opacity={0.065 + fill * 0.935}
-              style={{ transform: `scale(${0.72 + fill * 0.28})` }}
-            />
-          );
-        })}
+        <g aria-hidden="true">
+          {Array.from({ length: TILES }, (_, i) => rect(i, 0.065))}
+        </g>
+        {Array.from({ length: 8 }, (_, row) => (
+          <g
+            key={row}
+            className="calibration-tile-row"
+            data-reveal-sensor={kind}
+            data-reveal-row={row}
+          >
+            {Array.from({ length: 12 }, (_, column) => {
+              const index = row * 12 + column;
+              const fill = Math.min(
+                1,
+                Math.max(0, (count ?? 0) / unit - index),
+              );
+              return fill > 0 ? rect(index, fill) : null;
+            })}
+          </g>
+        ))}
       </svg>
     </div>
   );
-}
+});
 
 export default function CalibrationDemo({
   cases,
@@ -90,9 +100,12 @@ export default function CalibrationDemo({
   const [caseId, setCaseId] = useState(initialCase);
   const [month, setMonth] = useState("");
   const [model, setModel] = useState<MonthlyModel>("Seasonal scaling");
-  const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const elapsed = useRef(0);
+  const root = useRef<HTMLElement>(null);
+  const animation = useRef<Animation[]>([]);
+  const driver = useRef<Animation | null>(null);
+  const currentPhase = useRef(0);
   const reduced = useReducedMotion();
   const study = cases.find((c) => c.id === caseId) ?? cases[0];
   const selectedMonth = month || study.date.slice(0, 7);
@@ -108,63 +121,138 @@ export default function CalibrationDemo({
     1,
     Math.ceil(Math.max(source ?? 0, estimate ?? 0, truth ?? 0) / TILES),
   );
-  const estimateProgress = revealProgress(progress, 0.12, 0.52);
-  const viirsProgress = revealProgress(progress, 0.57, 0.94);
-  const revealed = progress >= 0.57;
+  const revealed = phase >= 2;
   const accuracy = countAccuracy(estimate ?? null, truth ?? null);
   const originalAccuracy = countAccuracy(source ?? null, truth ?? null);
   const earlier = [...study.months]
     .filter((m) => m.month < "2012-01" && m.modis != null)
     .sort((a, b) => (b.modis ?? 0) - (a.modis ?? 0))[0];
 
-  useEffect(() => {
-    elapsed.current = reduced ? DURATION : 0;
-    setProgress(reduced ? 1 : 0);
-    setPlaying(ready && !reduced);
-  }, [study.id, selectedMonth, model, ready, reduced]);
+  function publishPhase(value: number) {
+    if (currentPhase.current === value) return;
+    currentPhase.current = value;
+    setPhase(value);
+  }
 
   useEffect(() => {
-    if (!playing || !ready || reduced) return;
+    if (!ready || !root.current) {
+      setPlaying(false);
+      return;
+    }
+    const bar = root.current.querySelector<HTMLElement>(
+      ".calibration-timeline > span",
+    )!;
+    const clock = bar.animate(
+      [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }],
+      { duration: DURATION, fill: "both", easing: "linear" },
+    );
+    const rows = [
+      ...root.current.querySelectorAll<SVGGElement>(
+        "[data-reveal-sensor]:not([data-reveal-sensor=modis])",
+      ),
+    ];
+    const reveals = rows.map((row) => {
+      const start = row.dataset.revealSensor === "estimate" ? 0.12 : 0.57;
+      const offset = start + Number(row.dataset.revealRow) * 0.04;
+      return row.animate(
+        [
+          { opacity: 0, transform: "translateY(4px)", offset: 0 },
+          {
+            opacity: 0,
+            transform: "translateY(4px)",
+            offset,
+            easing: "cubic-bezier(.2,.7,.2,1)",
+          },
+          { opacity: 1, transform: "translateY(0)", offset: offset + 0.09 },
+          { opacity: 1, transform: "translateY(0)", offset: 1 },
+        ],
+        { duration: DURATION, fill: "both" },
+      );
+    });
+    animation.current = [clock, ...reveals];
+    driver.current = clock;
+    publishPhase(reduced ? 3 : 0);
+    if (reduced)
+      animation.current.forEach((item) => {
+        item.pause();
+        item.currentTime = DURATION;
+      });
+    setPlaying(!reduced);
+    clock.onfinish = () => {
+      publishPhase(3);
+      setPlaying(false);
+    };
+    return () => {
+      clock.onfinish = null;
+      animation.current.forEach((item) => item.cancel());
+      animation.current = [];
+      driver.current = null;
+    };
+  }, [
+    ready,
+    study.id,
+    selectedMonth,
+    model,
+    reduced,
+    source,
+    estimate,
+    truth,
+    unit,
+  ]);
+
+  useEffect(() => {
+    if (!playing) return;
     let frame = 0;
-    let previous = performance.now();
-    let lastDraw = previous;
-    const tick = (now: number) => {
-      elapsed.current = Math.min(DURATION, elapsed.current + now - previous);
-      previous = now;
-      if (now - lastDraw >= 40 || elapsed.current >= DURATION) {
-        setProgress(elapsed.current / DURATION);
-        lastDraw = now;
-      }
-      if (elapsed.current >= DURATION) {
-        setPlaying(false);
-      } else {
-        frame = requestAnimationFrame(tick);
-      }
+    const tick = () => {
+      const progress = Number(driver.current?.currentTime ?? 0) / DURATION;
+      // No per-frame DOM writes or React renders: only three phase transitions.
+      publishPhase(
+        progress >= 1 ? 3 : progress >= 0.57 ? 2 : progress >= 0.12 ? 1 : 0,
+      );
+      if (progress < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [playing, ready, reduced, study.id, selectedMonth, model]);
+  }, [playing]);
 
   function replay() {
-    elapsed.current = reduced ? DURATION : 0;
-    setProgress(reduced ? 1 : 0);
+    const time = reduced ? DURATION : 0;
+    animation.current.forEach((item) => {
+      item.pause();
+      item.currentTime = time;
+      if (!reduced) item.play();
+    });
+    publishPhase(reduced ? 3 : 0);
     setPlaying(!reduced);
   }
 
+  function togglePlayback() {
+    if (phase === 3) {
+      replay();
+      return;
+    }
+    animation.current.forEach((item) => (playing ? item.pause() : item.play()));
+    setPlaying(!playing);
+  }
+
   function revealAll() {
-    elapsed.current = DURATION;
-    setProgress(1);
+    animation.current.forEach((item) => {
+      item.pause();
+      item.currentTime = DURATION;
+    });
+    publishPhase(3);
     setPlaying(false);
   }
 
   return (
     <section
+      ref={root}
+      data-animation-phase={phase}
       className="calibration-demo calibration-animation"
       aria-label="Interactive MODIS calibration"
     >
       <header className="calibration-heading">
         <div>
-          <span className="eyebrow">THE BRIDGE IN ACTION</span>
           <h2>What could MODIS have seen?</h2>
         </div>
         <span className="calibration-month-label">
@@ -232,7 +320,7 @@ export default function CalibrationDemo({
               kind="modis"
               count={source}
               unit={unit}
-              progress={1}
+              revealed={true}
               detail="Original monthly count"
             />
             <CountPanel
@@ -240,7 +328,7 @@ export default function CalibrationDemo({
               kind="estimate"
               count={estimate}
               unit={unit}
-              progress={estimateProgress}
+              revealed={phase >= 1}
               detail="VIIRS-scale monthly count"
             />
             <CountPanel
@@ -248,7 +336,7 @@ export default function CalibrationDemo({
               kind="viirs"
               count={truth}
               unit={unit}
-              progress={viirsProgress}
+              revealed={phase >= 2}
               detail={
                 truth == null
                   ? "Before VIIRS · no observation"
@@ -266,40 +354,29 @@ export default function CalibrationDemo({
               aria-label={
                 playing
                   ? "Pause calibration animation"
-                  : progress >= 1
+                  : phase === 3
                     ? "Replay calibration animation"
                     : "Play calibration animation"
               }
-              onClick={() => {
-                if (progress >= 1) replay();
-                else setPlaying(!playing);
-              }}
+              onClick={togglePlayback}
               disabled={!!reduced}
               title={reduced ? "Reduced motion is enabled" : undefined}
             >
               {playing ? <Pause size={15} /> : <Play size={15} />}
-              {playing ? "Pause" : progress >= 1 ? "Replay" : "Play"}
+              {playing ? "Pause" : phase === 3 ? "Replay" : "Play"}
             </button>
-            <div
-              className="calibration-timeline"
-              style={
-                {
-                  "--calibration-progress": `${progress * 100}%`,
-                } as CSSProperties
-              }
-              aria-hidden="true"
-            >
+            <div className="calibration-timeline" aria-hidden="true">
               <span />
               <i />
               <i />
               <i />
             </div>
             <span className="calibration-phase" aria-live="polite">
-              {progress >= 1
+              {phase === 3
                 ? "Compare all three"
-                : progress < 0.12
+                : phase === 0
                   ? "Start with MODIS"
-                  : progress < 0.57
+                  : phase === 1
                     ? "Apply calibration"
                     : "Reveal VIIRS"}
             </span>

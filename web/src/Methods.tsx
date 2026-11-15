@@ -81,8 +81,7 @@ export default function Methods({
         >
           <header className="method-chapter-heading">
             <div>
-              <span className="eyebrow">01 / MODELS & VALIDATION</span>
-              <h1 id="bridge-chapter-title">Watch the bridge work.</h1>
+              <h1 id="bridge-chapter-title">Models & validation</h1>
             </div>
             <button className="text-button" onClick={onSources}>
               Data & sources <ArrowUpRight size={16} />
@@ -109,7 +108,6 @@ export default function Methods({
         >
           <header className="method-chapter-heading">
             <div>
-              <span className="eyebrow">02 / MONTHLY VALIDATION</span>
               <h2 id="scores-chapter-title">The years the models never saw.</h2>
             </div>
             <span className="method-unit">
@@ -228,7 +226,6 @@ export default function Methods({
         >
           <header className="method-chapter-heading">
             <div>
-              <span className="eyebrow">03 / MODELS & TRAINING</span>
               <h2 id="protocol-chapter-title">
                 Two approaches. One honest test.
               </h2>
@@ -337,7 +334,6 @@ export default function Methods({
         >
           <header className="method-chapter-heading">
             <div>
-              <span className="eyebrow">04 / MATCHED SATELLITE PASSES</span>
               <h2 id="passes-chapter-title">
                 Same place. Almost the same moment.
               </h2>

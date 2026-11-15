@@ -1,13 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { Crosshair, Layers2, Minus, Plus, ScanLine } from "lucide-react";
+import { Crosshair, Grid2X2, Minus, Plus } from "lucide-react";
 import LocationInset, {
   viewportCountry,
   type Viewport,
 } from "./orbital/LocationInset";
 import { groupGeography, type Area, type Point } from "./orbital/geography";
 import geographyUrl from "./orbital/map-units.json?url";
-import { sensorColor } from "./orbital/map-palette";
 import type { CaseStudy, MapMarker, Observation } from "./data";
 import {
   clusterMarkers,
@@ -16,6 +22,7 @@ import {
   sensorLabel,
   timeLabel,
 } from "./data";
+import "./regional-mesh.css";
 
 interface Props {
   study: CaseStudy;
@@ -29,17 +36,74 @@ interface Props {
   wide: boolean;
 }
 
+const SENSOR_COLORS = { modis: "#ffaaa0", viirs: "#ff4558" };
+const FLAME =
+  "M12 1C15 7 7 9 7 15c-3-1-3-5-3-5S-1 17 3 22c4 6 13 7 17 1 4-6 0-12-3-15 1 5-1 6-1 6 2-6-2-11-4-13Z";
+const CORE =
+  "M12 14c1 4-4 5-4 8 0 2 2 4 4 4 4 0 6-3 4-6 0 2-1 2-1 2 1-3-2-6-3-8Z";
+const MAX_ZOOM = 64;
+
 export default function RegionalMap({
   study,
   observations,
   selected,
   onSelect,
-  compare,
-  onCompare,
   period,
   reset,
 }: Props) {
   const [countries, setCountries] = useState<Area[]>([]);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [mesh, setMesh] = useState(true);
+  const [size, setSize] = useState({ width: 1000, height: 500 });
+  const [hover, setHover] = useState<{
+    o: Observation;
+    x: number;
+    y: number;
+    count: number;
+  } | null>(null);
+  const host = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(
+    null,
+  );
+  const moved = useRef(false);
+  const focused = useRef(false);
+  const reduced = useReducedMotion();
+  const meshId = useId().replaceAll(":", "");
+  const ratio =
+    (study.sceneBounds[3] - study.sceneBounds[1]) /
+    (study.sceneBounds[2] - study.sceneBounds[0]);
+  const h = 1000 * ratio;
+  const scale = Math.max(size.width / 1000, size.height / h);
+  // The raster is geographic, so x/y distances differ away from the equator.
+  // This is a nominal nadir illustration at the case latitude, not a swath grid.
+  const kmAcross =
+    111.32 *
+    Math.cos((study.center[1] * Math.PI) / 180) *
+    (study.sceneBounds[2] - study.sceneBounds[0]);
+  const kmDown = 111.32 * (study.sceneBounds[3] - study.sceneBounds[1]);
+  const unitX = 1000 / kmAcross;
+  const unitY = h / kmDown;
+  const xy = (lon: number, lat: number) => {
+    const point = project(lon, lat, study.sceneBounds);
+    return [point[0], point[1] * ratio];
+  };
+  const centerOn = (point: Point, nextZoom: number) => {
+    const p = xy(...point);
+    setZoom(nextZoom);
+    setPan({ x: (500 - p[0]) * nextZoom, y: (h / 2 - p[1]) * nextZoom });
+  };
+  const fitCase = () => {
+    const [west, south, east, north] = study.bbox;
+    const topLeft = xy(west, north);
+    const bottomRight = xy(east, south);
+    const fitted =
+      Math.min(
+        size.width / ((bottomRight[0] - topLeft[0]) * scale),
+        size.height / ((bottomRight[1] - topLeft[1]) * scale),
+      ) * 0.8;
+    centerOn(study.center, Math.max(1, Math.min(MAX_ZOOM, fitted)));
+  };
   useEffect(() => {
     const controller = new AbortController();
     fetch(geographyUrl, { signal: controller.signal })
@@ -51,30 +115,53 @@ export default function RegionalMap({
       .catch(() => {});
     return () => controller.abort();
   }, []);
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [split, setSplit] = useState(50);
-  const [columns, setColumns] = useState(false);
-  const [size, setSize] = useState({ width: 1000, height: 500 });
-  const [hover, setHover] = useState<{
-    o: Observation;
-    x: number;
-    y: number;
-    count: number;
-  } | null>(null);
-  const host = useRef<HTMLDivElement>(null);
-  const svg = useRef<SVGSVGElement>(null);
-  const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(
-    null,
-  );
-  const moved = useRef(false);
-  const reduced = useReducedMotion();
-  const ratio =
-    (study.sceneBounds[3] - study.sceneBounds[1]) /
-    (study.sceneBounds[2] - study.sceneBounds[0]);
-  const h = 1000 * ratio;
-  const scale = Math.max(size.width / 1000, size.height / h);
-  const visibleWidth = size.width / scale;
+  useEffect(() => {
+    if (!host.current) return;
+    const observer = new ResizeObserver(([entry]) =>
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      }),
+    );
+    observer.observe(host.current);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    focused.current = false;
+  }, [study.id, reset]);
+  useEffect(() => {
+    if (focused.current || !observations.length) return;
+    focused.current = true;
+    // Open on a real dense neighborhood, with a ~40km field of view. A national
+    // overview cannot resolve 375m cells; the locator and Fit case retain context.
+    const bins = new Map<string, { count: number; lon: number; lat: number }>();
+    for (const point of observations) {
+      const key = `${Math.floor(point.lon / 0.05)}:${Math.floor(point.lat / 0.05)}`;
+      const bin = bins.get(key);
+      if (bin) {
+        bin.count++;
+        bin.lon += point.lon;
+        bin.lat += point.lat;
+      } else bins.set(key, { count: 1, lon: point.lon, lat: point.lat });
+    }
+    const densest = [...bins.values()].sort((a, b) => b.count - a.count)[0];
+    const initialZoom = Math.max(
+      1,
+      Math.min(MAX_ZOOM, size.width / (40 * unitX * scale)),
+    );
+    centerOn(
+      [densest.lon / densest.count, densest.lat / densest.count],
+      initialZoom,
+    );
+  }, [observations, study.id, reset, size.width, size.height]);
+  useEffect(() => {
+    if (selected)
+      centerOn(
+        [selected.lon, selected.lat],
+        Math.min(MAX_ZOOM, Math.max(zoom, size.width / (25 * unitX * scale))),
+      );
+  }, [selected?.id, study.id]);
+
   const viewport = useMemo<Viewport>(() => {
     const [west, south, east, north] = study.sceneBounds;
     const unproject = (sx: number, sy: number): Point => {
@@ -105,143 +192,153 @@ export default function RegionalMap({
       }),
     [countries, study],
   );
-  const splitX = (1000 - visibleWidth) / 2 + (visibleWidth * split) / 100;
-  const xy = (lon: number, lat: number) => {
-    const p = project(lon, lat, study.sceneBounds);
-    return [p[0], p[1] * ratio];
-  };
-  useEffect(() => {
-    if (!host.current) return;
-    const observer = new ResizeObserver(([entry]) =>
-      setSize({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
+  const projectedPoints = useMemo(
+    () =>
+      observations.map((o) => {
+        const [x, y] = xy(o.lon, o.lat);
+        return { key: o.id, o, x, y, count: 1 };
       }),
-    );
-    observer.observe(host.current);
-    return () => observer.disconnect();
-  }, []);
-  useEffect(() => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-  }, [reset]);
-  useEffect(() => {
-    if (!selected) return;
-    const p = project(selected.lon, selected.lat, study.sceneBounds);
-    const z = Math.max(zoom, 2.3);
-    setZoom(z);
-    setPan({ x: (500 - p[0]) * z, y: (h / 2 - p[1] * ratio) * z });
-  }, [selected?.id, study.id]);
-
+    [observations, study.id],
+  );
   const markerItems = useMemo(() => {
-    const points = observations.map((o) => {
-      const p = xy(o.lon, o.lat);
-      return { key: o.id, o, x: p[0], y: p[1], count: 1 };
-    });
-    const visible = points.filter((p) => {
+    const visible = projectedPoints.filter((p) => {
       const x = ((p.x - 500) * zoom + pan.x) * scale + size.width / 2;
       const y = ((p.y - h / 2) * zoom + pan.y) * scale + size.height / 2;
-      return (
-        x >= -60 && x <= size.width + 60 && y >= -60 && y <= size.height + 60
-      );
+      return x >= 0 && x <= size.width && y >= 0 && y <= size.height;
     });
     return clusterMarkers(
       visible,
-      visible.length > 3500 ? 16 / (zoom * scale) : 0,
+      (visible.length > 900 ? 16 : 10) / (zoom * scale),
       selected?.id,
     );
-  }, [observations, study.id, zoom, pan, size, selected?.id]);
-  const transform = `translate(${500 + pan.x}px, ${h / 2 + pan.y}px) scale(${zoom}) translate(-500px, ${-h / 2}px)`;
-  const mapStyle = {
-    transform,
-    // Camera and locator share the same rendered transform during direct interaction.
-    transition: "none",
-  };
-  const mark = (item: MapMarker) => {
-    const { o, count } = item;
-    const p = [item.x, item.y];
-    const active = selected?.id === o.id;
-    const color = sensorColor(o.sensor);
+  }, [projectedPoints, zoom, pan, size, selected?.id]);
+  const visibleCounts = useMemo(
+    () =>
+      markerItems.reduce(
+        (total, item) => {
+          total[item.o.sensor === "MODIS" ? "modis" : "viirs"] += item.count;
+          return total;
+        },
+        { modis: 0, viirs: 0 },
+      ),
+    [markerItems],
+  );
+  const sourceCounts = useMemo(
+    () => ({
+      modis: observations.filter((o) => o.sensor === "MODIS").length,
+      viirs: observations.filter((o) => o.sensor !== "MODIS").length,
+    }),
+    [observations],
+  );
+  const transform = `translate(${500 + pan.x} ${h / 2 + pan.y}) scale(${zoom}) translate(-500 ${-h / 2})`;
+  const worldPerPixel = 1 / (zoom * scale);
+  const meshOpacity = (km: number) =>
+    Math.min(
+      1,
+      Math.max(0, ((Math.min(unitX, unitY) * km) / worldPerPixel - 2.5) / 4),
+    );
+  const origin = xy(...study.center);
+  const showModis = sourceCounts.modis > 0;
+  const showViirs = sourceCounts.viirs > 0;
+  const meshLayers = [
+    { name: "modis", size: 1, color: SENSOR_COLORS.modis, visible: showModis },
+    {
+      name: "viirs",
+      size: 0.375,
+      color: SENSOR_COLORS.viirs,
+      visible: showViirs,
+    },
+  ];
+  const mark = (item: MapMarker, index = 0) => {
+    const active = selected?.id === item.o.id;
+    const color = SENSOR_COLORS[item.o.sensor === "MODIS" ? "modis" : "viirs"];
+    const glyphSize = (active ? 20 : item.count > 1 ? 16 : 12) * worldPerPixel;
+    const markScale = glyphSize / 27;
     return (
       <g
         key={item.key}
-        className="map-mark"
-        onClick={(e) => {
-          e.stopPropagation();
-          if (!moved.current) {
-            if (count > 1) {
-              const z = Math.min(8, Math.max(2.3, zoom * 1.8));
-              setZoom(z);
-              setPan({ x: (500 - p[0]) * z, y: (h / 2 - p[1]) * z });
-            }
-            onSelect(o);
-          }
+        className={`map-mark sensor-fire-mark ${active ? "is-selected" : ""}`}
+        transform={`translate(${item.x} ${item.y})`}
+        onClick={(event) => {
+          event.stopPropagation();
+          if (moved.current) return;
+          if (item.count > 1)
+            centerOn([item.o.lon, item.o.lat], Math.min(MAX_ZOOM, zoom * 1.5));
+          onSelect(item.o);
         }}
-        onPointerEnter={(e) => {
+        onPointerEnter={(event) => {
           if (drag.current) return;
           const rect = host.current!.getBoundingClientRect();
           setHover({
-            o,
-            count,
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top,
+            o: item.o,
+            count: item.count,
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top,
           });
         }}
         onPointerLeave={() => setHover(null)}
       >
-        <circle
-          cx={p[0]}
-          cy={p[1]}
-          r={Math.max(4, 5 / zoom)}
+        <rect
+          x={-11 * worldPerPixel}
+          y={-16 * worldPerPixel}
+          width={22 * worldPerPixel}
+          height={25 * worldPerPixel}
           fill="transparent"
         />
-        {columns && count === 1 && o.frp !== null && (
-          <line
-            x1={p[0]}
-            x2={p[0]}
-            y1={p[1]}
-            y2={p[1] - Math.log1p(o.frp) * 4}
-            stroke={color}
-            strokeWidth={2.4 / zoom}
-            opacity=".7"
+        {active && (
+          <rect
+            className="sensor-selection-frame"
+            x={-14 * worldPerPixel}
+            y={-24 * worldPerPixel}
+            width={28 * worldPerPixel}
+            height={31 * worldPerPixel}
+            rx={5 * worldPerPixel}
+            fill="#09201588"
+            stroke="#f3f2db"
+            strokeWidth={worldPerPixel}
           />
         )}
-        <circle
-          cx={p[0]}
-          cy={p[1]}
-          r={
-            count > 1
-              ? Math.min(7, 2 + Math.log2(count)) / zoom
-              : (active ? 3.8 : 1.65) / Math.sqrt(zoom)
-          }
-          fill={color}
-          fillOpacity={count > 1 ? 0.55 : 1}
-          stroke={active ? "#fff" : count > 1 ? color : "#1c1c1c"}
-          strokeWidth={active ? 0.9 : 0.25}
-        />
-        {active && (
-          <circle
-            cx={p[0]}
-            cy={p[1]}
-            r={8 / zoom}
-            fill="none"
-            stroke="#fff"
-            strokeWidth={0.6 / zoom}
-          />
+        <g
+          transform={`translate(${-12 * markScale} ${-24 * markScale}) scale(${markScale})`}
+        >
+          <g
+            className={
+              !reduced && (active || index % 7 === 0) && index < 560
+                ? "sensor-fire-flicker"
+                : undefined
+            }
+            style={
+              { "--flame-delay": `${(-index % 9) * 0.37}s` } as CSSProperties
+            }
+          >
+            <path d={FLAME} fill={color} stroke="#361214" strokeWidth="1" />
+            <path
+              d={CORE}
+              fill={item.o.sensor === "MODIS" ? "#fff0db" : "#ffc3ac"}
+              opacity=".9"
+            />
+          </g>
+        </g>
+        {item.count >= 10 && (
+          <text
+            x={8 * worldPerPixel}
+            y={-9 * worldPerPixel}
+            className="sensor-group-count"
+            fontSize={9 * worldPerPixel}
+            strokeWidth={2.5 * worldPerPixel}
+          >
+            {item.count > 999
+              ? `${(item.count / 1000).toFixed(1)}k`
+              : item.count}
+          </text>
         )}
       </g>
     );
   };
-  const marks = useMemo(
-    () =>
-      markerItems.map((item) => ({
-        sensor: item.o.sensor,
-        element: mark(item),
-      })),
-    [markerItems, selected?.id, columns, zoom, onSelect],
+  const renderedMarks = useMemo(
+    () => markerItems.map((item, index) => mark(item, index)),
+    [markerItems, selected?.id, zoom, scale, reduced, onSelect],
   );
-  const modis = observations.filter((o) => o.sensor === "MODIS");
-  const viirs = observations.filter((o) => o.sensor !== "MODIS");
   const pinnedOutside =
     selected && !observations.some((o) => o.id === selected.id);
   const periodLabel =
@@ -249,34 +346,42 @@ export default function RegionalMap({
       ? dateLabel(period + "-01", { month: "long", year: "numeric" })
       : dateLabel(period);
   return (
-    <div className="regional-map" ref={host}>
+    <div
+      className={`regional-map sensor-mesh-map ${reduced ? "reduce-motion" : ""}`}
+      ref={host}
+    >
       <motion.svg
-        ref={svg}
-        initial={{ opacity: 0, scale: reduced ? 1 : 1.08 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.1, ease: [0.19, 1, 0.22, 1] }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: reduced ? 0 : 0.45 }}
         viewBox={`0 0 1000 ${h}`}
         preserveAspectRatio="xMidYMid slice"
         role="img"
-        aria-label={`NASA satellite scene of ${study.name}. ${observations.length} observations from ${periodLabel}. Select individual records in the observation list.`}
-        onWheel={(e) => {
+        aria-label={`NASA scene of ${study.name}; ${observations.length} detections from ${periodLabel}. Coral flames represent MODIS, red flames VIIRS. Nominal resolution grids are illustrations. Use the readings list to select records with the keyboard.`}
+        onWheel={(event) => {
           setHover(null);
-          setZoom((z) =>
-            Math.min(8, Math.max(1, z * (e.deltaY < 0 ? 1.12 : 0.89))),
+          setZoom((value) =>
+            Math.min(
+              MAX_ZOOM,
+              Math.max(1, value * (event.deltaY < 0 ? 1.12 : 0.89)),
+            ),
           );
         }}
-        onPointerDown={(e) => {
-          drag.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
+        onPointerDown={(event) => {
+          drag.current = {
+            x: event.clientX,
+            y: event.clientY,
+            px: pan.x,
+            py: pan.y,
+          };
           moved.current = false;
           setHover(null);
         }}
-        onPointerMove={(e) => {
-          if (!drag.current || e.buttons !== 1) return;
-          const dx = (e.clientX - drag.current.x) / scale,
-            dy = (e.clientY - drag.current.y) / scale;
-          if (Math.abs(dx) + Math.abs(dy) > 3) {
-            moved.current = true;
-          }
+        onPointerMove={(event) => {
+          if (!drag.current || event.buttons !== 1) return;
+          const dx = (event.clientX - drag.current.x) / scale;
+          const dy = (event.clientY - drag.current.y) / scale;
+          if (Math.abs(dx) + Math.abs(dy) > 3) moved.current = true;
           setPan({ x: drag.current.px + dx, y: drag.current.py + dy });
         }}
         onPointerUp={() => {
@@ -288,190 +393,177 @@ export default function RegionalMap({
         }}
       >
         <defs>
-          <clipPath id="left-compare">
-            <rect x="-1000" y="-1000" width={splitX + 1000} height={h + 2000} />
-          </clipPath>
-          <clipPath id="right-compare">
-            <rect x={splitX} y="-1000" width="2000" height={h + 2000} />
-          </clipPath>
+          {meshLayers.map((layer) => (
+            <pattern
+              key={layer.name}
+              id={`${meshId}-${layer.name}`}
+              patternUnits="userSpaceOnUse"
+              x={origin[0]}
+              y={origin[1]}
+              width={unitX * layer.size}
+              height={unitY * layer.size}
+            >
+              <rect
+                width={unitX * layer.size}
+                height={unitY * layer.size}
+                fill={layer.color}
+                fillOpacity={layer.name === "modis" ? 0.018 : 0.012}
+              />
+              <path
+                d={`M ${unitX * layer.size} 0 H 0 V ${unitY * layer.size}`}
+                fill="none"
+                stroke={layer.color}
+                strokeWidth={
+                  worldPerPixel * (layer.name === "modis" ? 0.8 : 0.55)
+                }
+              />
+            </pattern>
+          ))}
         </defs>
-        <g style={mapStyle}>
+        <g transform={transform}>
           <image
             href={`/assets/${study.image}`}
             width="1000"
             height={h}
             preserveAspectRatio="none"
           />
-          <rect width="1000" height={h} fill="#0a1424" opacity=".2" />
-
-          {!compare && (
-            <g aria-hidden="true">
-              {marks.map((m) => m.element)}
-              {pinnedOutside &&
-                selected &&
-                mark({
-                  key: selected.id,
-                  o: selected,
-                  x: xy(selected.lon, selected.lat)[0],
-                  y: xy(selected.lon, selected.lat)[1],
-                  count: 1,
-                })}
+          <rect width="1000" height={h} fill="#071b0f" opacity=".17" />
+          {mesh && (
+            <g className="sensor-resolution-mesh" pointerEvents="none">
+              {meshLayers
+                .filter((layer) => layer.visible)
+                .map((layer) => (
+                  <rect
+                    key={layer.name}
+                    width="1000"
+                    height={h}
+                    fill={`url(#${meshId}-${layer.name})`}
+                    opacity={
+                      meshOpacity(layer.size) *
+                      (layer.name === "modis" ? 0.55 : 0.34)
+                    }
+                  />
+                ))}
             </g>
           )}
+          <g aria-hidden="true">
+            {renderedMarks}
+            {pinnedOutside &&
+              selected &&
+              mark({
+                key: selected.id,
+                o: selected,
+                x: xy(selected.lon, selected.lat)[0],
+                y: xy(selected.lon, selected.lat)[1],
+                count: 1,
+              })}
+          </g>
         </g>
-        {compare && (
-          <>
-            <g clipPath="url(#left-compare)" aria-hidden="true">
-              <motion.g
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.6 }}
-              >
-                <g style={mapStyle}>
-                  {marks
-                    .filter((m) => m.sensor === "MODIS")
-                    .map((m) => m.element)}
-                </g>
-              </motion.g>
-            </g>
-            <g clipPath="url(#right-compare)" aria-hidden="true">
-              <motion.g
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.25 }}
-              >
-                <g style={mapStyle}>
-                  {marks
-                    .filter((m) => m.sensor !== "MODIS")
-                    .map((m) => m.element)}
-                </g>
-              </motion.g>
-            </g>
-            <line
-              x1={splitX}
-              x2={splitX}
-              y1="-1000"
-              y2={h + 1000}
-              stroke="#f6f2e8"
-              strokeWidth={1 / scale}
-            />
-          </>
-        )}
       </motion.svg>
       <div className="map-shading" />
+      <div className="sensor-map-heading">
+        <span>{periodLabel}</span>
+        <strong>
+          {study.name}
+          <small>{study.country}</small>
+        </strong>
+      </div>
+      <button
+        className={`sensor-mesh-toggle ${mesh ? "active" : ""}`}
+        aria-pressed={mesh}
+        onClick={() => setMesh((value) => !value)}
+        title="Geographic illustration of nominal nadir resolution; actual scan/track footprints vary"
+      >
+        <Grid2X2 size={15} /> Resolution mesh
+      </button>
       {insetCountry && (
         <LocationInset
           country={insetCountry}
           viewport={viewport}
           point={selected}
-          onBack={() => {
-            setZoom(1);
-            setPan({ x: 0, y: 0 });
-          }}
-          overviewLabel="Reset scene view"
+          onBack={fitCase}
+          overviewLabel="Fit whole case"
         />
       )}
-      <div className="scene-heading">
-        <span className="eyebrow">SATELLITE INVESTIGATION</span>
-        <h1>
-          {study.name}
-          <span>, {study.country}</span>
-        </h1>
-        <p>
-          {periodLabel} <span>·</span> {observations.length.toLocaleString()}{" "}
-          reported detections
-        </p>
+      <div className="sensor-map-legend">
+        <div className="sensor-legend-sources">
+          <div style={{ color: SENSOR_COLORS.modis }}>
+            <i className="sensor-grid-swatch coarse" />
+            <span>
+              <strong>MODIS</strong>
+              <small>1 km</small>
+            </span>
+            <b>{visibleCounts.modis.toLocaleString()}</b>
+          </div>
+          <div style={{ color: SENSOR_COLORS.viirs }}>
+            <i className="sensor-grid-swatch fine" />
+            <span>
+              <strong>VIIRS</strong>
+              <small>375 m</small>
+            </span>
+            <b>{visibleCounts.viirs.toLocaleString()}</b>
+          </div>
+        </div>
+        <span className="sensor-legend-note">
+          Detections in view · hover a flame for grouped counts
+        </span>
+        <details className="sensor-resolution-help">
+          <summary>About the resolution mesh</summary>
+          <p>
+            Nominal nadir spacing at this latitude. An illustration, not
+            satellite pixel boundaries. Actual footprints grow away from nadir;
+            inspect a reading for its scan × track dimensions.
+          </p>
+          <a
+            href="https://firms.modaps.eosdis.nasa.gov/content/descriptions/FIRMS_VIIRS_Firehotspots.html"
+            target="_blank"
+            rel="noreferrer"
+          >
+            NASA sensor resolution ↗
+          </a>
+        </details>
+        {mesh && meshOpacity(0.375) < 0.15 && (
+          <span className="sensor-mesh-hint">
+            Zoom closer to resolve the 375 m mesh
+          </span>
+        )}
       </div>
-      {compare && (
-        <>
-          <div className="comparison-titles">
-            <span>
-              <i className="dot aqua" />
-              AQUA / MODIS <b>{modis.length.toLocaleString()}</b>
-              <small>1 km at nadir</small>
-            </span>
-            <span>
-              <i className="dot fire" />
-              S-NPP / VIIRS <b>{viirs.length.toLocaleString()}</b>
-              <small>375 m at nadir</small>
-            </span>
-          </div>
-          <div className="comparison-note mono">
-            SELECTED ACQUISITIONS · PASS TIMES DIFFER
-          </div>
-        </>
-      )}
-      {compare && (
-        <input
-          aria-label="Satellite comparison divider"
-          className="comparison-slider"
-          type="range"
-          min="10"
-          max="90"
-          value={split}
-          onChange={(e) => setSplit(+e.target.value)}
-        />
-      )}
       <div className="map-tool-stack">
         <button
           aria-label="Zoom in"
-          onClick={() => setZoom((z) => Math.min(8, z * 1.3))}
+          onClick={() => setZoom((value) => Math.min(MAX_ZOOM, value * 1.4))}
         >
           <Plus size={17} />
         </button>
         <button
           aria-label="Zoom out"
-          onClick={() => setZoom((z) => Math.max(1, z / 1.3))}
+          onClick={() => setZoom((value) => Math.max(1, value / 1.4))}
         >
           <Minus size={17} />
         </button>
         <button
-          aria-label="Reset map view"
-          onClick={() => {
-            setZoom(1);
-            setPan({ x: 0, y: 0 });
-          }}
+          aria-label="Fit whole case"
+          title="Fit whole case"
+          onClick={fitCase}
         >
           <Crosshair size={17} />
         </button>
-        <button
-          aria-label="Toggle FRP columns"
-          aria-pressed={columns}
-          title="FRP columns"
-          className={columns ? "active" : ""}
-          onClick={() => setColumns((v) => !v)}
-        >
-          <Layers2 size={17} />
-        </button>
       </div>
-      <button
-        className={`compare-button ${compare ? "selected" : ""}`}
-        aria-pressed={compare}
-        onClick={onCompare}
-      >
-        <ScanLine size={15} />
-        {compare ? "Close comparison" : "Compare satellites"}
-      </button>
-      <div className="scene-credit mono">
-        IMAGERY {study.date} · AQUA MODIS / NASA GIBS
-        {period !== study.date
-          ? " · FIXED BACKGROUND SCENE"
-          : " · DAILY COMPOSITE"}
+      <div className="scene-credit">
+        NASA Aqua MODIS · {study.date} composite
+        {period !== study.date ? " · fixed background" : ""}
       </div>
-      {columns && (
-        <div className="column-legend mono">HEIGHT ∝ LOG(1 + FRP IN MW)</div>
-      )}
       {hover && (
         <div
-          className="map-hover"
+          className="map-hover sensor-map-hover"
           style={{
-            left: Math.min(size.width - 205, Math.max(12, hover.x + 15)),
-            top: Math.max(12, Math.min(size.height - 90, hover.y + 15)),
+            left: Math.min(size.width - 235, Math.max(12, hover.x + 15)),
+            top: Math.max(12, Math.min(size.height - 115, hover.y + 15)),
           }}
         >
           <strong>
             {hover.count > 1
-              ? `${hover.count.toLocaleString()} detections · click to inspect`
+              ? `${hover.count.toLocaleString()} grouped ${hover.o.sensor === "MODIS" ? "MODIS" : "VIIRS"} readings`
               : sensorLabel(hover.o.sensor)}
           </strong>
           <span>
@@ -479,6 +571,10 @@ export default function RegionalMap({
           </span>
           <small>
             {dateLabel(hover.o.time)} · {timeLabel(hover.o.time)}
+          </small>
+          <small>
+            {hover.count > 1 ? "Representative: " : "Reported footprint: "}
+            {hover.o.scan} × {hover.o.track} km
           </small>
         </div>
       )}

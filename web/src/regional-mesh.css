@@ -1,0 +1,297 @@
+.regional-map.sensor-mesh-map {
+  background: #102016;
+  --mesh-line: #a7bfaa32;
+}
+.sensor-mesh-map .map-shading {
+  background: linear-gradient(
+    180deg,
+    #08160de0,
+    #08160d0a 23%,
+    transparent 66%,
+    #08160d9c
+  );
+}
+.sensor-mesh-map .sensor-map-heading {
+  position: absolute;
+  top: 20px;
+  left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+  text-shadow: 0 2px 8px #000a;
+}
+.sensor-mesh-map .sensor-map-heading > span {
+  color: #c5d4c0;
+  font-size: 11px;
+}
+.sensor-mesh-map .sensor-map-heading > strong {
+  color: #f1f4e9;
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 500;
+  letter-spacing: -0.7px;
+}
+.sensor-mesh-map .sensor-map-heading small {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 400;
+  margin-left: 10px;
+  letter-spacing: 0;
+  color: #cad7c5;
+}
+.sensor-mesh-map .sensor-mesh-toggle {
+  position: absolute;
+  top: 20px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 35px;
+  padding: 7px 11px;
+  color: #ced9c6;
+  font-size: 11px;
+  background: #102318d9;
+  border: 1px solid #9db48f55;
+  border-radius: 7px;
+  backdrop-filter: blur(14px);
+}
+.sensor-mesh-map .sensor-mesh-toggle.active {
+  color: #f1d2bd;
+  border-color: #d5a89770;
+}
+.sensor-mesh-map .sensor-fire-mark {
+  cursor: pointer;
+}
+.sensor-mesh-map .sensor-fire-flicker {
+  transform-box: fill-box;
+  transform-origin: 50% 95%;
+  animation: sensor-flame-breathe 3.4s ease-in-out infinite alternate;
+  animation-delay: var(--flame-delay, 0s);
+}
+@keyframes sensor-flame-breathe {
+  0%,
+  100% {
+    transform: scale(0.94, 0.96) rotate(-2deg);
+  }
+  48% {
+    transform: scale(1.03, 1.07) rotate(2deg);
+  }
+}
+.sensor-mesh-map .sensor-group-count {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 600;
+  paint-order: stroke fill;
+  stroke: #142019;
+  fill: #fff2df;
+  pointer-events: none;
+}
+.sensor-mesh-map .sensor-map-legend {
+  position: absolute;
+  left: 20px;
+  bottom: 38px;
+  width: min(330px, calc(100% - 235px));
+  padding: 11px 13px;
+  border: 1px solid var(--mesh-line);
+  border-radius: 9px;
+  background: #0d1c13db;
+  box-shadow: 0 8px 24px #0002;
+  backdrop-filter: blur(14px);
+}
+.sensor-mesh-map .sensor-legend-sources {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 17px;
+}
+.sensor-mesh-map .sensor-legend-sources > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sensor-mesh-map .sensor-legend-sources > div + div {
+  border-left: 1px solid var(--mesh-line);
+  padding-left: 12px;
+}
+.sensor-mesh-map .sensor-legend-sources strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+}
+.sensor-mesh-map .sensor-legend-sources small {
+  display: block;
+  font-size: 10px;
+  line-height: 1.3;
+  color: #b2c3aa;
+}
+.sensor-mesh-map .sensor-legend-sources b {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.sensor-mesh-map .sensor-grid-swatch {
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
+  opacity: 0.9;
+  border: 1px solid currentColor;
+  background-image:
+    linear-gradient(currentColor 1px, transparent 1px),
+    linear-gradient(90deg, currentColor 1px, transparent 1px);
+  background-size: 11px 11px;
+}
+.sensor-mesh-map .sensor-grid-swatch.fine {
+  background-size: 4px 4px;
+}
+.sensor-mesh-map .sensor-legend-note,
+.sensor-mesh-map .sensor-mesh-hint {
+  display: block;
+  margin-top: 9px;
+  color: #b5c4ae;
+  font-size: 9px;
+  line-height: 1.4;
+}
+.sensor-mesh-map .sensor-mesh-hint {
+  color: #f0c1ac;
+  margin-top: 4px;
+}
+.sensor-mesh-map .sensor-resolution-help {
+  margin-top: 6px;
+}
+.sensor-mesh-map .sensor-resolution-help summary {
+  font-size: 10px;
+  color: #cbd5bd;
+  cursor: pointer;
+  width: fit-content;
+}
+.sensor-mesh-map .sensor-resolution-help[open] {
+  padding-top: 7px;
+  border-top: 1px solid var(--mesh-line);
+}
+.sensor-mesh-map .sensor-resolution-help p {
+  color: #c2d0bb;
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+.sensor-mesh-map .sensor-resolution-help a {
+  font-size: 10px;
+  color: #ffc3b1;
+}
+.sensor-mesh-map .map-tool-stack {
+  right: 18px;
+  bottom: 38px;
+  padding: 3px;
+  background: #102117e6;
+  border-color: #b3c7a944;
+  border-radius: 7px;
+}
+.sensor-mesh-map .map-tool-stack button {
+  width: 30px;
+  height: 32px;
+}
+.sensor-mesh-map .mission-location-inset {
+  width: 136px;
+  right: 66px;
+  bottom: 38px;
+  padding: 9px;
+  border-radius: 8px;
+  background: #0d2015d9;
+  border-color: #b3c7a933;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+.sensor-mesh-map .mission-location-inset:hover {
+  opacity: 1;
+}
+.sensor-mesh-map .mission-location-inset > span {
+  font-size: 12px;
+}
+.sensor-mesh-map .mission-location-inset svg {
+  max-height: 74px;
+  margin: 4px 0;
+}
+.sensor-mesh-map .mission-location-inset small {
+  font-size: 8px;
+  line-height: 1.4;
+}
+.sensor-mesh-map .scene-credit {
+  left: 20px;
+  right: auto;
+  bottom: 12px;
+  color: #c7d1be;
+  font-size: 9px;
+  letter-spacing: 0;
+  max-width: calc(100% - 40px);
+  text-shadow: 0 1px 4px #000;
+}
+.sensor-mesh-map .sensor-map-hover {
+  z-index: 20;
+  width: 225px;
+  padding: 11px 13px;
+  border: 1px solid #b3c7a955;
+  border-radius: 8px;
+  background: #0b1b13f5;
+  color: #e8eedf;
+}
+.sensor-mesh-map .sensor-map-hover strong {
+  font-size: 12px;
+  color: #ffb4a6;
+}
+.sensor-mesh-map .sensor-map-hover span,
+.sensor-mesh-map .sensor-map-hover small {
+  color: #c5d1bc;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.sensor-mesh-map :is(button, summary, a):focus-visible {
+  outline: 2px solid #ecd4b3;
+  outline-offset: 3px;
+}
+.sensor-mesh-map.reduce-motion .sensor-fire-flicker {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sensor-mesh-map .sensor-fire-flicker {
+    animation: none;
+  }
+}
+@media (max-width: 760px) {
+  .sensor-mesh-map .sensor-map-heading {
+    left: 14px;
+    top: 15px;
+  }
+  .sensor-mesh-map .sensor-map-heading > strong {
+    font-size: 21px;
+  }
+  .sensor-mesh-map .sensor-map-heading small {
+    display: block;
+    margin-left: 0;
+    font-size: 11px;
+  }
+  .sensor-mesh-map .sensor-mesh-toggle {
+    top: 15px;
+    right: 12px;
+    padding: 6px 9px;
+    font-size: 10px;
+  }
+  .sensor-mesh-map .sensor-map-legend {
+    left: 12px;
+    bottom: 36px;
+    width: calc(100% - 72px);
+    max-width: 330px;
+  }
+  .sensor-mesh-map .mission-location-inset {
+    right: 12px;
+    bottom: 159px;
+    width: 105px;
+  }
+  .sensor-mesh-map .map-tool-stack {
+    right: 12px;
+    bottom: 36px;
+  }
+  .sensor-mesh-map .scene-credit {
+    left: 12px;
+    font-size: 8px;
+  }
+}

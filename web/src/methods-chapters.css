@@ -1,8 +1,8 @@
 .methods-view.methods-chapters {
-  --chapter-bg: #0d1821;
-  --chapter-panel: #11222e;
-  --chapter-line: #2c414e;
-  --chapter-muted: #a7bac5;
+  --chapter-bg: #0b1510;
+  --chapter-panel: #122018;
+  --chapter-line: #304335;
+  --chapter-muted: #a8b8a5;
   position: relative;
   width: 100%;
   height: var(--workspace-height, calc(100dvh - 82px));
@@ -13,7 +13,7 @@
   margin: 0;
   overflow: hidden;
   background: var(--chapter-bg);
-  color: #edf2ee;
+  color: #eef2e8;
 }
 .methods-chapters .method-chapter-scroll {
   height: 100%;
@@ -35,7 +35,7 @@
   flex-direction: column;
   gap: 18px;
   overflow: hidden;
-  background: radial-gradient(ellipse at 100% 0%, #1b344152, transparent 65%);
+  background: radial-gradient(ellipse at 100% 0%, #203c2652, transparent 65%);
 }
 .methods-chapters .method-chapter-heading {
   flex: 0 0 auto;
@@ -43,7 +43,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  min-height: 66px;
+  min-height: 42px;
 }
 .methods-chapters .method-chapter-heading .eyebrow {
   color: #c1a17e;
@@ -51,14 +51,14 @@
   letter-spacing: 1.8px;
 }
 .methods-chapters .method-chapter-heading :is(h1, h2) {
-  margin: 7px 0 0;
-  font-size: clamp(25px, 2.35vw, 36px);
+  margin: 0;
+  font-size: clamp(25px, 2.35vw, 34px);
   font-weight: 400;
   letter-spacing: -1px;
   line-height: 1.15;
 }
 .methods-chapters .method-chapter-heading .text-button {
-  color: #bac9d1;
+  color: #b9c8ae;
   font-size: 12px;
   white-space: nowrap;
 }
@@ -79,9 +79,9 @@
   flex-direction: column;
   gap: 5px;
   padding: 9px 4px;
-  border: 1px solid #304654;
+  border: 1px solid #304335;
   border-radius: 24px;
-  background: #0c1824e8;
+  background: #0b1810e8;
   backdrop-filter: blur(14px);
 }
 .methods-chapters .method-chapter-nav button {
@@ -95,7 +95,7 @@
 .methods-chapters .chapter-dot {
   width: 7px;
   height: 7px;
-  border: 1px solid #8095a3;
+  border: 1px solid #82977b;
   border-radius: 50%;
   transition:
     background 0.2s,
@@ -111,9 +111,9 @@
   position: absolute;
   right: 42px;
   padding: 8px 12px;
-  background: #122633;
-  border: 1px solid #3c5666;
-  color: #e8eef1;
+  background: #182b1c;
+  border: 1px solid #40553c;
+  color: #e7eee3;
   border-radius: 6px;
   white-space: nowrap;
   font-size: 12px;
@@ -238,7 +238,7 @@
   color: #e5cf7d;
 }
 .methods-chapters .chapter-scorecard tfoot {
-  background: #172c39;
+  background: #1a3020;
 }
 .methods-chapters .chapter-scorecard tfoot :is(th, td) {
   padding-top: 16px;
@@ -379,12 +379,12 @@
 }
 .methods-chapters .chapter-pass-grid select {
   width: 100%;
-  background-color: #182e3c;
-  border: 1px solid #385365;
+  background-color: #1c3021;
+  border: 1px solid #40553c;
   border-radius: 7px;
   padding: 9px 30px 9px 12px;
   font-size: 12px;
-  color: #e6eef2;
+  color: #e7eee3;
 }
 .methods-chapters p.pass-unit {
   font-size: 11px;
@@ -423,7 +423,7 @@
 .methods-chapters .pass-error-track {
   display: block;
   height: 3px;
-  background: #223b4b;
+  background: #2b402b;
   margin-top: 8px;
   border-radius: 2px;
   overflow: hidden;
@@ -432,7 +432,7 @@
 .methods-chapters .pass-error-track > i {
   display: block;
   height: 100%;
-  background: #718a9a;
+  background: #839879;
   transition: width 0.45s ease;
 }
 .methods-chapters .pass-result-row.best .pass-error-track > i {
@@ -513,7 +513,7 @@
     gap: 8px;
   }
   .methods-chapters .method-chapter-heading {
-    min-height: 56px;
+    min-height: 36px;
   }
   .methods-chapters .method-chapter-heading :is(h1, h2) {
     font-size: 28px;

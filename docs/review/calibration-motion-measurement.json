@@ -1,0 +1,29 @@
+{
+  "before": {
+    "frames": 122,
+    "changes": 40,
+    "duration": 2016.5,
+    "changesPerSecond": 19.836350111579467,
+    "updatedFrameRatio": 0.3305785123966942,
+    "smooth": false
+  },
+  "after": {
+    "frames": 121,
+    "changes": 120,
+    "duration": 2016.6000000000004,
+    "changesPerSecond": 59.50609937518595,
+    "updatedFrameRatio": 1,
+    "smooth": true
+  },
+  "pause": {
+    "before": 47.64874267578125,
+    "after": 47.64874267578125,
+    "pass": true,
+    "state": "paused"
+  },
+  "viewport": [
+    1440,
+    900
+  ],
+  "method": "Chrome DevTools MCP: sample visible progress-span bounding width on requestAnimationFrame for 2 seconds after replay; sampled motion passes when >70% of frames advance."
+}

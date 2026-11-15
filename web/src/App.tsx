@@ -5,8 +5,8 @@ import {
   ArrowUpRight,
   CalendarDays,
   Check,
+  ChevronLeft,
   ChevronDown,
-  ChevronRight,
   Compass,
   Globe2,
   LoaderCircle,
@@ -43,6 +43,7 @@ import Sources from "./Sources";
 import Navigation from "./Navigation";
 import Investigations from "./Investigations";
 import { exportInvestigation } from "./exports";
+import "./case-workspace.css";
 
 const Globe = lazy(() => import("./Globe"));
 const OrbitalAtlas = lazy(() => import("./orbital/OrbitalAtlas"));
@@ -110,8 +111,8 @@ export default function App() {
         setTimeout(
           () =>
             document
-              .querySelector<HTMLInputElement>(
-                '[aria-label=\"Search case studies\"]',
+              .querySelector<HTMLElement>(
+                '[aria-label="Choose investigation"], [aria-label="Search case studies"]',
               )
               ?.focus(),
           0,
@@ -466,90 +467,133 @@ export default function App() {
           <Investigations cases={manifest.cases} onCase={commitCase} />
         )}
         {view === "explore" && (
-          <div className="explore-view">
-            <div className="explore-toolbar">
-              <div className="breadcrumbs">
-                <button onClick={toGlobal}>
-                  <Globe2 size={14} />
-                  Earth
-                </button>
-                {study && (
-                  <>
-                    <ChevronRight size={12} />
-                    <span>{study.country}</span>
-                    <ChevronRight size={12} />
-                    <strong>{study.name}</strong>
-                  </>
-                )}
-              </div>
-              <div className="search-wrap">
-                <Search size={15} />
-                <input
-                  aria-label="Search case studies"
-                  placeholder="Find an investigation…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setTimeout(() => setSearchFocused(false), 180)}
-                />
-                <span className="search-key">⌘ K</span>
-                {searchFocused && (
-                  <div className="search-results">
-                    {searchCases.length ? (
-                      searchCases.map((c) => (
-                        <button key={c.id} onClick={() => openCase(c)}>
-                          <span>
-                            {c.name}
-                            <small>
-                              {c.country} · {dateLabel(c.date)}
-                            </small>
-                          </span>
-                          <ArrowUpRight size={14} />
-                        </button>
-                      ))
-                    ) : (
-                      <p>
-                        No case study matches. Explore any observation directly
-                        on the globe.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="filter-wrap">
-                <select
-                  aria-label="Filter observation time"
-                  value={daynight}
-                  onChange={(e) => {
-                    setDaynight(e.target.value);
-                    setSelected(null);
-                  }}
+          <div className={`explore-view ${study ? "case-workspace" : ""}`}>
+            {study && (
+              <header className="case-workspace-toolbar">
+                <button
+                  className="case-back"
+                  onClick={() => navigate("investigations")}
                 >
-                  <option value="all">Day & night</option>
-                  <option value="D">Daytime</option>
-                  <option value="N">Nighttime</option>
-                </select>
-                <ChevronDown size={13} />
-              </div>
-              {study && (
-                <div className="filter-wrap">
+                  <ChevronLeft size={17} />
+                  <span>All cases</span>
+                </button>
+                <label className="case-switcher">
+                  <span>Investigation</span>
+                  <select
+                    aria-label="Choose investigation"
+                    value={study.id}
+                    onChange={(event) =>
+                      commitCase(
+                        manifest.cases.find(
+                          (item) => item.id === event.target.value,
+                        )!,
+                      )
+                    }
+                  >
+                    {manifest.cases.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name} · {item.country}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="case-toolbar-guide">
+                  Choose a flame to inspect a detection
+                </div>
+                <label className="case-filter">
+                  <span>Satellite</span>
                   <select
                     aria-label="Filter satellite"
                     value={sensor}
-                    onChange={(e) => {
-                      setSensor(e.target.value);
+                    onChange={(event) => {
+                      setSensor(event.target.value);
                       setCompare(false);
                       setSelected(null);
                     }}
                   >
-                    <option value="all">Both satellites</option>
+                    <option value="all">MODIS + VIIRS</option>
                     <option value="MODIS">Aqua MODIS</option>
                     <option value="VIIRS">S-NPP VIIRS</option>
                   </select>
+                </label>
+                <label className="case-filter">
+                  <span>Time of day</span>
+                  <select
+                    aria-label="Filter observation time"
+                    value={daynight}
+                    onChange={(event) => {
+                      setDaynight(event.target.value);
+                      setSelected(null);
+                    }}
+                  >
+                    <option value="all">Day & night</option>
+                    <option value="D">Daytime</option>
+                    <option value="N">Nighttime</option>
+                  </select>
+                </label>
+              </header>
+            )}
+            {!study && (
+              <div className="explore-toolbar">
+                <div className="breadcrumbs">
+                  <button onClick={toGlobal}>
+                    <Globe2 size={14} />
+                    Earth
+                  </button>
+                </div>
+                <div className="search-wrap">
+                  <Search size={15} />
+                  <input
+                    aria-label="Search case studies"
+                    placeholder="Find an investigation…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={() =>
+                      setTimeout(() => setSearchFocused(false), 180)
+                    }
+                  />
+                  <span className="search-key">⌘ K</span>
+                  {searchFocused && (
+                    <div className="search-results">
+                      {searchCases.length ? (
+                        searchCases.map((c) => (
+                          <button key={c.id} onClick={() => openCase(c)}>
+                            <span>
+                              {c.name}
+                              <small>
+                                {c.country} · {dateLabel(c.date)}
+                              </small>
+                            </span>
+                            <ArrowUpRight size={14} />
+                          </button>
+                        ))
+                      ) : (
+                        <p>
+                          No case study matches. Explore any observation
+                          directly on the globe.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="filter-wrap">
+                  <select
+                    aria-label="Filter observation time"
+                    value={daynight}
+                    onChange={(e) => {
+                      setDaynight(e.target.value);
+                      setSelected(null);
+                    }}
+                  >
+                    <option value="all">Day & night</option>
+                    <option value="D">Daytime</option>
+                    <option value="N">Nighttime</option>
+                  </select>
                   <ChevronDown size={13} />
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             <div
               className={`exploration-stage ${study ? "regional" : "global"} ${(selected || browseGlobal) && !study ? "has-selection" : ""}`}
             >
@@ -688,6 +732,7 @@ export default function App() {
                   study={study}
                   observation={selected}
                   observations={displayRows}
+                  period={day ?? month}
                   onSelect={selectObservation}
                   onClose={() => {
                     setSelected(null);
@@ -756,7 +801,7 @@ export default function App() {
               )}
             </div>
             {study ? (
-              <div className="timeline">
+              <div className="timeline case-timeline">
                 <button
                   className="playback-button"
                   aria-label={
@@ -775,7 +820,7 @@ export default function App() {
                 </button>
                 <div className="timeline-label">
                   <span className="eyebrow">
-                    {day ? "SELECTED DAY" : "SELECTED MONTH"}
+                    {day ? "SELECTED DAY" : "WHOLE MONTH"}
                   </span>
                   <strong>
                     {dateLabel(
@@ -797,10 +842,20 @@ export default function App() {
                       setSelected(null);
                     }}
                   >
-                    {day ? "View entire month" : "View one day"}
+                    {day
+                      ? "Show whole month"
+                      : study.date.slice(0, 7) === month
+                        ? "Show featured day"
+                        : "Show one day"}
                   </button>
                 </div>
-                <div className="timeline-chart">
+                <div
+                  className="timeline-chart"
+                  aria-label="Daily detection timeline"
+                >
+                  <span className="case-timeline-hint">
+                    Daily detections · choose a day
+                  </span>
                   <div className="timeline-bars">
                     {dayCounts.map((n, i) => (
                       <button
@@ -843,11 +898,7 @@ export default function App() {
                   onClick={() => navigate("calendar")}
                 >
                   <CalendarDays size={18} />
-                  <span>
-                    Explore
-                    <br />
-                    the calendar
-                  </span>
+                  <span>Fire calendar</span>
                   <ArrowUpRight size={15} />
                 </button>
               </div>
