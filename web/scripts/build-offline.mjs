@@ -3,6 +3,9 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+const buildId = process.env.VITE_APP_BUILD_ID;
+if (!buildId) throw new Error("Run npm run build to share the app build ID.");
+
 const root = fileURLToPath(new URL("../dist/", import.meta.url));
 const manifest = JSON.parse(
   await readFile(path.join(root, "data/manifest.json"), "utf8"),
@@ -56,6 +59,7 @@ for (const url of urls) {
 const cacheName = "pyrobridge-" + hash.digest("hex").slice(0, 16);
 const offline = {
   bundleVersion: manifest.bundleVersion,
+  buildId,
   cacheName,
   bytes,
   files: urls.length,
@@ -66,6 +70,7 @@ await writeFile(path.join(root, "offline.json"), JSON.stringify(offline));
 const worker = `
 const CACHE = ${JSON.stringify(cacheName)};
 const VERSION = ${JSON.stringify(manifest.bundleVersion)};
+const BUILD_ID = ${JSON.stringify(buildId)};
 const CORE = ${JSON.stringify([...urls, "/offline.json"])};
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
@@ -84,15 +89,18 @@ self.addEventListener('install', event => {
 });
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
-    for (const name of await caches.keys()) {
+    // Other open tabs may still need their old hashed lazy chunks until they reload.
+    const clients = await self.clients.matchAll({includeUncontrolled: true});
+    if (clients.length <= 1) for (const name of await caches.keys()) {
       if (name.startsWith('pyrobridge-') && name !== CACHE) await caches.delete(name);
     }
     await self.clients.claim();
-    for (const client of await self.clients.matchAll()) client.postMessage({type: 'PYROBRIDGE_OFFLINE_STATUS', version: VERSION, ready: true});
+    for (const client of await self.clients.matchAll()) client.postMessage({type: 'PYROBRIDGE_OFFLINE_STATUS', version: VERSION, buildId: BUILD_ID, ready: true});
   })());
 });
 self.addEventListener('message', event => {
-  if (event.data?.type === 'OFFLINE_STATUS') event.source?.postMessage({type: 'PYROBRIDGE_OFFLINE_STATUS', version: VERSION, ready: true});
+  if (event.data?.type === 'ACTIVATE_UPDATE') event.waitUntil(self.skipWaiting());
+  if (event.data?.type === 'OFFLINE_STATUS') event.source?.postMessage({type: 'PYROBRIDGE_OFFLINE_STATUS', version: VERSION, buildId: BUILD_ID, ready: true});
 });
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
@@ -109,7 +117,8 @@ self.addEventListener('fetch', event => {
   if (!url.pathname.startsWith('/assets/') && !url.pathname.startsWith('/brand/') && !url.pathname.startsWith('/data/') && url.pathname !== '/offline.json' && url.pathname !== '/favicon.svg') return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
-    const saved = await cache.match(event.request);
+    const saved = await cache.match(event.request) ||
+      (url.pathname.startsWith('/assets/') ? await caches.match(event.request) : undefined);
     if (saved) return saved;
     const response = await fetch(event.request);
     if (response.ok) await cache.put(event.request, response.clone());

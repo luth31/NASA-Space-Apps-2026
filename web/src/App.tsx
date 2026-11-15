@@ -46,6 +46,7 @@ import Calendar from "./Calendar";
 import Methods from "./Methods";
 import Sources from "./Sources";
 import { exportInvestigation } from "./exports";
+import { offlineStatusMatches } from "./offline-status";
 import { brand } from "./brand";
 import { readRoute, sectionPurpose, monthlyAvailability } from "./navigation";
 import type { View } from "./navigation";
@@ -123,6 +124,11 @@ export default function App() {
     [demoPlaying, setDemoPlaying] = useState(false),
     [online, setOnline] = useState(navigator.onLine),
     [offlineReady, setOfflineReady] = useState(false);
+  const [offlineUpdate, setOfflineUpdate] = useState<ServiceWorker | null>(
+    null,
+  );
+  const [offlineReplaced, setOfflineReplaced] = useState(false);
+  const offlineReloadRequested = useRef(false);
   const reduced = useReducedMotion();
   const [destination, setDestination] = useState<CaseStudy | null>(null);
   useEffect(() => {
@@ -233,29 +239,71 @@ export default function App() {
   }, []);
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);
+    let disposed = false;
+    let registration: ServiceWorkerRegistration | undefined;
+    let hadController = Boolean(navigator.serviceWorker?.controller);
     const status = (event: MessageEvent) => {
-      if (event.data?.type === "PYROBRIDGE_OFFLINE_STATUS") {
+      if (
+        event.data?.type === "PYROBRIDGE_OFFLINE_STATUS" &&
+        event.source === navigator.serviceWorker.controller
+      ) {
         setOfflineReady(
-          event.data.ready === true &&
-            event.data.version === manifest?.bundleVersion,
+          offlineStatusMatches(
+            event.data,
+            manifest?.bundleVersion,
+            import.meta.env.VITE_APP_BUILD_ID,
+          ),
         );
       }
+    };
+    const controlled = () => {
+      setOfflineReady(false);
+      if (offlineReloadRequested.current) {
+        location.reload();
+        return;
+      }
+      if (hadController) setOfflineReplaced(true);
+      hadController = true;
+      navigator.serviceWorker.controller?.postMessage({
+        type: "OFFLINE_STATUS",
+      });
+    };
+    const checkWaiting = () => {
+      if (!disposed) setOfflineUpdate(registration?.waiting ?? null);
+    };
+    const found = () => {
+      const installing = registration?.installing;
+      installing?.addEventListener("statechange", checkWaiting);
     };
     window.addEventListener("online", update);
     window.addEventListener("offline", update);
     if ("serviceWorker" in navigator && import.meta.env.PROD) {
       navigator.serviceWorker.addEventListener("message", status);
+      navigator.serviceWorker.addEventListener("controllerchange", controlled);
       navigator.serviceWorker
-        .register("/service-worker.js")
+        .register("/service-worker.js", { updateViaCache: "none" })
         .then((r) => {
-          r.active?.postMessage({ type: "OFFLINE_STATUS" });
+          if (disposed) return;
+          registration = r;
+          checkWaiting();
+          r.addEventListener("updatefound", found);
+          found();
+          navigator.serviceWorker.controller?.postMessage({
+            type: "OFFLINE_STATUS",
+          });
         })
         .catch(() => {});
     }
     return () => {
+      disposed = true;
       window.removeEventListener("online", update);
       window.removeEventListener("offline", update);
       navigator.serviceWorker?.removeEventListener("message", status);
+      navigator.serviceWorker?.removeEventListener(
+        "controllerchange",
+        controlled,
+      );
+      registration?.removeEventListener("updatefound", found);
     };
   }, [manifest?.bundleVersion]);
   useEffect(() => {
@@ -1300,6 +1348,21 @@ export default function App() {
             <span className="footer-status" />
             {offlineReady ? "OFFLINE BUNDLE READY" : "PINNED NASA DATA BUNDLE"}
           </span>
+          {(offlineUpdate || offlineReplaced) && (
+            <button
+              onClick={() => {
+                if (!offlineUpdate || offlineUpdate.state === "activated") {
+                  location.reload();
+                  return;
+                }
+                offlineReloadRequested.current = true;
+                setOfflineReady(false);
+                offlineUpdate.postMessage({ type: "ACTIVATE_UPDATE" });
+              }}
+            >
+              {offlineUpdate ? "Update and reload" : "Reload updated app"}
+            </button>
+          )}
           <button onClick={() => navigate("sources")}>
             GLOBAL SNAPSHOT {dateLabel(manifest.snapshotEnd).toUpperCase()} ·{" "}
             {timeLabel(manifest.snapshotEnd)}
