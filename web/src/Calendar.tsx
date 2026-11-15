@@ -3,10 +3,8 @@ import { motion } from "motion/react";
 import {
   ArrowDownToLine,
   ArrowUpRight,
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Info,
 } from "lucide-react";
 import type { CaseStudy } from "./data";
 import { dateLabel, number } from "./data";
@@ -66,16 +64,15 @@ function Flame({ count, maximum }: { count: number | null; maximum: number }) {
         ·
       </span>
     );
-  const strength = Math.log1p(count) / Math.log1p(maximum);
+  // Scale both dimensions so the flame's area is proportional to the count.
+  const height = 54 * Math.sqrt(count / maximum);
   return (
     <svg
       className="calendar-flame"
       viewBox="0 0 24 32"
       aria-hidden="true"
-      style={{
-        height: `${16 + strength * 42}px`,
-        opacity: 0.5 + strength * 0.5,
-      }}
+      width={height * (24 / 32)}
+      height={height}
     >
       <path
         d="M13.1 1C15 9 4 11.2 4.1 20.1 1.7 17.5 2.6 14 2.6 14S-2 21.4 2.8 27.3C7.4 33 17 33.5 21.5 26.8c4.8-7.2-.4-13.5-3-16.5.8 4.8-1.3 6.2-1.3 6.2C19.3 9.9 14.4 3 13.1 1Z"
@@ -89,10 +86,17 @@ function Flame({ count, maximum }: { count: number | null; maximum: number }) {
     </svg>
   );
 }
-function errorChange(original: number, estimated: number) {
-  if (original === estimated) return "Same error";
-  if (original === 0) return `${number(estimated)} more error`;
-  return `${number(Math.abs((original - estimated) / original) * 100)}% ${estimated < original ? "less" : "more"} error`;
+function gapChange(original: number, estimated: number) {
+  if (original === estimated) return "Same gap";
+  if (original === 0)
+    return `${number(estimated)} detections farther from VIIRS`;
+  const change = Math.abs(original - estimated) / original;
+  return `${number(change * 100)}% ${estimated < original ? "smaller" : "larger"} gap`;
+}
+
+function describeGap(difference: number) {
+  if (difference === 0) return "Matches VIIRS";
+  return `${number(Math.abs(difference))} ${difference < 0 ? "below" : "above"}`;
 }
 export default function Calendar({
   study,
@@ -159,14 +163,17 @@ export default function Calendar({
     1,
     ...totals.flatMap((entry) => entry.values.map((value) => value ?? 0)),
   );
-  const baselineError =
+  const modisDifference =
     selected?.modis != null && selected.viirs != null
-      ? Math.abs(selected.modis - selected.viirs)
+      ? selected.modis - selected.viirs
       : null;
-  const modelError =
+  const estimateDifference =
     selected?.estimate != null && selected.viirs != null
-      ? Math.abs(selected.estimate - selected.viirs)
+      ? selected.estimate - selected.viirs
       : null;
+  const modisGap = modisDifference == null ? null : Math.abs(modisDifference);
+  const estimateGap =
+    estimateDifference == null ? null : Math.abs(estimateDifference);
   const score = monthly?.scores[model];
   function chooseYear(value: number) {
     onMonth(`${value}-${selectedKey.slice(5, 7)}`);
@@ -185,7 +192,7 @@ export default function Calendar({
       <header className="calendar-heading">
         <div>
           <h1>Compare the fire record.</h1>
-          <p>One month. Three counts. The difference is visible.</p>
+          <p>Compare MODIS, the model estimate, and observed VIIRS by month.</p>
         </div>
         <div className="calendar-controls">
           <button
@@ -258,34 +265,43 @@ export default function Calendar({
           </div>
         ))}
         <div
-          className={`calendar-comparison-error ${modelError != null && baselineError != null && modelError > baselineError ? "is-worse" : ""}`}
+          className={`calendar-comparison-error ${estimateGap != null && modisGap != null && estimateGap > modisGap ? "is-worse" : ""}`}
         >
-          <span>ERROR VS OBSERVED VIIRS</span>
-          {baselineError != null && modelError != null ? (
-            <>
+          <span>GAP TO OBSERVED VIIRS</span>
+          {selected?.viirs != null ? (
+            <dl className="calendar-gap-values">
               <div>
-                <b>{number(baselineError)}</b>
-                <ArrowRight size={17} />
-                <b>{number(modelError)}</b>
+                <dt>Original MODIS</dt>
+                <dd>
+                  {modisDifference == null
+                    ? "Unavailable"
+                    : describeGap(modisDifference)}
+                </dd>
               </div>
-              <strong>{errorChange(baselineError, modelError)}</strong>
-            </>
+              <div>
+                <dt>Model estimate</dt>
+                <dd>
+                  {estimateDifference == null
+                    ? !calibration && !failed
+                      ? "Loading…"
+                      : "Unavailable"
+                    : describeGap(estimateDifference)}
+                </dd>
+              </div>
+            </dl>
           ) : (
-            <strong>
-              {failed
-                ? "Estimates unavailable"
-                : !calibration
-                  ? "Loading estimates…"
-                  : "No VIIRS comparison"}
-            </strong>
+            <strong>No VIIRS count for this month</strong>
           )}
-          <small>
-            {selected?.evaluation === "withheld-year"
-              ? "This year excluded from training"
-              : selected?.estimate != null
-                ? "Historical estimate"
-                : ""}
-          </small>
+          {modisGap != null && estimateGap != null && (
+            <strong>{gapChange(modisGap, estimateGap)} this month</strong>
+          )}
+          {selected?.estimate != null && (
+            <small>
+              {selected.evaluation === "withheld-year"
+                ? `The model was trained without ${year} data.`
+                : "Historical estimate from the full archive fit."}
+            </small>
+          )}
         </div>
       </section>
       {seasonView ? (
@@ -371,11 +387,8 @@ export default function Calendar({
                   </span>
                 ))}
               </div>
-              <span
-                className="calendar-scale-note"
-                title="Flame height uses one logarithmic scale across the selected year. Exact monthly counts appear below each flame."
-              >
-                Shared flame scale <Info size={13} />
+              <span className="calendar-scale-note">
+                Flame area is proportional to count within {year}
               </span>
             </div>
             <div
@@ -462,13 +475,12 @@ export default function Calendar({
         </span>
         {score ? (
           <span className="calendar-average-error">
-            {score.n} withheld months · average error{" "}
+            Average gap to VIIRS over {score.n} test months
             <strong>
-              {number(score.baselineMae)} <ArrowRight size={13} />{" "}
-              {number(score.mae)}
+              MODIS {number(score.baselineMae)} · Estimate {number(score.mae)}
             </strong>
             <b className={score.mae > score.baselineMae ? "is-worse" : ""}>
-              {errorChange(score.baselineMae, score.mae)}
+              {gapChange(score.baselineMae, score.mae)}
             </b>
           </span>
         ) : (
