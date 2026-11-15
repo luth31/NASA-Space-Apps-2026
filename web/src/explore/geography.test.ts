@@ -6,6 +6,7 @@ import {
   countryBounds,
   inBounds,
   localWindow,
+  observationsInScope,
   sectors,
 } from "./geography";
 import type { Country } from "./geography";
@@ -51,6 +52,38 @@ describe("atlas geographic invariants", () => {
     }
     expect(localWindow(179, 0)).toEqual([168, -5, 180, 5]);
     expect(localWindow(-179, 0)).toEqual([-180, -5, -168, 5]);
+  });
+  it("updates day/night-filtered sector records without losing the country or source-window boundary", () => {
+    const country: Country = {
+      type: "Feature",
+      properties: { NAME_EN: "triangle", CONTINENT: "test", ISO_A3: "T" },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [0, 0],
+            [1, 0],
+            [0, 1],
+            [0, 0],
+          ],
+        ],
+      },
+    };
+    const rows = [
+      { ...o(0.3, 0.2, "day"), daynight: "D" },
+      { ...o(0.4, 0.2, "night"), daynight: "N" },
+      { ...o(0.8, 0.8, "outside-country"), daynight: "D" },
+      { ...o(0.1, 0.2, "outside-source-window"), daynight: "D" },
+      { ...o(1.2, 0.2, "outside-sector"), daynight: "D" },
+    ];
+    const scope = (input: Observation[]) =>
+      observationsInScope(input, [0, 0, 1, 1], country, [0.2, 0, 1, 1]).map(
+        (r) => r.id,
+      );
+    expect(scope(rows)).toEqual(["day", "night"]);
+    expect(scope(rows.filter((r) => r.daynight === "D"))).toEqual(["day"]);
+    expect(scope(rows.filter((r) => r.daynight === "N"))).toEqual(["night"]);
+    expect(scope(rows)).toEqual(["day", "night"]);
   });
   it("calculates spherical rectangular area and latitude contraction", () => {
     expect(areaKm2([-180, -90, 180, 90])).toBeCloseTo(510065880.973, 0);

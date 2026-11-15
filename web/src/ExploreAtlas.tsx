@@ -22,6 +22,7 @@ import {
   countryBounds,
   inBounds,
   localWindow,
+  observationsInScope,
   sectors,
   WORLD,
 } from "./explore/geography";
@@ -45,6 +46,7 @@ interface Place {
   kind: "world" | "continent" | "country" | "sector";
   country?: Country;
   sector?: Sector;
+  sourceBounds?: Bounds;
 }
 export default function ExploreAtlas({
   observations,
@@ -153,13 +155,13 @@ export default function ExploreAtlas({
     setHover(null);
   }, [current]);
   const rows = useMemo(() => {
-    if (current?.kind === "sector" && current.sector)
-      return current.sector.rows;
     if (!current || current.kind === "world") return observations;
-    const candidates = observations.filter((o) => inBounds(o, bounds));
-    return current.country
-      ? candidates.filter((o) => contains(current.country!, o.lon, o.lat))
-      : candidates;
+    return observationsInScope(
+      observations,
+      bounds,
+      current.country,
+      current.sourceBounds,
+    );
   }, [observations, current, bounds]);
   const binSize =
     current?.kind === "country" ? 0.5 : current?.kind === "continent" ? 2 : 5;
@@ -177,6 +179,7 @@ export default function ExploreAtlas({
         kind: "sector",
         sector,
         country: p.at(-1)?.country,
+        sourceBounds: p.at(-1)?.bounds,
       },
     ]);
     setPage(0);

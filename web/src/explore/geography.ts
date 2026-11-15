@@ -77,6 +77,20 @@ export function contains(country: Country, lon: number, lat: number) {
       inRing(lon, lat, p[0]) && !p.slice(1).some((r) => inRing(lon, lat, r)),
   );
 }
+/** Reapply current sensor/day-night rows without widening the selected source scope. */
+export function observationsInScope(
+  rows: Observation[],
+  bounds: Bounds,
+  country?: Country,
+  sourceBounds?: Bounds,
+) {
+  return rows.filter(
+    (o) =>
+      inBounds(o, bounds) &&
+      (!sourceBounds || inBounds(o, sourceBounds)) &&
+      (!country || contains(country, o.lon, o.lat)),
+  );
+}
 /** A spherical rectangle area, not a map-projection area. */
 export function areaKm2(b: Bounds) {
   return (
