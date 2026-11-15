@@ -127,6 +127,7 @@ function alpha(
 
 export default function ContinuousMap(props: Props) {
   const host = useRef<HTMLDivElement>(null);
+  const casePicker = useRef<HTMLElement>(null);
   const mapRef = useRef<Map | null>(null);
   const baseZoom = useRef(2.2);
   const latest = useRef(props);
@@ -254,6 +255,22 @@ export default function ContinuousMap(props: Props) {
     let lastTime = 0;
     let speed = 0;
     let lastContext = "";
+    let highlighted: { source: string; id: string | number } | null = null;
+    const canvas = map.getCanvas();
+    function clearHighlight() {
+      if (highlighted) {
+        map.setFeatureState(highlighted, { hover: false });
+        highlighted = null;
+      }
+    }
+    function clearMapHover() {
+      clearHighlight();
+      setHover(null);
+      canvas.style.cursor = "";
+    }
+    function clearHoverOnControls(event: Event) {
+      if (event.target !== canvas) clearMapHover();
+    }
     const emitContext = (area: Area | null) => {
       const key = `${currentDepth}:${area?.id ?? ""}`;
       if (key !== lastContext) {
@@ -327,11 +344,12 @@ export default function ContinuousMap(props: Props) {
     }
     function leave() {
       pointerInside = false;
-      setHover(null);
-      clearHighlight();
+      clearMapHover();
     }
     el.addEventListener("mouseenter", enter);
     el.addEventListener("mouseleave", leave);
+    el.addEventListener("pointerover", clearHoverOnControls, true);
+    el.addEventListener("focusin", clearHoverOnControls);
     function spin(now: number) {
       frame = requestAnimationFrame(spin);
       const dt = Math.min(0.05, (now - (lastTime || now)) / 1000);
@@ -354,7 +372,7 @@ export default function ContinuousMap(props: Props) {
     }
     frame = requestAnimationFrame(spin);
     map.on("movestart", (event) => {
-      if (!spinning) setHover(null);
+      if (!spinning) clearMapHover();
       if (event.originalEvent) latest.current.onInteract();
     });
     // Buttons and wheel are user input too; rotation should not fight a zoom.
@@ -589,13 +607,6 @@ export default function ContinuousMap(props: Props) {
       move();
       settle();
     });
-    let highlighted: { source: string; id: string | number } | null = null;
-    function clearHighlight() {
-      if (highlighted) {
-        map.setFeatureState(highlighted, { hover: false });
-        highlighted = null;
-      }
-    }
     function hitArea(point: { x: number; y: number }) {
       const source =
         currentDepth === "globe" || currentDepth === "continents"
@@ -628,6 +639,8 @@ export default function ContinuousMap(props: Props) {
     let lastHover = 0;
     map.on("mousemove", (e) => {
       if (
+        e.originalEvent.target !== canvas ||
+        casePicker.current ||
         !map.getLayer("points") ||
         map.isMoving() ||
         performance.now() - lastHover < 35
@@ -644,7 +657,7 @@ export default function ContinuousMap(props: Props) {
         setHover(
           hit?.area ? { area: hit.area, x: e.point.x, y: e.point.y } : null,
         );
-        map.getCanvas().style.cursor = hit?.area ? "pointer" : "grab";
+        canvas.style.cursor = hit?.area ? "pointer" : "grab";
       } else {
         const f = hitPoint(e.point);
         clearHighlight();
@@ -658,11 +671,15 @@ export default function ContinuousMap(props: Props) {
               }
             : null,
         );
-        map.getCanvas().style.cursor = f ? "pointer" : "grab";
+        canvas.style.cursor = f ? "pointer" : "grab";
       }
     });
     map.on("click", (e) => {
-      if (!map.getLayer("points")) return;
+      if (e.originalEvent.target !== canvas || !map.getLayer("points")) return;
+      if (casePicker.current) {
+        setCaseChoices([]);
+        return;
+      }
       latest.current.onInteract();
       if (currentDepth !== "points") {
         const hit = hitArea(e.point);
@@ -686,6 +703,8 @@ export default function ContinuousMap(props: Props) {
       resize.disconnect();
       el.removeEventListener("mouseenter", enter);
       el.removeEventListener("mouseleave", leave);
+      el.removeEventListener("pointerover", clearHoverOnControls, true);
+      el.removeEventListener("focusin", clearHoverOnControls);
       el.removeEventListener("pointerdown", stopOnInput);
       el.removeEventListener("wheel", stopOnInput);
       map.remove();
@@ -790,6 +809,7 @@ export default function ContinuousMap(props: Props) {
         button.addEventListener("pointerdown", (e) => e.stopPropagation());
         button.addEventListener("click", (e) => {
           e.stopPropagation();
+          setHover(null);
           latest.current.onInteract();
           if (studies.length === 1) latest.current.onCase(study);
           else setCaseChoices(studies);
@@ -883,6 +903,7 @@ export default function ContinuousMap(props: Props) {
     <div className="mission-map" ref={host}>
       {caseChoices.length > 0 && (
         <section
+          ref={casePicker}
           className="living-case-picker"
           aria-label="Historical case studies"
           onPointerDown={(event) => event.stopPropagation()}

@@ -43,6 +43,27 @@ const CORE =
   "M12 14c1 4-4 5-4 8 0 2 2 4 4 4 4 0 6-3 4-6 0 2-1 2-1 2 1-3-2-6-3-8Z";
 const MAX_ZOOM = 64;
 
+type SceneCamera = { zoom: number; pan: { x: number; y: number } };
+
+function zoomAround(
+  camera: SceneCamera,
+  factor: number,
+  anchorX = 0,
+  anchorY = 0,
+): SceneCamera {
+  const zoom = Math.max(1, Math.min(MAX_ZOOM, camera.zoom * factor));
+  if (zoom === camera.zoom) return camera;
+  const ratio = zoom / camera.zoom;
+  // Anchor coordinates are relative to the center of the SVG viewport.
+  return {
+    zoom,
+    pan: {
+      x: anchorX + (camera.pan.x - anchorX) * ratio,
+      y: anchorY + (camera.pan.y - anchorY) * ratio,
+    },
+  };
+}
+
 export default function RegionalMap({
   study,
   observations,
@@ -52,8 +73,10 @@ export default function RegionalMap({
   reset,
 }: Props) {
   const [countries, setCountries] = useState<Area[]>([]);
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [{ zoom, pan }, setCamera] = useState<SceneCamera>({
+    zoom: 1,
+    pan: { x: 0, y: 0 },
+  });
   const [mesh, setMesh] = useState(true);
   const [size, setSize] = useState({ width: 1000, height: 500 });
   const [hover, setHover] = useState<{
@@ -63,6 +86,7 @@ export default function RegionalMap({
     count: number;
   } | null>(null);
   const host = useRef<HTMLDivElement>(null);
+  const svg = useRef<SVGSVGElement>(null);
   const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(
     null,
   );
@@ -90,8 +114,10 @@ export default function RegionalMap({
   };
   const centerOn = (point: Point, nextZoom: number) => {
     const p = xy(...point);
-    setZoom(nextZoom);
-    setPan({ x: (500 - p[0]) * nextZoom, y: (h / 2 - p[1]) * nextZoom });
+    setCamera({
+      zoom: nextZoom,
+      pan: { x: (500 - p[0]) * nextZoom, y: (h / 2 - p[1]) * nextZoom },
+    });
   };
   const fitCase = () => {
     const [west, south, east, north] = study.bbox;
@@ -126,6 +152,31 @@ export default function RegionalMap({
     observer.observe(host.current);
     return () => observer.disconnect();
   }, []);
+  useEffect(() => {
+    const element = svg.current;
+    if (!element) return;
+    function onWheel(event: WheelEvent) {
+      // Read deltaMode first because browsers may normalize deltaY on access.
+      const mode = event.deltaMode;
+      if (event.deltaY === 0 || drag.current) return;
+      const bounds = element!.getBoundingClientRect();
+      const viewScale = Math.max(bounds.width / 1000, bounds.height / h);
+      if (!viewScale) return;
+      event.preventDefault();
+      setHover(null);
+      const unit = mode === 1 ? 16 : mode === 2 ? bounds.height : 1;
+      const delta = Math.max(-240, Math.min(240, event.deltaY * unit));
+      const anchorX =
+        (event.clientX - bounds.left - bounds.width / 2) / viewScale;
+      const anchorY =
+        (event.clientY - bounds.top - bounds.height / 2) / viewScale;
+      setCamera((camera) =>
+        zoomAround(camera, Math.exp(-delta * 0.00115), anchorX, anchorY),
+      );
+    }
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  }, [h]);
   useEffect(() => {
     focused.current = false;
   }, [study.id, reset]);
@@ -351,6 +402,7 @@ export default function RegionalMap({
       ref={host}
     >
       <motion.svg
+        ref={svg}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: reduced ? 0 : 0.45 }}
@@ -358,15 +410,6 @@ export default function RegionalMap({
         preserveAspectRatio="xMidYMid slice"
         role="img"
         aria-label={`NASA scene of ${study.name}; ${observations.length} detections from ${periodLabel}. Coral flames represent MODIS, red flames VIIRS. Nominal resolution grids are illustrations. Use the readings list to select records with the keyboard.`}
-        onWheel={(event) => {
-          setHover(null);
-          setZoom((value) =>
-            Math.min(
-              MAX_ZOOM,
-              Math.max(1, value * (event.deltaY < 0 ? 1.12 : 0.89)),
-            ),
-          );
-        }}
         onPointerDown={(event) => {
           drag.current = {
             x: event.clientX,
@@ -382,7 +425,8 @@ export default function RegionalMap({
           const dx = (event.clientX - drag.current.x) / scale;
           const dy = (event.clientY - drag.current.y) / scale;
           if (Math.abs(dx) + Math.abs(dy) > 3) moved.current = true;
-          setPan({ x: drag.current.px + dx, y: drag.current.py + dy });
+          const nextPan = { x: drag.current.px + dx, y: drag.current.py + dy };
+          setCamera((camera) => ({ ...camera, pan: nextPan }));
         }}
         onPointerUp={() => {
           drag.current = null;
@@ -531,13 +575,13 @@ export default function RegionalMap({
       <div className="map-tool-stack">
         <button
           aria-label="Zoom in"
-          onClick={() => setZoom((value) => Math.min(MAX_ZOOM, value * 1.4))}
+          onClick={() => setCamera((camera) => zoomAround(camera, 1.4))}
         >
           <Plus size={17} />
         </button>
         <button
           aria-label="Zoom out"
-          onClick={() => setZoom((value) => Math.max(1, value / 1.4))}
+          onClick={() => setCamera((camera) => zoomAround(camera, 1 / 1.4))}
         >
           <Minus size={17} />
         </button>
