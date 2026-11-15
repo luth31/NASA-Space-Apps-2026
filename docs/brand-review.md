@@ -58,3 +58,9 @@ SVG wordmarks use editable text with system fallback fonts. For distribution on 
 Structural checks verify every SVG parses, all referenced preview files exist, no external image/font requests are embedded, and viewBoxes/dimensions are present. Visual QA results must be recorded after rendered inspection; structural checks alone do not prove small-size legibility or layout fit.
 
 All marks are original vector concepts created with Codex assistance for this project. They contain no NASA insignia or copied reference artwork. NASA and third-party data/imagery attribution remains separate from identity artwork.
+
+### Rendered vector QA, 15 November 2026
+
+The bundled Sharp renderer produced all six header variants and six pitch-cover variants, plus 16px favicon rasters enlarged with nearest-neighbor sampling for inspection. All three light wordmarks, all six headers and the three dark covers were visually inspected. The first Ashkey render exposed an overlapping path that cancelled the seed silhouette; the editable source was corrected and re-rendered before delivery. The three directions now have distinct silhouettes and readable wordmarks. At 16px the simplified symbols retain the key aperture, ember cut and V; fine detail is intentionally removed. Header navigation fits without overlapping the name.
+
+Calculated foreground/background contrast: Ashkey light text13.38:1/accent6.20:1, dark text15.22:1/accent8.75:1; Brasa12.30/5.56 and13.71/8.50; Vestige11.64/5.99 and14.09/9.61. This checks the chosen text/accent colors, not every app control or a complete accessibility audit. Actual comparison-page browser review is owned by the lead; this workstream did not control the desktop while UI QA was in progress.
