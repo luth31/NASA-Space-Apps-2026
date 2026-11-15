@@ -4137,6 +4137,76 @@ select {
   max-height: 850px;
   overflow-y: auto;
 }
+.orbital-entry .global .map-space {
+  height: clamp(560px, calc(100dvh - 220px), 800px);
+  overflow: hidden;
+  background: radial-gradient(
+    ellipse at 65% 50%,
+    #253b37,
+    #121c19 50%,
+    #0f1614 80%
+  );
+}
+.orbital-entry .global-intro {
+  top: 52px;
+  max-width: 410px;
+}
+.orbital-entry .globe-wrap {
+  inset: -10px -25px -20px 23%;
+}
+.open-contour-atlas {
+  pointer-events: auto;
+  margin-top: 42px;
+  gap: 20px;
+  padding: 15px 22px;
+  font-size: 13px;
+}
+.orbital-entry .global-metric {
+  margin-top: 28px;
+}
+.orbital-entry .globe-instructions {
+  left: 32px;
+}
+@media (max-width: 760px) {
+  .orbital-entry .global .map-space {
+    height: 780px;
+  }
+  .orbital-entry .global-intro {
+    top: 25px;
+    left: 22px;
+    max-width: calc(100% - 44px);
+  }
+  .orbital-entry .global-intro h1 {
+    font-size: 29px;
+    margin-top: 12px;
+  }
+  .orbital-entry .global-intro > p {
+    display: none;
+  }
+  .orbital-entry .global-metric {
+    margin-top: 18px;
+  }
+  .orbital-entry .global-metric > span {
+    font-size: 31px;
+  }
+  .orbital-entry .global-source {
+    display: none;
+  }
+  .orbital-entry .open-contour-atlas {
+    margin-top: 18px;
+  }
+  .orbital-entry .globe-wrap {
+    inset: 285px -50px 35px -50px;
+  }
+  .orbital-entry .globe-callout {
+    display: none;
+  }
+  .orbital-entry .globe-instructions {
+    left: 22px;
+    bottom: 18px;
+    font-size: 7px;
+  }
+}
 @media (max-width: 760px) {
   .atlas-scene-intro {
     padding: 18px;

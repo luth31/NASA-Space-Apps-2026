@@ -4,9 +4,9 @@ export const sectionPurpose: Record<View, string> = {
   explore:
     "Find a place, unfold its geography, and inspect the original satellite detections.",
   report:
-    "Discover concentration, recurring timing, and differences between sensors.",
+    "Compare years and places, discover recurring patterns, and investigate dated source context.",
   calendar:
-    "Compare the available monthly source records and see where harmonization is withheld.",
+    "Explore the shape of a fire season and follow a month through the years.",
   methods:
     "Inspect the working method, measured feasibility evidence, and next validation gate.",
   sources: "Trace each observation, image, and scientific claim to its source.",

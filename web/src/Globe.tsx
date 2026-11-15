@@ -18,6 +18,8 @@ interface Props {
   destination?: [number, number];
   zoom: number;
   reset: number;
+  paused?: boolean;
+  onAtlas?: () => void;
 }
 export default function Globe({
   observations,
@@ -27,6 +29,8 @@ export default function Globe({
   destination,
   zoom,
   reset,
+  paused = false,
+  onAtlas,
 }: Props) {
   const [hover, setHover] = useState<{
     x: number;
@@ -36,12 +40,32 @@ export default function Globe({
   } | null>(null);
   const host = useRef<HTMLDivElement>(null);
   const marker = useRef<HTMLButtonElement>(null);
-  const latest = useRef({ onSelect, onCase, focus, destination, zoom, reset });
-  latest.current = { onSelect, onCase, focus, destination, zoom, reset };
+  const latest = useRef({
+    onSelect,
+    onCase,
+    focus,
+    destination,
+    zoom,
+    reset,
+    paused,
+    onAtlas,
+  });
+  const wakeRef = useRef<() => void>(() => {});
+  latest.current = {
+    onSelect,
+    onCase,
+    focus,
+    destination,
+    zoom,
+    reset,
+    paused,
+    onAtlas,
+  };
   const reduced = useReducedMotion();
   useEffect(() => {
     if (!host.current) return;
     const el = host.current;
+    let disposed = false;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(37, 1, 0.1, 100);
     camera.position.copy(location(24, 19, 3.5));
@@ -73,10 +97,11 @@ export default function Globe({
     controls.maxDistance = 5;
     controls.rotateSpeed = 0.45;
     controls.zoomSpeed = 0.7;
-    controls.autoRotate = !reduced;
+    controls.autoRotate = !reduced && !latest.current.paused;
     controls.autoRotateSpeed = 0.14;
     const texture = new THREE.TextureLoader().load(
       "/assets/earth-blue-marble.jpg",
+      () => wake(),
     );
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -225,6 +250,7 @@ export default function Globe({
     function pointerDown(e: PointerEvent) {
       down = { x: e.clientX, y: e.clientY };
       controls.autoRotate = false;
+      wake();
     }
     function pick(e: PointerEvent) {
       const rect = el.getBoundingClientRect();
@@ -250,7 +276,10 @@ export default function Globe({
     function pointerUp(e: PointerEvent) {
       if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
       const hit = pick(e);
-      if (hit) latest.current.onSelect(hit.o);
+      if (hit) {
+        if (latest.current.onAtlas) latest.current.onAtlas();
+        else latest.current.onSelect(hit.o);
+      }
     }
     let hoverTime = 0;
     function pointerMove(e: PointerEvent) {
@@ -289,9 +318,13 @@ export default function Globe({
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
+      wake();
     });
     resize.observe(el);
     let frame = 0;
+    let inViewport = true;
+    let lastPaused = latest.current.paused;
+    let atlasEntered = false;
     let lastFocus = "";
     let lastZoom = zoom;
     let lastReset = reset;
@@ -303,7 +336,12 @@ export default function Globe({
       time: number;
     } | null = null;
     function animate() {
-      frame = requestAnimationFrame(animate);
+      frame = 0;
+      if (!inViewport || document.hidden) return;
+      if (lastPaused !== latest.current.paused) {
+        lastPaused = latest.current.paused;
+        controls.autoRotate = !lastPaused && !reduced;
+      }
       const f = latest.current.focus;
       const dest = latest.current.destination;
       if (dest && dest.join(",") !== flightKey) {
@@ -372,13 +410,22 @@ export default function Globe({
       if (lastReset !== latest.current.reset) {
         target = location(24, 19, 3.5);
         lastReset = latest.current.reset;
-        controls.autoRotate = !reduced;
+        controls.autoRotate = !reduced && !latest.current.paused;
       }
       if (target) {
         camera.position.lerp(target, reduced ? 1 : 0.065);
         if (camera.position.distanceTo(target) < 0.005) target = null;
       }
-      if (!dest) controls.update();
+      const moving = !dest && controls.update();
+      if (
+        !dest &&
+        !atlasEntered &&
+        latest.current.onAtlas &&
+        camera.position.length() < 2.84
+      ) {
+        atlasEntered = true;
+        latest.current.onAtlas();
+      }
       points.visible = camera.position.length() <= 2.6;
       clusterPoints.visible = !points.visible;
       const pos = location(26.05, 41.025, 1.03);
@@ -392,10 +439,37 @@ export default function Globe({
         marker.current.style.pointerEvents = visible ? "auto" : "none";
       }
       renderer.render(scene, camera);
+      if (controls.autoRotate || target || flight || moving) wake();
     }
-    animate();
+    function wake() {
+      if (!disposed && !frame && inViewport && !document.hidden)
+        frame = requestAnimationFrame(animate);
+    }
+    wakeRef.current = wake;
+    const visibility = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      } else wake();
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      inViewport = entry.isIntersecting;
+      if (!inViewport) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      } else wake();
+    });
+    observer.observe(el);
+    document.addEventListener("visibilitychange", visibility);
+    controls.addEventListener("change", wake);
+    wake();
     return () => {
+      disposed = true;
       cancelAnimationFrame(frame);
+      wakeRef.current = () => {};
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", visibility);
+      controls.removeEventListener("change", wake);
       resize.disconnect();
       controls.dispose();
       renderer.domElement.removeEventListener("pointerdown", pointerDown);
@@ -416,6 +490,7 @@ export default function Globe({
       el.removeChild(renderer.domElement);
     };
   }, [observations, reduced]);
+  useEffect(() => wakeRef.current(), [focus, destination, zoom, reset, paused]);
   return (
     <div className="globe-wrap">
       <div className="globe-canvas" ref={host}>

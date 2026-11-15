@@ -96,6 +96,10 @@ export default function App() {
   const [coverage, setCoverage] = useState<CoverageReport | null>(null);
   const legacyExplore =
     new URLSearchParams(location.search).get("explore") === "legacy";
+  const [atlasOpen, setAtlasOpen] = useState(
+    new URLSearchParams(location.search).get("atlas") === "1",
+  );
+  const [globePaused, setGlobePaused] = useState(false);
   const [browseGlobal, setBrowseGlobal] = useState(false);
   const initialRoute = useRef(readRoute(location.search));
   const [reportContext, setReportContext] = useState<
@@ -152,6 +156,8 @@ export default function App() {
     if (!manifest) return;
     const url = new URL(location.href);
     url.searchParams.set("tab", view);
+    if (atlasOpen && !legacyExplore) url.searchParams.set("atlas", "1");
+    else url.searchParams.delete("atlas");
     if (view !== "report") url.searchParams.delete("concept");
     const context =
       view === "report"
@@ -167,7 +173,16 @@ export default function App() {
       ["case", "month", "sensor"].forEach((k) => url.searchParams.delete(k));
     history.replaceState(null, "", url);
     document.title = `${brand.name} — ${view === "methods" ? "The science" : view[0].toUpperCase() + view.slice(1)}`;
-  }, [view, manifest, study, month, sensor, reportContext]);
+  }, [
+    view,
+    manifest,
+    study,
+    month,
+    sensor,
+    reportContext,
+    atlasOpen,
+    legacyExplore,
+  ]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -394,7 +409,12 @@ export default function App() {
   }
   function openCase(c: CaseStudy) {
     cancelFlight();
-    if (legacyExplore && !study && view === "explore" && !reduced) {
+    if (
+      (legacyExplore || !atlasOpen) &&
+      !study &&
+      view === "explore" &&
+      !reduced
+    ) {
       setSelected(null);
       setDestination(c);
       loadObservations(
@@ -412,6 +432,7 @@ export default function App() {
     window.scrollTo(0, 0);
     cancelFlight();
     setStudy(null);
+    setAtlasOpen(false);
     setSelected(null);
     setBrowseGlobal(false);
     setView("explore");
@@ -702,7 +723,9 @@ export default function App() {
           </div>
         </header>
         {view === "explore" && (
-          <div className={`explore-view ${!legacyExplore ? "atlas-mode" : ""}`}>
+          <div
+            className={`explore-view ${!legacyExplore ? "atlas-mode" : ""} ${!study && !atlasOpen && !legacyExplore ? "orbital-entry" : ""}`}
+          >
             <div className="explore-toolbar">
               <div className="breadcrumbs">
                 <button onClick={toGlobal}>
@@ -786,12 +809,12 @@ export default function App() {
                 </div>
               )}
             </div>
-            {!study && !legacyExplore && (
+            {!study && !legacyExplore && atlasOpen && (
               <div className="atlas-scene-intro">
                 <div>
                   <span className="eyebrow">NASA FIRE OBSERVATIONS</span>
                   <h1>
-                    Read the Earth. <em>Unfold the record.</em>
+                    Follow the shapes. <em>Find the activity.</em>
                   </h1>
                 </div>
                 <div className="atlas-snapshot-summary">
@@ -840,7 +863,7 @@ export default function App() {
                   />
                 ) : (
                   <>
-                    {legacyExplore && (
+                    {(legacyExplore || !atlasOpen) && (
                       <div
                         className={`global-intro ${destination ? "departing" : ""}`}
                       >
@@ -879,6 +902,18 @@ export default function App() {
                           <i className="dot fire" />
                           NOAA-20 VIIRS <span>375 m at nadir</span>
                         </div>
+                        {!legacyExplore && (
+                          <button
+                            className="primary-button open-contour-atlas"
+                            onClick={() => {
+                              setSelected(null);
+                              setBrowseGlobal(false);
+                              setAtlasOpen(true);
+                            }}
+                          >
+                            Explore by place <ArrowRight size={17} />
+                          </button>
+                        )}
                       </div>
                     )}
                     <Suspense
@@ -889,7 +924,7 @@ export default function App() {
                         </div>
                       }
                     >
-                      {legacyExplore ? (
+                      {legacyExplore || !atlasOpen ? (
                         <Globe
                           observations={observations}
                           onSelect={selectObservation}
@@ -898,6 +933,16 @@ export default function App() {
                           destination={destination?.center}
                           zoom={zoom}
                           reset={reset}
+                          paused={globePaused}
+                          onAtlas={
+                            legacyExplore
+                              ? undefined
+                              : () => {
+                                  setSelected(null);
+                                  setBrowseGlobal(false);
+                                  setAtlasOpen(true);
+                                }
+                          }
                         />
                       ) : (
                         <ExploreAtlas
@@ -910,10 +955,16 @@ export default function App() {
                           focus={selected}
                           zoom={zoom}
                           reset={reset}
+                          onBackToGlobe={() => {
+                            setAtlasOpen(false);
+                            setSelected(null);
+                            setBrowseGlobal(false);
+                            setReset((v) => v + 1);
+                          }}
                         />
                       )}
                     </Suspense>
-                    {legacyExplore && (
+                    {(legacyExplore || !atlasOpen) && (
                       <>
                         <div className="globe-map-tools">
                           <button
@@ -939,6 +990,22 @@ export default function App() {
                             }}
                           >
                             <LocateFixed size={17} />
+                          </button>
+                          <button
+                            className="icon-button"
+                            aria-label={
+                              globePaused
+                                ? "Resume globe motion"
+                                : "Pause globe motion"
+                            }
+                            aria-pressed={globePaused}
+                            onClick={() => setGlobePaused((v) => !v)}
+                          >
+                            {globePaused ? (
+                              <Play size={16} />
+                            ) : (
+                              <Pause size={16} />
+                            )}
                           </button>
                         </div>
                         <div className="globe-instructions mono">
