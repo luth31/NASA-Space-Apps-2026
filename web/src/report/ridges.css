@@ -1,0 +1,266 @@
+.season-ridges {
+  min-width: 0;
+  width: 100%;
+  padding-top: 18px;
+}
+.sr-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px;
+}
+.sr-eyebrow {
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 1.8px;
+  color: #9fb6a1;
+}
+.sr-intro h2 {
+  margin: 10px 0 6px;
+  font:
+    400 clamp(26px, 3vw, 42px) Georgia,
+    serif;
+  letter-spacing: -1px;
+  color: #e8e5d4;
+}
+.sr-intro p {
+  margin: 0;
+  color: #aab5a2;
+  font-size: 12px;
+}
+.sr-scale {
+  display: flex;
+  padding: 4px;
+  gap: 3px;
+  border: 1px solid #9bb49e30;
+  border-radius: 30px;
+  flex-shrink: 0;
+}
+.sr-scale button {
+  padding: 9px 14px;
+  border-radius: 30px;
+  font-size: 10px;
+  color: #a5b7a4;
+}
+.sr-scale button[aria-pressed="true"] {
+  background: #cad5b6;
+  color: #17281e;
+}
+.sr-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 23px 0 12px;
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+  color: #91a58e;
+}
+.sr-legend i {
+  display: inline-block;
+  width: 20px;
+  height: 2px;
+  margin-right: 7px;
+  background: #e7bf83;
+  vertical-align: middle;
+}
+.sr-scroll {
+  overflow-x: auto;
+  scrollbar-color: #71836a #17221b;
+  background: radial-gradient(ellipse at 50% 60%, #263a2e60, transparent 73%);
+  border-bottom: 1px solid #b8c9a52c;
+}
+.sr-landscape {
+  display: block;
+  width: 100%;
+  min-width: 660px;
+  outline: none;
+}
+.sr-landscape:focus-visible {
+  outline: 1px solid #e9c28d;
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+.sr-landscape text {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  fill: #99ae96;
+}
+.sr-month {
+  cursor: pointer;
+}
+.sr-month.is-active text {
+  fill: #ffe1aa;
+}
+.sr-year .sr-year-label {
+  font-size: 12px;
+  fill: #a6bda3;
+}
+.sr-year.is-selected .sr-year-label {
+  fill: #ffe1aa;
+  font-weight: 600;
+}
+.sr-year .sr-year-total {
+  font-size: 10px;
+}
+.sr-year.is-selected .sr-year-total {
+  fill: #ecd1a5;
+}
+.sr-hit {
+  cursor: crosshair;
+}
+.sr-readout {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr auto;
+  align-items: center;
+  gap: 26px;
+  padding: 24px 0;
+}
+.sr-date > span {
+  display: block;
+  font:
+    8px "IBM Plex Mono",
+    monospace;
+  letter-spacing: 1.4px;
+  color: #aabda2;
+  margin-bottom: 10px;
+}
+.sr-date > div {
+  display: flex;
+  gap: 8px;
+}
+.sr-date select {
+  max-width: 100%;
+  background: #1a2a20;
+  border: 1px solid #66816a;
+  border-radius: 5px;
+  padding: 8px 20px 8px 8px;
+  font-size: 15px;
+  color: #eee4cb;
+}
+.sr-reading {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 5px 10px;
+}
+.sr-reading strong {
+  font:
+    400 34px Georgia,
+    serif;
+  color: #f1d3a2;
+}
+.sr-reading > span {
+  font-size: 11px;
+  color: #aabb9f;
+}
+.sr-reading small {
+  grid-column: 1/-1;
+  color: #aabb9f;
+  font-size: 10px;
+}
+.sr-open {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid #e8c28a;
+  padding: 12px 0;
+  color: #edd0a1;
+  font-size: 12px;
+}
+.sr-open:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.sr-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #8f9e86;
+  font-size: 9px;
+}
+.sr-footer span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fire-journey[data-pattern="rhythm"] .jy-plot {
+  min-height: 0;
+}
+@media (max-width: 760px) {
+  .sr-intro {
+    align-items: start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .sr-intro h2 {
+    font-size: 30px;
+  }
+  .sr-legend {
+    font-size: 8px;
+    line-height: 1.6;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .sr-readout {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 12px;
+  }
+  .sr-open {
+    grid-column: 1/-1;
+    justify-content: space-between;
+  }
+  .sr-reading {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sr-reading strong {
+    font-size: 31px;
+  }
+  .sr-date > div {
+    flex-wrap: wrap;
+  }
+  .sr-footer {
+    flex-direction: column;
+    line-height: 1.6;
+  }
+}
+.fire-journey.jy-discovery[data-pattern="rhythm"] > .jy-scene {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto;
+  min-height: 0;
+}
+.fire-journey.jy-discovery[data-pattern="rhythm"] .jy-plot {
+  min-width: 0;
+  height: auto;
+}
+.sr-scroll {
+  max-width: 100%;
+}
+.sr-month-short {
+  display: none;
+}
+@media (max-width: 760px) {
+  .sr-landscape {
+    min-width: 0;
+  }
+  .sr-month-full {
+    display: none;
+  }
+  .sr-month-short {
+    display: block;
+    font-size: 27px !important;
+  }
+  .sr-year .sr-year-label {
+    font-size: 28px;
+  }
+  .sr-year .sr-year-total {
+    font-size: 22px;
+  }
+  .sr-year path {
+    stroke-width: 2;
+  }
+}

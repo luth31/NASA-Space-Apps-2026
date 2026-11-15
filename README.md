@@ -10,7 +10,7 @@ Models & validation contains the interactive MODIS → estimated VIIRS → obser
 
 ## Showcase and presentation
 
-Investigations opens with a MODIS/VIIRS comparison divider over the nominal 1 km / 375 m reference meshes. Calendar has a **Seasonal wheel** switch while retaining the monthly comparison. The original sensor records and cursor-anchored zoom remain available.
+Investigations opens with a MODIS/VIIRS comparison divider over the nominal 1 km / 375 m reference meshes. Drag the double-arrow divider directly: MODIS stays on the left, VIIRS on the right. The **Report** tab imports the Fire-Mesh branch’s seasonal story, comparisons, research drawer and gallery; its study groups are Evros, Evia and Gran Chaco. Calendar has a **Seasonal wheel** switch while retaining the monthly comparison. The original sensor records and cursor-anchored zoom remain available.
 
 The [presentation package](deliverables/README.md) includes English/Romanian pitches, the demo runbook, seven-slide source, imported media and [submission copy](docs/submission-copy.md). Imported binary media are marked legacy. Recompute the verified August and October findings with `python3 deliverables/scripts/verify-claims.py`. See the [integration record](docs/showcase-integration.md).
 

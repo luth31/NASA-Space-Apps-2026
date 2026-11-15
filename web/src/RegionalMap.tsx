@@ -563,30 +563,69 @@ export default function RegionalMap({
       {compare && (
         <>
           <div className="sensor-compare-labels" aria-hidden="true">
-            <span>MODIS · 1 km</span>
-            <span>VIIRS · 375 m</span>
+            <span style={{ visibility: split > 15 ? "visible" : "hidden" }}>
+              MODIS · 1 km
+            </span>
+            <span style={{ visibility: split < 85 ? "visible" : "hidden" }}>
+              VIIRS · 375 m
+            </span>
           </div>
-          <div
-            className="sensor-compare-line"
-            style={{ left: `${split}%` }}
-            aria-hidden="true"
-          >
-            <span>↔</span>
-          </div>
-          <label className="sensor-compare-slider">
-            <span>MODIS ← Compare → VIIRS</span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={split}
-              aria-label="MODIS and VIIRS comparison divider"
-              onChange={(event) => {
-                setSplit(Number(event.target.value));
+          <div className="sensor-compare-line" style={{ left: `${split}%` }}>
+            <button
+              className="sensor-compare-handle"
+              role="slider"
+              aria-label="Sensor divider: MODIS left, VIIRS right"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(split)}
+              aria-valuetext={`${Math.round(split)}% MODIS on the left, ${100 - Math.round(split)}% VIIRS on the right`}
+              title="Drag to compare: MODIS left, VIIRS right"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
                 setHover(null);
+                event.currentTarget.focus({ preventScroll: true });
+                event.currentTarget.setPointerCapture(event.pointerId);
               }}
-            />
-          </label>
+              onPointerMove={(event) => {
+                if (!event.currentTarget.hasPointerCapture(event.pointerId))
+                  return;
+                event.stopPropagation();
+                const bounds = host.current!.getBoundingClientRect();
+                setSplit(
+                  Math.max(
+                    0,
+                    Math.min(
+                      100,
+                      ((event.clientX - bounds.left) / bounds.width) * 100,
+                    ),
+                  ),
+                );
+              }}
+              onPointerUp={(event) => {
+                if (event.currentTarget.hasPointerCapture(event.pointerId))
+                  event.currentTarget.releasePointerCapture(event.pointerId);
+              }}
+              onKeyDown={(event) => {
+                const step = event.shiftKey ? 10 : 1;
+                const next =
+                  event.key === "ArrowLeft"
+                    ? split - step
+                    : event.key === "ArrowRight"
+                      ? split + step
+                      : event.key === "Home"
+                        ? 0
+                        : event.key === "End"
+                          ? 100
+                          : null;
+                if (next === null) return;
+                event.preventDefault();
+                setSplit(Math.max(0, Math.min(100, next)));
+              }}
+            >
+              ↔
+            </button>
+          </div>
         </>
       )}
       {insetCountry && (

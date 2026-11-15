@@ -47,7 +47,14 @@ import "./case-workspace.css";
 
 const Globe = lazy(() => import("./Globe"));
 const OrbitalAtlas = lazy(() => import("./orbital/OrbitalAtlas"));
-type View = "explore" | "calendar" | "methods" | "sources" | "investigations";
+const Report = lazy(() => import("./Report"));
+type View =
+  | "explore"
+  | "calendar"
+  | "methods"
+  | "sources"
+  | "investigations"
+  | "report";
 
 function Brand() {
   return (
@@ -81,7 +88,11 @@ export default function App() {
   const [coverage, setCoverage] = useState<CoverageReport | null>(null);
   const [browseGlobal, setBrowseGlobal] = useState(false);
   const [atlasExplore, setAtlasExplore] = useState(false);
-  const [view, setView] = useState<View>("explore"),
+  const [view, setView] = useState<View>(() =>
+      new URLSearchParams(location.search).get("tab") === "report"
+        ? "report"
+        : "explore",
+    ),
     [study, setStudy] = useState<CaseStudy | null>(null),
     [selected, setSelected] = useState<Observation | null>(null);
   const [month, setMonth] = useState("2023-08"),
@@ -103,6 +114,15 @@ export default function App() {
   const reduced = useReducedMotion();
   const [destination, setDestination] = useState<CaseStudy | null>(null);
   const flightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const url = new URL(location.href);
+    if (view === "report") url.searchParams.set("tab", "report");
+    else {
+      url.searchParams.delete("tab");
+      url.searchParams.delete("concept");
+    }
+    history.replaceState(null, "", url);
+  }, [view]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
@@ -947,6 +967,35 @@ export default function App() {
           </div>
         )}
         <AnimatePresence mode="wait">
+          {view === "report" && (
+            <Suspense
+              key="report"
+              fallback={
+                <div className="boot" role="status">
+                  Opening Report…
+                </div>
+              }
+            >
+              <Report
+                manifest={manifest}
+                onExplore={(context) => {
+                  const target = manifest.cases.find(
+                    (c) => c.id === context.caseId,
+                  );
+                  if (!target) return;
+                  commitCase(target);
+                  setMonth(context.month);
+                  setDay(null);
+                  setSensor(
+                    context.sensor && context.sensor !== "all"
+                      ? context.sensor.toUpperCase()
+                      : "all",
+                  );
+                  setCompare(!context.sensor || context.sensor === "all");
+                }}
+              />
+            </Suspense>
+          )}
           {view === "calendar" && study && (
             <Calendar
               key={"calendar" + study.id}
