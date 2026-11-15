@@ -222,9 +222,9 @@ export default function Dossier({
         </button>
       )}
       <div className="nearby-heading">
-        <h3>{o ? "Nearby observations" : "In this selection"}</h3>
+        <h3>{o ? "Other observations by distance" : "In this selection"}</h3>
         <span className="mono">
-          {number(recordStatus ? null : observations.length)}
+          {number(recordStatus ? null : candidates.length)}
         </span>
       </div>
       <div className="observation-list">

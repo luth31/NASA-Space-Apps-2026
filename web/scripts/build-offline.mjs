@@ -22,6 +22,9 @@ async function walk(directory) {
 const assets = (await walk(path.join(root, "assets"))).map(
   (file) => "/" + path.relative(root, file),
 );
+const brandAssets = (await walk(path.join(root, "brand")))
+  .filter((file) => !file.endsWith(".mjs"))
+  .map((file) => "/" + path.relative(root, file));
 const selected = manifest.cases
   .flatMap((c) => [
     `/context/${c.id}/${c.date.slice(0, 7)}.json`,
@@ -32,6 +35,7 @@ const selected = manifest.cases
 const urls = [
   "/index.html",
   "/favicon.svg",
+  "/playground.html",
   "/data/manifest.json",
   "/data/global.json",
   "/data/models.json",
@@ -40,6 +44,7 @@ const urls = [
   "/data/schema.json",
   ...selected,
   ...assets,
+  ...brandAssets,
 ];
 const hash = createHash("sha256");
 let bytes = 0;
@@ -97,11 +102,11 @@ self.addEventListener('fetch', event => {
   if (event.request.mode === 'navigate') {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE);
-      return (await cache.match('/index.html')) || fetch(event.request);
+      return (await cache.match(url.pathname)) || (await cache.match('/index.html')) || fetch(event.request);
     })());
     return;
   }
-  if (!url.pathname.startsWith('/assets/') && !url.pathname.startsWith('/data/') && url.pathname !== '/offline.json' && url.pathname !== '/favicon.svg') return;
+  if (!url.pathname.startsWith('/assets/') && !url.pathname.startsWith('/brand/') && !url.pathname.startsWith('/data/') && url.pathname !== '/offline.json' && url.pathname !== '/favicon.svg') return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const saved = await cache.match(event.request);

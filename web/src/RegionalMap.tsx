@@ -28,13 +28,14 @@ export default function RegionalMap({
   observations,
   selected,
   onSelect,
-  compare,
+  compare: requestedCompare,
   onCompare,
   period,
   reset,
   wide,
   recordStatus,
 }: Props) {
+  const compare = requestedCompare && !recordStatus;
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [split, setSplit] = useState(50);
@@ -406,6 +407,7 @@ export default function RegionalMap({
       <button
         className={`compare-button ${compare ? "selected" : ""}`}
         aria-pressed={compare}
+        disabled={!!recordStatus}
         onClick={onCompare}
       >
         <ScanLine size={15} />

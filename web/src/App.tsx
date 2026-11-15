@@ -52,6 +52,7 @@ import type { View } from "./navigation";
 import type { ReportContext } from "./Report";
 
 const Globe = lazy(() => import("./Globe"));
+const ExploreAtlas = lazy(() => import("./ExploreAtlas"));
 const Report = lazy(() => import("./Report"));
 const demoSteps = [
   "A global perspective",
@@ -92,6 +93,8 @@ export default function App() {
     [report, setReport] = useState<ModelReport | null>(null),
     [error, setError] = useState("");
   const [coverage, setCoverage] = useState<CoverageReport | null>(null);
+  const legacyExplore =
+    new URLSearchParams(location.search).get("explore") === "legacy";
   const [browseGlobal, setBrowseGlobal] = useState(false);
   const initialRoute = useRef(readRoute(location.search));
   const [reportContext, setReportContext] = useState<
@@ -343,7 +346,7 @@ export default function App() {
   }
   function openCase(c: CaseStudy) {
     cancelFlight();
-    if (!study && view === "explore" && !reduced) {
+    if (legacyExplore && !study && view === "explore" && !reduced) {
       setSelected(null);
       setDestination(c);
       loadObservations(
@@ -651,7 +654,7 @@ export default function App() {
           </div>
         </header>
         {view === "explore" && (
-          <div className="explore-view">
+          <div className={`explore-view ${!legacyExplore ? "atlas-mode" : ""}`}>
             <div className="explore-toolbar">
               <div className="breadcrumbs">
                 <button onClick={toGlobal}>
@@ -735,6 +738,28 @@ export default function App() {
                 </div>
               )}
             </div>
+            {!study && !legacyExplore && (
+              <div className="atlas-scene-intro">
+                <div>
+                  <span className="eyebrow">NASA FIRE OBSERVATIONS</span>
+                  <h1>
+                    Read the Earth. <em>Unfold the record.</em>
+                  </h1>
+                </div>
+                <div className="atlas-snapshot-summary">
+                  <strong>
+                    {integer(observations.length)} satellite detections
+                  </strong>
+                  <span>
+                    NOAA-20 VIIRS · {dateLabel(manifest.snapshotStart)} –{" "}
+                    {dateLabel(manifest.snapshotEnd)}
+                  </span>
+                  <button onClick={() => setBrowseGlobal(true)}>
+                    Browse original observations <ArrowUpRight size={12} />
+                  </button>
+                </div>
+              </div>
+            )}
             <div
               className={`exploration-stage ${study ? "regional" : "global"} ${(selected || browseGlobal) && !study ? "has-selection" : ""}`}
             >
@@ -752,51 +777,62 @@ export default function App() {
                       setSensor("all");
                     }}
                     period={day ?? month}
-                    recordStatus={loading ? "Loading observations…" : partitionError ? "Observations unavailable" : monthlyAvailability(study, month, sensor) === "missing" ? "No source record" : undefined}
+                    recordStatus={
+                      loading
+                        ? "Loading observations…"
+                        : partitionError
+                          ? "Observations unavailable"
+                          : monthlyAvailability(study, month, sensor) ===
+                              "missing"
+                            ? "No source record"
+                            : undefined
+                    }
                     reset={reset}
                     wide={wide}
                   />
                 ) : (
                   <>
-                    <div
-                      className={`global-intro ${destination ? "departing" : ""}`}
-                    >
-                      <span className="eyebrow">
-                        <span className="tiny-cross">+</span> THE FIRE
-                        OBSERVATORY
-                      </span>
-                      <h1>
-                        A changing planet.
-                        <br />
-                        <em>Every observation matters.</em>
-                      </h1>
-                      <p>
-                        Find the signal.
-                        <br />
-                        Understand the season.
-                      </p>
-                      <div className="global-metric">
-                        <span>{integer(observations.length)}</span>
-                        <div>
-                          reported hotspots
-                          <small>
-                            {dateLabel(manifest.snapshotStart, {
-                              day: "numeric",
-                              month: "short",
-                            })}{" "}
-                            —{" "}
-                            {dateLabel(manifest.snapshotEnd, {
-                              day: "numeric",
-                              month: "short",
-                            })}
-                          </small>
+                    {legacyExplore && (
+                      <div
+                        className={`global-intro ${destination ? "departing" : ""}`}
+                      >
+                        <span className="eyebrow">
+                          <span className="tiny-cross">+</span> THE FIRE
+                          OBSERVATORY
+                        </span>
+                        <h1>
+                          A changing planet.
+                          <br />
+                          <em>Every observation matters.</em>
+                        </h1>
+                        <p>
+                          Find the signal.
+                          <br />
+                          Understand the season.
+                        </p>
+                        <div className="global-metric">
+                          <span>{integer(observations.length)}</span>
+                          <div>
+                            reported hotspots
+                            <small>
+                              {dateLabel(manifest.snapshotStart, {
+                                day: "numeric",
+                                month: "short",
+                              })}{" "}
+                              —{" "}
+                              {dateLabel(manifest.snapshotEnd, {
+                                day: "numeric",
+                                month: "short",
+                              })}
+                            </small>
+                          </div>
+                        </div>
+                        <div className="global-source">
+                          <i className="dot fire" />
+                          NOAA-20 VIIRS <span>375 m at nadir</span>
                         </div>
                       </div>
-                      <div className="global-source">
-                        <i className="dot fire" />
-                        NOAA-20 VIIRS <span>375 m at nadir</span>
-                      </div>
-                    </div>
+                    )}
                     <Suspense
                       fallback={
                         <div className="globe-loading">
@@ -805,46 +841,64 @@ export default function App() {
                         </div>
                       }
                     >
-                      <Globe
-                        observations={observations}
-                        onSelect={selectObservation}
-                        onCase={() => openCase(manifest.cases[0])}
-                        focus={selected}
-                        destination={destination?.center}
-                        zoom={zoom}
-                        reset={reset}
-                      />
+                      {legacyExplore ? (
+                        <Globe
+                          observations={observations}
+                          onSelect={selectObservation}
+                          onCase={() => openCase(manifest.cases[0])}
+                          focus={selected}
+                          destination={destination?.center}
+                          zoom={zoom}
+                          reset={reset}
+                        />
+                      ) : (
+                        <ExploreAtlas
+                          observations={observations}
+                          cases={manifest.cases}
+                          onSelect={selectObservation}
+                          onCase={commitCase}
+                          snapshotStart={manifest.snapshotStart}
+                          snapshotEnd={manifest.snapshotEnd}
+                          focus={selected}
+                          zoom={zoom}
+                          reset={reset}
+                        />
+                      )}
                     </Suspense>
-                    <div className="globe-map-tools">
-                      <button
-                        className="icon-button"
-                        aria-label="Zoom globe in"
-                        onClick={() => setZoom((z) => z + 1)}
-                      >
-                        <Plus size={17} />
-                      </button>
-                      <button
-                        className="icon-button"
-                        aria-label="Zoom globe out"
-                        onClick={() => setZoom((z) => z - 1)}
-                      >
-                        <Minus size={17} />
-                      </button>
-                      <button
-                        className="icon-button"
-                        aria-label="Reset globe"
-                        onClick={() => {
-                          setSelected(null);
-                          setReset((v) => v + 1);
-                        }}
-                      >
-                        <LocateFixed size={17} />
-                      </button>
-                    </div>
-                    <div className="globe-instructions mono">
-                      <Compass size={14} />
-                      DRAG TO EXPLORE <span>·</span> SCROLL TO ZOOM
-                    </div>
+                    {legacyExplore && (
+                      <>
+                        <div className="globe-map-tools">
+                          <button
+                            className="icon-button"
+                            aria-label="Zoom globe in"
+                            onClick={() => setZoom((z) => z + 1)}
+                          >
+                            <Plus size={17} />
+                          </button>
+                          <button
+                            className="icon-button"
+                            aria-label="Zoom globe out"
+                            onClick={() => setZoom((z) => z - 1)}
+                          >
+                            <Minus size={17} />
+                          </button>
+                          <button
+                            className="icon-button"
+                            aria-label="Reset globe"
+                            onClick={() => {
+                              setSelected(null);
+                              setReset((v) => v + 1);
+                            }}
+                          >
+                            <LocateFixed size={17} />
+                          </button>
+                        </div>
+                        <div className="globe-instructions mono">
+                          <Compass size={14} />
+                          DRAG TO EXPLORE <span>·</span> SCROLL TO ZOOM
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
                 {destination && (
@@ -929,7 +983,7 @@ export default function App() {
                     );
                   }}
                 />
-              ) : (
+              ) : legacyExplore ? (
                 <aside className="global-aside">
                   <div className="panel-title">
                     <span className="eyebrow">IN THE CURRENT SNAPSHOT</span>
@@ -976,7 +1030,7 @@ export default function App() {
                     </button>
                   </div>
                 </aside>
-              )}
+              ) : null}
             </div>
             {study && (
               <div className="investigation-context">
@@ -1029,7 +1083,11 @@ export default function App() {
               <div className="timeline" aria-busy={loading}>
                 <button
                   className="playback-button"
-                  disabled={loading || Boolean(partitionError) || monthlyAvailability(study, month, sensor) === "missing"}
+                  disabled={
+                    loading ||
+                    Boolean(partitionError) ||
+                    monthlyAvailability(study, month, sensor) === "missing"
+                  }
                   aria-label={
                     playing ? "Pause time playback" : "Play time playback"
                   }

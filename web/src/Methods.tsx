@@ -60,7 +60,11 @@ export default function Methods({
           <div>
             <span className="mono">SAMPLED CELL-PASSES</span>
             <strong>{report ? integer(report.totalRows) : "—"}</strong>
-            <small>{report ? "Coverage-eligible 0.25° cells and paired passes" : "Coverage preparation pending"}</small>
+            <small>
+              {report
+                ? "Coverage-eligible 0.25° cells and paired passes"
+                : "Coverage preparation pending"}
+            </small>
           </div>
           <div>
             <span className="mono">TRAINING & EVALUATION</span>
