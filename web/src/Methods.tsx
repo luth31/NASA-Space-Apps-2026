@@ -9,6 +9,7 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import type { CoverageReport, Manifest, ModelReport } from "./data";
 import { integer, number } from "./data";
+import HoldoutLab from "./HoldoutLab";
 
 export default function Methods({
   report,
@@ -155,6 +156,7 @@ export default function Methods({
         })}
       </div>
       {report && <Benchmark report={report} />}
+      {report && <HoldoutLab />}
       {coverage && <CoverageAudit coverage={coverage} manifest={manifest} />}
       <div className="validation-bottom">
         <div>

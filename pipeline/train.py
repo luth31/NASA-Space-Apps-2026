@@ -374,6 +374,7 @@ def train(path):
     write_json(PUBLIC / "models.json", report)
     write_json(output / "training-report.json", report)
     write_json(output / "held-out-predictions.json", predictions)
+    write_json(PUBLIC / "held-out-predictions.json", predictions)
     print(
         json.dumps(
             {

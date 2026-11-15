@@ -1,12 +1,14 @@
-# Orbital Atlas release handoff
+# Mission dashboard development handoff
 
-## v0.2 experience
+## Current experience
 
-Orbital Atlas is the single product direction. It opens as a photographic NASA Earth; selecting a region opens that region directly. Region → 2° area → satellite reading is the primary exploration path. Plain-language explanations and larger controls lead the interface; technical metadata is expandable. The menu retains calendars, methods, credits, historical investigations, and offline status. Respect reduced motion and provide the place picker alongside canvas interactions.
+The dashboard explains MODIS-to-VIIRS count harmonization through four scientific chapters. Global exploration has four geographic depths on one persistent MapLibre canvas: Earth → region → area → observation. Camera movements preserve the layout, breadcrumbs and map controls. Detections use circle clusters and square pixel markers; original readings remain visible. Country insets and Natural Earth place labels preserve context at close zoom.
 
-The three prototype alternatives are preserved in Git history, not in the release UI. Local preview and explicitly requested private Tailscale access are supported. Public hosting remains outside the authorized scope.
+Global exploration and historical investigations remain distinct datasets with visible dates and sensor labels. The visible navigation opens investigations, calendar, models and sources. Respect reduced motion and retain the region/observation lists alongside canvas interactions. Do not claim that calibration reconstructs subpixel fire locations or that the feasibility score validates a monthly calendar.
 
-Regenerate `web/src/orbital/map-units.json` after replacing the global snapshot (see README). Its SHA256 guard prevents silently reusing stale spatial assignments. Flame symbols aggregate observations; they do not identify unique fires or incident perimeters. Region cells are degrees, not equal-area density estimates.
+The retired prototypes are preserved in Git history. Keep localhost and private Tailscale previews enabled during development using the per-developer [README setup](README.md#phone-preview-on-tailscale). Store hostnames, ports and login services locally.
+
+Regenerate `web/src/orbital/map-units.json` after replacing the global snapshot (see README). Its SHA256 guard prevents stale assignments. `build-map-context.py` reproduces map assets and the cached-tile manifest. Geographic rectangles are degrees, not equal-area density estimates.
 
 ## Stable boundary for parallel development
 
@@ -19,6 +21,8 @@ The frontend reads generated JSON and local imagery. It never authenticates to E
 | Build and verification | `web/scripts/`, build configuration, browser QA, documentation | Offline cache scope, data-bundle generation |
 
 Use separate branches/worktrees once the team setup is chosen. Assign one integrator to shared schema and release changes. Do not have multiple developers regenerate `web/public/data/` concurrently. Commit generated artifacts with the configuration and model changes that produced them.
+
+Push the branch and open a pull request for review. Merge only when explicitly requested for that pull request. In app handoffs, share the verified localhost URL first and the verified private Tailscale URL second. Each developer chooses the ports and hostname for their own machine.
 
 ## What is ready in v0.1
 

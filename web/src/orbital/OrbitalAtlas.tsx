@@ -1,46 +1,88 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
-  BookOpen,
-  ChevronDown,
-  Flame,
+  ChevronRight,
+  Crosshair,
+  Database,
   Globe2,
-  HelpCircle,
-  Map,
-  Menu,
+  Layers2,
   Pause,
   Play,
   Search,
   X,
 } from "lucide-react";
-import type { Manifest, Observation, CaseStudy } from "../data";
-import { coordinates, dateLabel, integer, number, timeLabel } from "../data";
-import { frameFor, grid, groupGeography, signalClusters } from "./geography";
+import type { Manifest, Observation, CaseStudy, ModelReport } from "../data";
+import {
+  coordinates,
+  dateLabel,
+  integer,
+  loadObservations,
+  number,
+  sensorLabel,
+  timeLabel,
+  typeLabel,
+  within,
+} from "../data";
+import { boundsOf, groupGeography } from "./geography";
 import type { Geography, Area } from "./geography";
 import geographyUrl from "./map-units.json?url";
-import OrbitalEarth from "./OrbitalEarth";
-import AtlasMap from "./AtlasMap";
-import "./orbital.css";
+import ContinuousMap from "./ContinuousMap";
+import type { Camera, MapHandle } from "./ContinuousMap";
+import "./mission.css";
+import Navigation from "../Navigation";
+import LocationInset from "./LocationInset";
 
 type Props = {
   observations: Observation[];
   manifest: Manifest;
+  report: ModelReport | null;
   offlineReady: boolean;
-  onNavigate: (view: "calendar" | "methods" | "sources") => void;
+  initialExplore: boolean;
+  onNavigate: (
+    view: "calendar" | "methods" | "sources" | "investigations",
+  ) => void;
+  onMonth: (study: CaseStudy, month: string) => void;
   onCase: (study: CaseStudy) => void;
 };
-type Place = {
-  regionId: string | null;
-  sectorId: string | null;
-  atlas: boolean;
-};
-const home: Place = { regionId: null, sectorId: null, atlas: false };
+const chapters = [
+  "The changing view",
+  "The sensor difference",
+  "Learning the bridge",
+  "The longer record",
+];
+const headlines = [
+  <>
+    A longer memory.
+    <br />
+    <em>A clearer picture.</em>
+  </>,
+  <>
+    Same landscape.
+    <br />
+    <em>Different signals.</em>
+  </>,
+  <>
+    Learn from the overlap.
+    <br />
+    <em>Test somewhere else.</em>
+  </>,
+  <>
+    Today’s insight.
+    <br />
+    <em>Decades of context.</em>
+  </>,
+];
+const descriptions = [
+  "Newer satellites detect smaller hotspots. PyroBridge learns from overlapping MODIS and VIIRS records to make decades of fire observations comparable.",
+  "Same landscape and day. Different satellite counts. A higher count does not automatically mean more fire.",
+  "Hide a whole region. Train elsewhere. Test estimates against the unseen VIIRS observations. Repeat for each region.",
+  "Explore decades of observed fire activity. A harmonized calendar needs broader validation before we publish estimates.",
+];
 
 export default function OrbitalAtlas(props: Props) {
-  const [data, setData] = useState<Geography | null>(null);
+  const [geography, setGeography] = useState<Geography | null>(null);
   const [error, setError] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
@@ -49,724 +91,849 @@ export default function OrbitalAtlas(props: Props) {
         if (!r.ok) throw Error();
         return r.json();
       })
-      .then(setData)
+      .then(setGeography)
       .catch(() => {
         if (!controller.signal.aborted) setError(true);
       });
     return () => controller.abort();
   }, []);
-  return data ? (
-    <Experience {...props} geography={data} />
-  ) : (
-    <main className="orb-boot">
-      <Flame size={36} />
-      <h1>
-        {error ? "Earth could not be loaded" : "Opening a window onto Earth"}
-      </h1>
-      {error && (
-        <button onClick={() => window.location.reload()}>Try again</button>
-      )}
-    </main>
-  );
+  if (!geography)
+    return (
+      <main className="mission-boot">
+        <Globe2 size={32} />
+        <h1>{error ? "The atlas could not be loaded" : "Opening Earth"}</h1>
+        {error && <button onClick={() => location.reload()}>Try again</button>}
+      </main>
+    );
+  return <Dashboard {...props} geography={geography} />;
 }
 
-function Experience({
+function Dashboard({
   observations,
   manifest,
+  report,
   offlineReady,
-  geography,
+  initialExplore,
   onNavigate,
   onCase,
+  onMonth,
+  geography,
 }: Props & { geography: Geography }) {
-  const [place, setPlace] = useState<Place>(home);
-  const [hover, setHover] = useState<Area | null>(null);
+  const [chapter, setChapter] = useState(0);
+  const [explore, setExplore] = useState(initialExplore);
+  const [region, setRegion] = useState<Area | null>(null);
+  const [area, setArea] = useState<[number, number] | null>(null);
   const [point, setPoint] = useState<Observation | null>(null);
-  const [hoverPoint, setHoverPoint] = useState<Observation | null>(null);
-  const [panel, setPanel] = useState<"places" | "learn" | "menu" | null>(null);
   const [search, setSearch] = useState("");
-  const [showAll, setShowAll] = useState(false);
-  const [paused, setPaused] = useState(false);
-  const [tour, setTour] = useState<number | null>(null);
-  const [tourPaused, setTourPaused] = useState(false);
-  const dialog = useRef<HTMLDialogElement>(null);
-  const reading = useRef<HTMLDivElement>(null);
-  const reduced = useReducedMotion();
+  const [sensor, setSensor] = useState<"MODIS" | "VIIRS">("MODIS");
+  const [globalSensor, setGlobalSensor] = useState<"all" | "MODIS" | "NOAA-20">(
+    "all",
+  );
+  const [caseRows, setCaseRows] = useState<Observation[]>([]);
+  const [caseError, setCaseError] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [fold, setFold] = useState("macro");
+  const map = useRef<MapHandle>(null);
+  const globalRows = useMemo(
+    () =>
+      explore && globalSensor !== "all"
+        ? observations.filter((row) => row.sensor === globalSensor)
+        : observations,
+    [observations, explore, globalSensor],
+  );
   const groups = useMemo(
-    () => groupGeography(geography, observations),
-    [geography, observations],
+    () => groupGeography(geography, globalRows),
+    [geography, globalRows],
   );
   const regions = useMemo(
     () => groups.regions.filter((a) => a.rows.length),
     [groups],
   );
-  const region = regions.find((a) => a.id === place.regionId) ?? null;
-  const sectors = useMemo(() => grid(region?.rows ?? [], 2), [region]);
-  const sector = sectors.find((a) => a.id === place.sectorId) ?? null;
-  const active = sector ?? region;
-  const areaRows = active?.rows ?? observations;
-  const signals = useMemo(
-    () => signalClusters(observations, 7),
-    [observations],
-  );
-  const mapSignals = useMemo(
-    () => (active ? signalClusters(areaRows, 2) : signals),
-    [active, areaRows, signals],
-  );
-  const bounds = useMemo(() => frameFor(active), [active]);
-  const pointRows = useMemo(
-    () =>
-      sector
-        ? [...sector.rows].sort((a, b) => (b.frp ?? -1) - (a.frp ?? -1))
-        : [],
-    [sector],
-  );
-  const shownPoint = point ?? hoverPoint;
-  const isEarth = !place.atlas && !region;
-  const isWorld = !region && !isEarth;
-  const available = region ? sectors : regions;
-  const range = `${dateLabel(manifest.snapshotStart, { day: "numeric", month: "short" })}–${dateLabel(manifest.snapshotEnd, { day: "numeric", month: "short", year: "numeric" })}`;
-  const tourRegion =
-    regions.find((a) => a.id === "Eastern Africa") ?? regions[0];
-  const tourSector = useMemo(
-    () => grid(tourRegion?.rows ?? [], 2)[0],
-    [tourRegion],
-  );
-  const lessons = [
-    "Satellites help us spot heat across our planet.",
-    "Unfold Earth to see every part of the world.",
-    "Closer in, shaded squares group the heat detections.",
-    "Each small mark is one satellite observation.",
-    "One fire can be seen more than once as satellites pass overhead.",
-  ];
+  const study = manifest.cases.find((c) => c.id === "evros")!;
+  const inCase = !explore && chapter > 0;
   useEffect(() => {
-    if (!point) return;
-    reading.current?.focus({ preventScroll: true });
-    reading.current?.scrollIntoView({
-      block: "nearest",
-      behavior: reduced ? "instant" : "smooth",
-    });
-  }, [point, reduced]);
+    let active = true;
+    loadObservations(`/data/scenes/${study.id}.json`)
+      .then((rows) => {
+        if (active)
+          setCaseRows(
+            rows.filter(
+              (row) =>
+                row.time.startsWith(study.date) &&
+                row.daynight === "D" &&
+                within(row, study.bbox),
+            ),
+          );
+      })
+      .catch(() => {
+        if (active) setCaseError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [study]);
   useEffect(() => {
-    if (panel) dialog.current?.showModal();
-    else dialog.current?.close();
-  }, [panel]);
-  useEffect(() => {
-    if (tour === null || tourPaused) return;
+    if (!playing) return;
     const timer = setTimeout(
       () => {
-        if (tour === 4) {
-          setTourPaused(true);
+        if (chapter === 1 && sensor === "MODIS") {
+          setSensor("VIIRS");
           return;
         }
-        const next = tour + 1;
-        setTour(next);
-        if (next === 1)
-          move({ regionId: null, sectorId: null, atlas: true }, false);
-        if (next === 2 && tourRegion)
-          move({ regionId: tourRegion.id, sectorId: null, atlas: true }, false);
-        if (next === 3 && tourSector)
-          move(
-            { regionId: tourRegion.id, sectorId: tourSector.id, atlas: true },
-            false,
-          );
-        if (next === 4) setPoint(tourSector?.peak ?? null);
+        if (chapter === 3) {
+          setPlaying(false);
+          return;
+        }
+        chooseChapter(chapter + 1, true);
       },
-      tour === 0 ? 3000 : 3800,
+      chapter === 1 ? 3200 : 5700,
     );
     return () => clearTimeout(timer);
-  }, [tour, tourPaused, tourRegion, tourSector]);
-  function move(next: Place, manual = true) {
-    if (manual) {
-      setTour(null);
-      setTourPaused(false);
-    }
-    setPlace(next);
+  }, [playing, chapter, sensor]);
+  const rows = useMemo(() => {
+    if (!inCase) return globalRows;
+    if (chapter === 1) return caseRows.filter((row) => row.sensor === sensor);
+    return caseRows;
+  }, [inCase, chapter, caseRows, sensor, globalRows]);
+  const localRows = useMemo(() => {
+    if (area)
+      return rows.filter(
+        (row) =>
+          Math.abs(((row.lon - area[0] + 540) % 360) - 180) < 1 &&
+          Math.abs(row.lat - area[1]) < 1,
+      );
+    if (region)
+      return groups.regions.find((entry) => entry.id === region.id)?.rows ?? [];
+    return rows;
+  }, [rows, region, area, groups.regions]);
+  const camera = useMemo<Camera>(() => {
+    if (point)
+      return { id: point.id, center: [point.lon, point.lat], zoom: 9.5 };
+    if (area) return { id: area.join(), center: area, zoom: 8.5 };
+    if (region) return { id: region.id, bounds: boundsOf(region) };
+    if (inCase) return { id: study.id, center: study.center, zoom: 7.6 };
+    return { id: "earth", center: [20, 15] };
+  }, [point, area, region, inCase, study]);
+  const counts = useMemo(
+    () => ({
+      MODIS: caseRows.filter((r) => r.sensor === "MODIS").length,
+      VIIRS: caseRows.filter((r) => r.sensor === "VIIRS").length,
+    }),
+    [caseRows],
+  );
+  const country = useMemo(
+    () =>
+      point
+        ? (groups.countries.find((c) =>
+            c.rows.some((r) => r.id === point.id),
+          ) ?? null)
+        : null,
+    [point, groups],
+  );
+  const level = point ? 3 : area ? 2 : region || inCase ? 1 : 0;
+  function clearPlace() {
+    setRegion(null);
+    setArea(null);
     setPoint(null);
-    setHover(null);
-    setHoverPoint(null);
-    setShowAll(false);
-    setPanel(null);
-    setSearch("");
-    window.scrollTo({ top: 0, behavior: reduced ? "instant" : "smooth" });
   }
-  function open(area: Area) {
-    if (area.kind === "sector") move({ ...place, sectorId: area.id });
-    else move({ regionId: area.id, sectorId: null, atlas: true });
+  function chooseChapter(next: number, automatic = false) {
+    setChapter(next);
+    setExplore(false);
+    clearPlace();
+    if (next === 1) setSensor("MODIS");
+    if (!automatic) setPlaying(false);
   }
-  function back() {
-    if (point) {
-      setPoint(null);
-      return;
-    }
-    if (sector) move({ ...place, sectorId: null });
-    else move(home);
+  function openExplore() {
+    setExplore(true);
+    setChapter(0);
+    clearPlace();
+    setPlaying(false);
   }
-  function startTour() {
-    move(home, false);
-    setTour(0);
-    setTourPaused(false);
+  function selectRegion(next: Area) {
+    setRegion(next);
+    setArea(null);
+    setPoint(null);
+    setExplore(true);
+    setPlaying(false);
   }
-  function pickPoint(row: Observation) {
-    setTour(null);
+  function selectArea(lon: number, lat: number) {
+    setArea([lon, lat]);
+    setPoint(null);
+    setPlaying(false);
+  }
+  function selectPoint(row: Observation) {
+    if (!area) setArea([row.lon, row.lat]);
+    if (!inCase) setExplore(true);
     setPoint(row);
+    setPlaying(false);
   }
-  function keyboard(event: React.KeyboardEvent) {
-    if (event.key === "Escape" && !panel) {
-      setTour(null);
-      back();
+  function backTo(next: number) {
+    if (next === level) return;
+    setPlaying(false);
+    setPoint(null);
+    if (next < 2) setArea(null);
+    if (next < 1) {
+      setRegion(null);
+      if (inCase) chooseChapter(0);
     }
   }
-  const choices = available.filter((a, index) =>
-    `${region ? `Area ${index + 1} ` : ""}${a.name}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
-  const contextual = hover ?? active;
-  const title = isEarth ? (
-    <>
-      A world of fire.
-      <br />
-      <em>A closer look.</em>
-    </>
-  ) : isWorld ? (
-    "Choose a place."
-  ) : (
-    region?.name
-  );
+  const scopeTitle = point
+    ? `${country?.name ?? region?.name ?? (inCase ? "Evros, Greece" : "Observation")} · ${coordinates(point.lon, point.lat)}`
+    : area
+      ? "Local observations"
+      : (region?.name ?? (inCase ? "Evros, Greece" : "Global observations"));
+  const range = inCase
+    ? dateLabel(study.date)
+    : `${dateLabel(manifest.snapshotStart, { day: "numeric", month: "short" })}–${dateLabel(manifest.snapshotEnd, { day: "numeric", month: "short", year: "numeric" })}`;
+  const hasGlobalModis = manifest.globalSensorCounts?.MODIS !== undefined;
+  const globalSourceLabel =
+    explore && globalSensor !== "all"
+      ? sensorLabel(globalSensor)
+      : manifest.globalSensor;
+  function changeGlobalSensor(next: "all" | "MODIS" | "NOAA-20") {
+    setGlobalSensor(next);
+    if (next !== "all" && point?.sensor !== next) setPoint(null);
+  }
   return (
-    <main className="orb-app" onKeyDown={keyboard}>
-      <header className="orb-header">
-        <button
-          className="orb-brand"
-          onClick={() => move(home)}
-          aria-label="PyroBridge home"
-        >
-          <Flame size={28} />
-          <span>pyrobridge</span>
-        </button>
-        <div className="orb-header-actions">
-          <button onClick={() => setPanel("learn")} aria-label="How it works">
-            <HelpCircle size={19} />
-            <span>How it works</span>
-          </button>
-          <button onClick={() => setPanel("menu")} aria-label="Open menu">
-            <Menu size={23} />
-          </button>
-        </div>
-      </header>
-      <section
-        className={`orb-scene ${isEarth ? "is-earth" : isWorld ? "is-world" : "is-place"}`}
-        data-view={
-          isEarth ? "earth" : sector ? "sector" : isWorld ? "atlas" : "region"
-        }
-      >
-        <div className="orb-intro">
-          {!isEarth && (
-            <button className="orb-back" onClick={back}>
-              <ArrowLeft size={18} />
+    <main className="mission-app">
+      <Navigation
+        active={explore ? "explore" : "dashboard"}
+        onNavigate={(view) => {
+          if (view === "dashboard") chooseChapter(0);
+          else if (view === "explore") openExplore();
+          else onNavigate(view);
+        }}
+      />
+      <div className="mission-workspace">
+        <aside className="mission-story" aria-label="Investigation context">
+          <div className="mission-story-scroll">
+            <p className="mission-eyebrow">
               {point
-                ? "Back to this area"
-                : sector
-                  ? "Back to " + region!.name
-                  : "Back to Earth"}
-            </button>
-          )}
-          <p className="orb-date">Seen from space · {range}</p>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={isEarth ? "earth" : isWorld ? "world" : region?.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25 }}
-            >
-              <h1>{title}</h1>
-              <p className="orb-description">
-                {isEarth
-                  ? "See where satellites found heat. Pick a place and follow the story."
-                  : isWorld
-                    ? "Tap a place to discover what satellites saw."
-                    : sector
-                      ? "You’re looking at individual heat detections. Tap a mark to meet one."
-                      : "Tap a shaded square to take a closer look."}
-              </p>
-            </motion.div>
-          </AnimatePresence>
-          {isEarth && (
-            <div className="orb-start">
-              <button
-                className="orb-primary"
-                onClick={() =>
-                  move({ regionId: null, sectorId: null, atlas: true })
-                }
-              >
-                <Map size={18} />
-                Explore the world
-                <ArrowRight size={18} />
-              </button>
-              <button className="orb-tour-link" onClick={startTour}>
-                <Play size={15} />
-                Show me around
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="orb-visual" onPointerDown={() => setTour(null)}>
-          <AnimatePresence mode="sync" initial={false}>
-            {isEarth ? (
-              <motion.div
-                className="orb-earth-layer"
-                key="earth"
-                initial={{ opacity: 0, scale: 0.87 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.14, rotate: -8 }}
-                transition={{
-                  duration: reduced ? 0 : 0.75,
-                  ease: [0.2, 0.8, 0.2, 1],
-                }}
-              >
-                <OrbitalEarth
-                  areas={regions}
-                  signals={signals}
-                  onOpen={open}
-                  paused={paused || panel !== null}
-                />
-              </motion.div>
-            ) : (
-              <motion.div
-                className="orb-atlas-layer"
-                key="map"
-                initial={{ opacity: 0, scale: 0.72 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.75 }}
-                transition={{
-                  duration: reduced ? 0 : 0.8,
-                  ease: [0.2, 0.8, 0.2, 1],
-                }}
-              >
-                <AtlasMap
-                  style="orbital"
-                  stage={active ? "detail" : "world"}
-                  land={groups.land}
-                  motionLand={groups.motionLand}
-                  outline={region?.geometry}
-                  areas={sector ? [] : available}
-                  signal={mapSignals}
-                  motionSignal={signals}
-                  bounds={bounds}
-                  rows={pointRows}
-                  showPoints={!!sector}
-                  sector={sector?.bounds}
-                  hovered={hover}
-                  selectedPoint={point}
-                  onHover={setHover}
-                  onOpen={open}
-                  onPoint={pickPoint}
-                  onHoverPoint={setHoverPoint}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <div className="orb-map-bottom">
-            <span>
-              {isEarth
-                ? "Drag to turn Earth"
-                : sector
-                  ? "Each small square is one detection"
-                  : isWorld
-                    ? "Flames group nearby detections"
-                    : "Brighter squares contain more detections"}
-            </span>
-            {isEarth && (
-              <button
-                onClick={() => setPaused((v) => !v)}
-                aria-label={
-                  paused ? "Resume Earth rotation" : "Pause Earth rotation"
-                }
-              >
-                {paused ? <Play size={15} /> : <Pause size={15} />}
-              </button>
-            )}
-          </div>
-          {isEarth && (
-            <span className="orb-texture-credit">
-              NASA Blue Marble · Aug 2004
-            </span>
-          )}
-        </div>
-        <div className="orb-action-strip">
-          <button
-            className="orb-place-button"
-            onClick={() => setPanel("places")}
-          >
-            <Search size={18} />
-            {region ? "Choose an area" : "Choose a place"}
-            <ChevronDown size={16} />
-          </button>
-          <button className="orb-legend" onClick={() => setPanel("learn")}>
-            <Flame size={21} />
-            <span>Heat spotted by satellite</span>
-            <HelpCircle size={15} />
-          </button>
-        </div>
-        <AnimatePresence>
-          {tour !== null && (
-            <motion.div
-              className="orb-guide"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              role="status"
-            >
-              <span className="orb-guide-progress">{tour + 1}/5</span>
-              <p>{lessons[tour]}</p>
-              <button
-                onClick={() =>
-                  tour === 4 ? startTour() : setTourPaused(!tourPaused)
-                }
-                aria-label={
-                  tour === 4
-                    ? "Replay introduction"
-                    : tourPaused
-                      ? "Resume introduction"
-                      : "Pause introduction"
-                }
-              >
-                {tourPaused ? <Play size={18} /> : <Pause size={18} />}
-              </button>
-              <button
-                onClick={() => setTour(null)}
-                aria-label="Close introduction"
-              >
-                <X size={18} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </section>
-      {active && (
-        <section className="orb-detail">
-          {shownPoint ? (
-            <motion.div
-              className="orb-observation"
-              ref={reading}
-              tabIndex={-1}
-              key={shownPoint.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <div className="orb-detail-icon">
-                <Flame size={28} />
-              </div>
-              <div>
-                <h2>A little mark. A real observation.</h2>
-                <p>
-                  The satellite measured unusually hot ground here on{" "}
-                  {dateLabel(shownPoint.time)} at {timeLabel(shownPoint.time)}.
-                </p>
-                <details>
-                  <summary>See the satellite reading</summary>
-                  <dl>
-                    <div>
-                      <dt>Location</dt>
-                      <dd>{coordinates(shownPoint.lon, shownPoint.lat)}</dd>
-                    </div>
-                    <div>
-                      <dt>Heat radiated (fire radiative power)</dt>
-                      <dd>{number(shownPoint.frp)} MW</dd>
-                    </div>
-                    <div>
-                      <dt>Satellite confidence</dt>
-                      <dd>{shownPoint.confidence}</dd>
-                    </div>
-                    <div>
-                      <dt>Satellite and sensor</dt>
-                      <dd>NOAA-20 · VIIRS</dd>
-                    </div>
-                    <div>
-                      <dt>Pixel footprint</dt>
-                      <dd>
-                        {number(shownPoint.scan)} × {number(shownPoint.track)}{" "}
-                        km
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Processing version</dt>
-                      <dd>{shownPoint.version}</dd>
-                    </div>
-                  </dl>
+                ? "THE ORIGINAL OBSERVATION"
+                : explore
+                  ? "THE OBSERVED EARTH"
+                  : "BRIDGING MODIS & VIIRS"}
+            </p>
+            <h1>
+              {point ? (
+                <>
+                  {inCase
+                    ? "Evros, Greece."
+                    : (country?.name ?? region?.name ?? "Satellite reading.")}
+                  <br />
+                  <em>One thermal pixel.</em>
+                </>
+              ) : explore ? (
+                <>
+                  {region?.name ?? "Follow the signal."}
+                  <br />
+                  <em>
+                    {area ? "Closer to the ground." : "Across the planet."}
+                  </em>
+                </>
+              ) : (
+                headlines[chapter]
+              )}
+            </h1>
+            <p className="mission-description">
+              {point
+                ? "Inspect the sensor, time and reported footprint. Keep panning or zooming to retain the geographic context."
+                : explore
+                  ? "Explore satellite detections from the global view down to an individual reading. Drag to move, scroll to zoom, or choose a place."
+                  : descriptions[chapter]}
+            </p>
+            {!explore && !point && chapter === 0 && (
+              <>
+                <div className="sensor-footprints">
+                  <div>
+                    <i className="pixel-modis" />
+                    <span>
+                      MODIS<strong>1 km</strong>
+                    </span>
+                  </div>
+                  <ArrowRight size={20} />
+                  <div>
+                    <i className="pixel-viirs" />
+                    <span>
+                      VIIRS<strong>375 m</strong>
+                    </span>
+                  </div>
+                  <small>Nominal active-fire pixel size at nadir</small>
+                </div>
+                <button
+                  className="mission-primary"
+                  onClick={() => chooseChapter(1)}
+                >
+                  See the sensor difference <ArrowRight size={17} />
+                </button>
+                <button className="mission-text" onClick={openExplore}>
+                  Explore {integer(observations.length)} detections{" "}
+                  <ArrowUpRight size={15} />
+                </button>
+                <div className="mission-purpose">
+                  <span>THE QUESTION</span>
                   <p>
-                    Fire radiative power measures how quickly heat is radiated.
-                    It does not tell us a fire’s size or danger on its own.
+                    More detections. More fire?
+                    <br />
+                    Or a better satellite?
                   </p>
-                </details>
-              </div>
-              <button
-                onClick={() => {
-                  setPoint(null);
-                  setHoverPoint(null);
-                }}
-                aria-label="Close observation"
-              >
-                <X size={20} />
-              </button>
-            </motion.div>
-          ) : (
-            <div className="orb-region-fact">
-              <Flame size={28} />
-              <p>
-                <strong>
-                  {integer(contextual?.rows.length ?? areaRows.length)}
-                </strong>{" "}
-                heat detections{" "}
-                {sector
-                  ? "in this square"
-                  : `across ${contextual?.name ?? region!.name}`}
-                .<span>A satellite may see the same fire more than once.</span>
-              </p>
-            </div>
-          )}
-          {!sector && (
-            <div className="orb-area-shortcuts">
-              <h2>Look closer</h2>
-              <div>
-                {sectors
-                  .slice(0, showAll ? sectors.length : 4)
-                  .map((area, i) => (
+                </div>
+              </>
+            )}
+            {!explore && !point && chapter === 1 && (
+              <>
+                <div
+                  className="mission-sensors"
+                  role="group"
+                  aria-label="Compare satellite observations"
+                >
+                  {(["MODIS", "VIIRS"] as const).map((name) => (
                     <button
-                      key={area.id}
-                      onClick={() => open(area)}
-                      onMouseEnter={() => setHover(area)}
-                      onMouseLeave={() => setHover(null)}
-                      onFocus={() => setHover(area)}
-                      onBlur={() => setHover(null)}
+                      key={name}
+                      className={sensor === name ? "selected" : ""}
+                      onClick={() => {
+                        setSensor(name);
+                        setPlaying(false);
+                        setPoint(null);
+                      }}
                     >
                       <span>
-                        Area {i + 1}
-                        <small>{area.name}</small>
+                        {name === "MODIS" ? "Aqua · MODIS" : "S-NPP · VIIRS"}
                       </span>
-                      <strong>
-                        {integer(area.rows.length)} <small>detections</small>
-                      </strong>
-                      <ArrowRight size={18} />
+                      <strong>{caseError ? "—" : integer(counts[name])}</strong>
+                      <small>daytime detections</small>
                     </button>
                   ))}
-              </div>
-              {sectors.length > 4 && (
+                </div>
+                <p className="mission-note">
+                  {dateLabel(study.date)} · Same analysis boundary. Separate
+                  overpasses and sampling. Counts alone do not measure the
+                  sensor correction.
+                </p>
                 <button
-                  className="orb-text-button"
-                  onClick={() => setShowAll(!showAll)}
+                  className="mission-primary"
+                  onClick={() => chooseChapter(2)}
                 >
-                  {showAll
-                    ? "Show fewer areas"
-                    : `See all ${sectors.length} areas`}
-                  <ChevronDown size={16} />
+                  How do we bridge the gap? <ArrowRight size={17} />
                 </button>
-              )}
-            </div>
-          )}
-          {sector && !point && (
-            <button
-              className="orb-primary"
-              onClick={() => pickPoint(sector.peak!)}
-            >
-              Show me one detection
-              <ArrowRight size={18} />
-            </button>
-          )}
-        </section>
-      )}
-      {!active && (
-        <section className="orb-invitation">
-          <span className="orb-invitation-icon">
-            <Flame size={24} />
-          </span>
-          <p>
-            <strong>Every mark starts with a satellite.</strong>
-            <br />
-            It spots heat that may come from a fire. Zoom in to see what it
-            found.
-          </p>
-          <button
-            onClick={() => setPanel("learn")}
-            aria-label="Learn how satellites see fire"
-          >
-            <ArrowUpRight size={21} />
-          </button>
-        </section>
-      )}
-      <footer className="orb-footer">
-        <span>NASA FIRMS · NOAA-20 VIIRS</span>
-        <button onClick={() => onNavigate("sources")}>
-          Data & credits
-          <ArrowUpRight size={13} />
-        </button>
-      </footer>
-      <dialog
-        className="orb-dialog"
-        aria-labelledby="orb-panel-title"
-        ref={dialog}
-        onClose={() => {
-          setPanel(null);
-          setSearch("");
-        }}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) setPanel(null);
-        }}
-      >
-        <div className="orb-dialog-inner">
-          <header>
-            <h2 id="orb-panel-title">
-              {panel === "places"
-                ? region
-                  ? "Choose an area"
-                  : "Where shall we go?"
-                : panel === "learn"
-                  ? "How can a satellite see fire?"
-                  : "Keep exploring"}
-            </h2>
-            <button onClick={() => setPanel(null)} aria-label="Close panel">
-              <X size={22} />
-            </button>
-          </header>
-          {panel === "places" && (
-            <>
-              <label className="orb-search">
-                <Search size={20} />
-                <input
-                  autoFocus
-                  aria-label="Find a place"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={region ? "Find an area…" : "Try Western Europe…"}
-                />
-              </label>
-              <div className="orb-choices">
-                {choices.map((area) => (
-                  <button key={area.id} onClick={() => open(area)}>
-                    <span>
-                      {region
-                        ? `Area ${available.indexOf(area) + 1}`
-                        : area.name}
-                      <small>{region ? area.name : ""}</small>
-                    </span>
-                    <small>{integer(area.rows.length)} heat detections</small>
-                    <ArrowRight size={18} />
-                  </button>
-                ))}
-                {!choices.length && (
-                  <p>
-                    {region
-                      ? "No areas match. Try an area number or coordinates."
-                      : "No places match that name. Try a region, such as Western Europe."}
+              </>
+            )}
+            {!explore && !point && chapter === 2 && (
+              <>
+                <div className="bridge-flow">
+                  <span>MODIS observations</span>
+                  <ChevronRight />
+                  <strong>Trained calibration</strong>
+                  <ChevronRight />
+                  <span>VIIRS-equivalent count</span>
+                </div>
+                <p className="mission-note">
+                  The model estimates counts for a common observation
+                  opportunity. Original detection locations remain traceable.
+                </p>
+                <div className="mission-measure">
+                  <strong>{report?.totalRows ?? "—"}</strong>
+                  <span>
+                    eligible cell-passes
+                    <br />
+                    {report?.independentRegions ?? "—"} regions · exploratory
+                    benchmark
+                  </span>
+                </div>
+                <button
+                  className="mission-primary"
+                  onClick={() => onNavigate("methods")}
+                >
+                  Inspect the validation <ArrowUpRight size={17} />
+                </button>
+              </>
+            )}
+            {!explore && !point && chapter === 3 && (
+              <>
+                <div className="mission-measure">
+                  <strong>{study.years.length}</strong>
+                  <span>
+                    years in the Greek case archive
+                    <br />
+                    {Math.min(...study.years)}–{Math.max(...study.years)}
+                  </span>
+                </div>
+                <p className="mission-note">
+                  Observed counts are available now. Harmonized monthly values
+                  need broader validation and complete observing-effort records.
+                </p>
+                <button
+                  className="mission-primary"
+                  onClick={() => onNavigate("calendar")}
+                >
+                  Open the fire calendar <ArrowRight size={17} />
+                </button>
+                <button className="mission-text" onClick={() => onCase(study)}>
+                  Investigate Evros <ArrowUpRight size={15} />
+                </button>
+              </>
+            )}
+            {explore && !point && (
+              <>
+                <div className="mission-measure">
+                  <strong>{integer(localRows.length)}</strong>
+                  <span>
+                    reported detections
+                    <br />
+                    {globalSourceLabel} · {range}
+                  </span>
+                </div>
+                {localRows.length === 0 && (
+                  <p className="mission-note">
+                    No detections reported here for this sensor and snapshot
+                    window. Usable coverage is unknown.
                   </p>
                 )}
-              </div>
-              {region && (
-                <button
-                  className="orb-text-button"
-                  onClick={() => {
-                    move(home);
-                    setPanel("places");
-                  }}
-                >
-                  Choose another part of the world
-                  <Globe2 size={17} />
-                </button>
+                {!region && !area && (
+                  <>
+                    <label className="mission-search">
+                      <Search size={16} />
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        aria-label="Find a region"
+                        placeholder="Find a region"
+                      />
+                    </label>
+                    <div className="mission-places">
+                      {regions
+                        .filter((a) =>
+                          a.name.toLowerCase().includes(search.toLowerCase()),
+                        )
+                        .map((a) => (
+                          <button key={a.id} onClick={() => selectRegion(a)}>
+                            <span>{a.name}</span>
+                            <small>{integer(a.rows.length)}</small>
+                            <ChevronRight size={14} />
+                          </button>
+                        ))}
+                    </div>
+                  </>
+                )}
+                {(region || area) && (
+                  <div className="mission-observations">
+                    <h2>
+                      {area ? "Readings in this area" : "Explore a detection"}
+                    </h2>
+                    {[...localRows]
+                      .sort((a, b) => (b.frp ?? -1) - (a.frp ?? -1))
+                      .slice(0, 8)
+                      .map((row) => (
+                        <button
+                          key={row.id}
+                          onClick={() =>
+                            area
+                              ? selectPoint(row)
+                              : selectArea(row.lon, row.lat)
+                          }
+                        >
+                          <span>
+                            {coordinates(row.lon, row.lat)}
+                            <small>
+                              {sensorLabel(row.sensor)} · {timeLabel(row.time)}
+                            </small>
+                          </span>
+                          <strong>
+                            {number(row.frp)} <small>MW</small>
+                          </strong>
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </>
+            )}
+            {point && (
+              <ObservationReading row={point} onClose={() => setPoint(null)} />
+            )}
+            {caseError && inCase && (
+              <p role="alert">
+                Case observations could not be loaded. Reload to retry.
+              </p>
+            )}
+          </div>
+          <footer className="mission-story-footer">
+            <Database size={14} />
+            <span>
+              {offlineReady
+                ? "Core data saved on this device"
+                : "Precomputed NASA observations"}
+            </span>
+          </footer>
+        </aside>
+        <section
+          className="mission-scene"
+          aria-label="Interactive Earth and scientific evidence"
+        >
+          <ContinuousMap
+            ref={map}
+            rows={rows}
+            regions={regions}
+            countries={groups.countries}
+            camera={camera}
+            region={region}
+            selected={point}
+            study={inCase ? study : null}
+            onRegion={selectRegion}
+            onArea={selectArea}
+            onPoint={selectPoint}
+            onInteract={() => setPlaying(false)}
+          />
+          <div className="mission-location-bar">
+            <nav aria-label="Geographic depth">
+              {["Earth", "Region", "Area", "Observation"].map(
+                (label, index) => (
+                  <button
+                    key={label}
+                    className={level === index ? "current" : ""}
+                    disabled={index > level}
+                    aria-current={index === level ? "step" : undefined}
+                    onClick={() => backTo(index)}
+                  >
+                    {index > 0 && <ChevronRight size={12} />}
+                    {label}
+                  </button>
+                ),
               )}
-            </>
-          )}
-          {panel === "learn" && (
-            <div className="orb-learning">
-              <div>
-                <Flame />
-                <h3>Heat leaves a clue.</h3>
-                <p>
-                  Fires give off heat. Sensors on satellites can spot unusually
-                  hot patches of ground as they pass overhead.
-                </p>
-              </div>
-              <div>
-                <Globe2 />
-                <h3>Zoom in to follow it.</h3>
-                <p>
-                  The flame symbols group nearby detections. Choose a place,
-                  then a square, to see individual satellite readings.
-                </p>
-              </div>
-              <div>
-                <BookOpen />
-                <h3>One fire can leave many marks.</h3>
-                <p>
-                  Satellites can see the same fire on several passes. Clouds can
-                  hide fires, and some heat comes from volcanoes or other hot
-                  sources.
-                </p>
-              </div>
-              <p className="orb-source-note">
-                This view uses {range} observations. Empty areas may have
-                missing observations. The globe’s background is NASA imagery
-                from August 2004.
-              </p>
-              <p className="orb-source-note">
-                Map boundaries use{" "}
-                <a
-                  href="https://www.naturalearthdata.com/"
-                  target="_blank"
-                  rel="noreferrer"
+            </nav>
+            <button
+              aria-label="Reset to Earth"
+              onClick={() => {
+                chooseChapter(0);
+                map.current?.reset();
+              }}
+            >
+              <Globe2 size={17} />
+            </button>
+          </div>
+          <div className="mission-map-caption">
+            <span>{scopeTitle}</span>
+            <small>
+              {range} ·{" "}
+              {inCase
+                ? chapter === 1
+                  ? sensorLabel(sensor)
+                  : "Aqua & S-NPP"
+                : globalSourceLabel}
+            </small>
+          </div>
+          {(!inCase || chapter === 1) && (
+            <div
+              className={`mission-map-legend${explore && hasGlobalModis ? " with-filter" : ""}`}
+            >
+              {explore && hasGlobalModis ? (
+                <div
+                  className="mission-sensor-filter"
+                  role="group"
+                  aria-label="Filter observations by sensor"
                 >
-                  Natural Earth 5.1.2
-                </a>
-                . The shaded squares are 2° map cells, not fire boundaries.
-                Their ground area varies with latitude.
-              </p>
-              <button className="orb-primary" onClick={() => setPanel(null)}>
-                Let’s explore
-                <ArrowRight size={18} />
-              </button>
+                  {(["all", "MODIS", "NOAA-20"] as const).map((option) => (
+                    <button
+                      key={option}
+                      aria-pressed={globalSensor === option}
+                      onClick={() => changeGlobalSensor(option)}
+                    >
+                      {option !== "all" && (
+                        <i
+                          className={option === "MODIS" ? "modis" : "viirs"}
+                          aria-hidden="true"
+                        />
+                      )}
+                      {option === "all"
+                        ? "Both"
+                        : option === "MODIS"
+                          ? "Aqua MODIS"
+                          : "NOAA-20 VIIRS"}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="mission-legend-symbols">
+                  {(inCase
+                    ? [sensor]
+                    : hasGlobalModis
+                      ? (["MODIS", "NOAA-20"] as const)
+                      : (["NOAA-20"] as const)
+                  ).map((id) => (
+                    <span key={id}>
+                      <i
+                        className={id === "MODIS" ? "modis" : "viirs"}
+                        aria-hidden="true"
+                      />
+                      {sensorLabel(id)}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <small>
+                Circles group detections · squares show individual pixels
+              </small>
             </div>
           )}
-          {panel === "menu" && (
-            <div className="orb-menu">
-              <p className="orb-source-note" role="status">
-                {offlineReady
-                  ? "Ready to explore offline. Featured stories and the calendar are saved on this device."
-                  : "PyroBridge 0.2 · Orbital Atlas"}
-              </p>
-              <button
-                onClick={() => {
-                  setPanel(null);
-                  startTour();
-                }}
-              >
-                <Play />
-                Show me around
-                <ArrowRight />
-              </button>
-              <button onClick={() => onNavigate("calendar")}>
-                <Map />
-                Fire calendar
-                <ArrowRight />
-              </button>
-              <button onClick={() => onNavigate("methods")}>
-                <BookOpen />
-                How the science works
-                <ArrowRight />
-              </button>
-              <h3>Stories from the past</h3>
-              {manifest.cases.map((c) => (
-                <button key={c.id} onClick={() => onCase(c)}>
-                  <span>
-                    {c.name}, {c.country}
-                    <small>{dateLabel(c.date)}</small>
-                  </span>
-                  <ArrowRight />
+          {!explore && !point && chapter === 2 && (
+            <ModelEvidence
+              report={report}
+              fold={fold}
+              onFold={(value) => {
+                setPlaying(false);
+                setFold(value);
+              }}
+            />
+          )}
+          {!explore && !point && chapter === 3 && (
+            <CalendarPreview
+              study={study}
+              onOpen={(month) =>
+                onMonth(study, month ?? study.date.slice(0, 7))
+              }
+            />
+          )}
+          {point && country && (
+            <LocationInset
+              country={country}
+              point={point}
+              onBack={() => backTo(1)}
+            />
+          )}
+          <div className="mission-imagery-note">
+            {inCase
+              ? `NASA Aqua MODIS · ${dateLabel(study.date)} composite`
+              : "NASA Blue Marble · background imagery · not current conditions"}
+          </div>
+        </section>
+      </div>
+      <footer className="mission-journey">
+        {explore ? (
+          <>
+            <button className="mission-text" onClick={() => chooseChapter(0)}>
+              <ArrowLeft size={16} />
+              Back to the dashboard
+            </button>
+            <span className="mission-explore-hint">
+              {point
+                ? "Observation selected · inspect its source reading"
+                : area
+                  ? "Select a pixel to inspect the satellite reading"
+                  : region
+                    ? "Select a group or use the list to investigate"
+                    : "Select a region to begin"}
+            </span>
+            <button
+              className="mission-text"
+              onClick={() => onNavigate("sources")}
+            >
+              Sources <ArrowUpRight size={14} />
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              className="mission-play"
+              onClick={() => {
+                if (playing) setPlaying(false);
+                else {
+                  if (chapter === 3) chooseChapter(0);
+                  setPlaying(true);
+                }
+              }}
+              aria-label={playing ? "Pause introduction" : "Play introduction"}
+            >
+              {playing ? <Pause size={17} /> : <Play size={17} />}
+              <span>{playing ? "Pause" : "Play story"}</span>
+            </button>
+            <div className="mission-chapters">
+              {chapters.map((label, i) => (
+                <button
+                  key={label}
+                  className={chapter === i ? "active" : ""}
+                  onClick={() => chooseChapter(i)}
+                >
+                  <span className="chapter-line" />
+                  <span>{label}</span>
                 </button>
               ))}
             </div>
-          )}
-        </div>
-      </dialog>
+            <button
+              className="mission-next"
+              onClick={() => chooseChapter((chapter + 1) % 4)}
+              aria-label="Next chapter"
+            >
+              <ArrowRight size={20} />
+            </button>
+          </>
+        )}
+      </footer>
     </main>
+  );
+}
+
+function ObservationReading({
+  row,
+  onClose,
+}: {
+  row: Observation;
+  onClose: () => void;
+}) {
+  return (
+    <section className="mission-reading">
+      <header>
+        <h2>Satellite reading</h2>
+        <button aria-label="Close satellite reading" onClick={onClose}>
+          <X size={18} />
+        </button>
+      </header>
+      <p className="reading-coordinates">
+        <Crosshair size={16} />
+        {coordinates(row.lon, row.lat)}
+      </p>
+      <dl>
+        {[
+          ["Acquired", `${dateLabel(row.time)} · ${timeLabel(row.time)}`],
+          ["Sensor", sensorLabel(row.sensor)],
+          ["Fire radiative power", `${number(row.frp)} MW`],
+          ["Confidence", row.confidence],
+          ["Scan × track", `${number(row.scan)} × ${number(row.track)} km`],
+          ["Classification", typeLabel(row.type)],
+          ["Processing version", row.version],
+        ].map(([name, value]) => (
+          <div key={name}>
+            <dt>{name}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mission-note">
+        A detection is a thermal pixel. Repeated passes may observe the same
+        fire. Pixel centers do not describe fire boundaries.
+      </p>
+    </section>
+  );
+}
+
+function ModelEvidence({
+  report,
+  fold,
+  onFold,
+}: {
+  report: ModelReport | null;
+  fold: string;
+  onFold: (fold: string) => void;
+}) {
+  const scores =
+    report?.models
+      .map((model) => ({
+        name: model.name,
+        mae:
+          fold === "macro"
+            ? model.mae
+            : model.folds?.find((f) => f.region === fold)?.mae,
+      }))
+      .filter((m) => m.mae !== undefined) ?? [];
+  const max = Math.max(1, ...scores.map((s) => s.mae!));
+  return (
+    <section className="mission-evidence" aria-label="Actual model benchmark">
+      <header>
+        <div>
+          <p className="mission-eyebrow">MEASURED ON WITHHELD DATA</p>
+          <h2>How close did we get?</h2>
+        </div>
+        <select
+          value={fold}
+          onChange={(e) => onFold(e.target.value)}
+          aria-label="Validation region"
+        >
+          <option value="macro">Mean of region holdouts</option>
+          <option value="evia">Withheld Evia</option>
+          <option value="evros">Withheld Evros</option>
+        </select>
+      </header>
+      <p>Mean absolute error · lower is better</p>
+      <div className="mission-scorebars">
+        {scores.map((score) => (
+          <div key={score.name}>
+            <span>{score.name}</span>
+            <div>
+              <i style={{ width: `${(score.mae! / max) * 100}%` }} />
+            </div>
+            <strong>{score.mae?.toFixed(2)}</strong>
+          </div>
+        ))}
+      </div>
+      <p className="mission-note">
+        Hotspot pixels per 0.25° cell and paired pass.{" "}
+        {report?.totalRows ?? "—"} eligible cell-passes in two regions. Monthly
+        and global transfer remain unverified.
+      </p>
+    </section>
+  );
+}
+
+function CalendarPreview({
+  study,
+  onOpen,
+}: {
+  study: CaseStudy;
+  onOpen: (month?: string) => void;
+}) {
+  const years = [2021, 2022, 2023];
+  const max = Math.max(
+    ...study.months
+      .filter((m) => years.includes(Number(m.month.slice(0, 4))))
+      .map((m) => m.modis ?? 0),
+    1,
+  );
+  return (
+    <section className="mission-calendar-preview">
+      <header>
+        <div>
+          <p className="mission-eyebrow">EVROS · OBSERVED MODIS COUNTS</p>
+          <h2>Every season leaves a pattern.</h2>
+        </div>
+        <Layers2 size={24} />
+      </header>
+      <div className="mini-calendar-head">
+        <span />
+        {"JFMAMJJASOND".split("").map((m, i) => (
+          <span key={i}>{m}</span>
+        ))}
+      </div>
+      {years.map((year) => (
+        <div className="mini-calendar-row" key={year}>
+          <span>{year}</span>
+          {Array.from({ length: 12 }, (_, i) => {
+            const month = study.months.find(
+              (m) => m.month === `${year}-${String(i + 1).padStart(2, "0")}`,
+            );
+            return (
+              <button
+                key={i}
+                onClick={() =>
+                  onOpen(`${year}-${String(i + 1).padStart(2, "0")}`)
+                }
+                title={`${year}-${i + 1}: ${month?.modis ?? "unavailable"} MODIS detections`}
+                style={{
+                  background:
+                    month?.modis == null
+                      ? "#28343e"
+                      : `rgba(235,148,89,${0.07 + Math.sqrt(month.modis / max) * 0.9})`,
+                }}
+                aria-label={`${year} month ${i + 1}: ${month?.modis ?? "unavailable"} MODIS detections. Open this month.`}
+              />
+            );
+          })}
+        </div>
+      ))}
+      <p className="mission-note">
+        Raw counts reflect both fire activity and observation conditions.
+        Historical calibration is the next scientific milestone.
+      </p>
+      <button className="mission-text" onClick={() => onOpen()}>
+        Explore the full record <ArrowUpRight size={15} />
+      </button>
+    </section>
   );
 }

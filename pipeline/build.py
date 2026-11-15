@@ -18,7 +18,16 @@ from datetime import UTC, datetime
 import duckdb
 import pandas as pd
 
-from pipeline.catalog import CASES, FIRMS_BASE, GLOBAL_URL, PUBLIC, RAW, ROOT, WORK
+from pipeline.catalog import (
+    CASES,
+    FIRMS_BASE,
+    GLOBAL_MODIS_URL,
+    GLOBAL_URL,
+    PUBLIC,
+    RAW,
+    ROOT,
+    WORK,
+)
 
 
 def write_json(path, value):
@@ -79,7 +88,7 @@ def normalize(df, sensor):
     df = df.copy()
     df["sensor"] = sensor
     if sensor == "MODIS":
-        df = df[df.satellite.str.upper().eq("AQUA")].copy()
+        df = df[df.satellite.str.upper().isin(["A", "AQUA"])].copy()
     if df.empty:
         return df
     df["acq_time"] = df.acq_time.astype(str).str.zfill(4)
@@ -134,6 +143,37 @@ def in_box(df, bbox):
         & (df.latitude >= s)
         & (df.latitude < n)
     ]
+
+
+def global_snapshot(refresh=False):
+    viirs_path = RAW / "global-noaa20-24h.csv"
+    modis_path = RAW / "global-modis-7d.csv"
+    sources = [
+        fetch(GLOBAL_URL, viirs_path, refresh),
+        fetch(GLOBAL_MODIS_URL, modis_path, refresh),
+    ]
+    dtypes = {"acq_time": str, "version": str}
+    viirs = normalize(pd.read_csv(viirs_path, dtype=dtypes), "NOAA-20")
+    modis = normalize(pd.read_csv(modis_path, dtype=dtypes), "MODIS")
+    if viirs.empty or modis.empty:
+        raise ValueError("Expected both NOAA-20 VIIRS and Aqua MODIS observations")
+    start, end = viirs.timestamp.min(), viirs.timestamp.max()
+    # Catch a stale or mismatched rolling feed. Day-level overlap checks file
+    # freshness only. They say nothing about clear-sky coverage or paired passes.
+    if modis.acq_date.min() > start[:10] or modis.acq_date.max() < end[:10]:
+        raise ValueError("The MODIS feed does not span the pinned VIIRS snapshot dates")
+    modis = modis[modis.timestamp.between(start, end)]
+    rows = pd.concat([viirs, modis], ignore_index=True)
+    metadata = {
+        "snapshotStart": start,
+        "snapshotEnd": end,
+        "globalCount": len(rows),
+        "globalSensor": "Aqua MODIS and NOAA-20 VIIRS",
+        "globalSource": GLOBAL_URL,
+        "globalProcessing": "Near real time",
+        "globalSensorCounts": {"MODIS": len(modis), "NOAA-20": len(viirs)},
+    }
+    return rows, metadata, sources
 
 
 def build(refresh=False):
@@ -288,25 +328,14 @@ def build(refresh=False):
         "COPY observations TO ? (FORMAT PARQUET, COMPRESSION ZSTD)",
         [str(WORK / "case-observations.parquet")],
     )
-    global_meta = fetch(GLOBAL_URL, RAW / "global-noaa20-24h.csv", refresh)
-    global_frame = normalize(
-        pd.read_csv(
-            RAW / "global-noaa20-24h.csv", dtype={"acq_time": str, "version": str}
-        ),
-        "NOAA-20",
-    )
+    global_frame, global_metadata, global_sources = global_snapshot(refresh)
     write_json(PUBLIC / "global.json", pack(global_frame))
     manifest = {
         "schemaVersion": 1,
         "bundleVersion": datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ"),
         "builtAt": datetime.now(UTC).isoformat(),
-        "snapshotStart": global_frame.timestamp.min(),
-        "snapshotEnd": global_frame.timestamp.max(),
-        "globalCount": len(global_frame),
-        "globalSensor": "NOAA-20 VIIRS",
-        "globalSource": GLOBAL_URL,
-        "globalProcessing": "Near real time",
-        "sources": [index_meta, *sources, global_meta],
+        **global_metadata,
+        "sources": [index_meta, *sources, *global_sources],
         "qualityPolicy": {
             "time": "UTC",
             "bounds": "west/south inclusive, east/north exclusive",

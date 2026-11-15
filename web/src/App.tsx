@@ -8,8 +8,6 @@ import {
   ChevronDown,
   ChevronRight,
   Compass,
-  Database,
-  FlaskConical,
   Globe2,
   LoaderCircle,
   LocateFixed,
@@ -42,11 +40,13 @@ import Dossier from "./Dossier";
 import Calendar from "./Calendar";
 import Methods from "./Methods";
 import Sources from "./Sources";
+import Navigation from "./Navigation";
+import Investigations from "./Investigations";
 import { exportInvestigation } from "./exports";
 
 const Globe = lazy(() => import("./Globe"));
 const OrbitalAtlas = lazy(() => import("./orbital/OrbitalAtlas"));
-type View = "explore" | "calendar" | "methods" | "sources";
+type View = "explore" | "calendar" | "methods" | "sources" | "investigations";
 
 function Brand() {
   return (
@@ -79,6 +79,7 @@ export default function App() {
     [error, setError] = useState("");
   const [coverage, setCoverage] = useState<CoverageReport | null>(null);
   const [browseGlobal, setBrowseGlobal] = useState(false);
+  const [atlasExplore, setAtlasExplore] = useState(false);
   const [view, setView] = useState<View>("explore"),
     [study, setStudy] = useState<CaseStudy | null>(null),
     [selected, setSelected] = useState<Observation | null>(null);
@@ -272,6 +273,7 @@ export default function App() {
     setDestination(null);
   }
   function toGlobal() {
+    setAtlasExplore(false);
     window.scrollTo(0, 0);
     cancelFlight();
     setStudy(null);
@@ -384,7 +386,15 @@ export default function App() {
         <OrbitalAtlas
           observations={global}
           manifest={manifest}
+          report={report}
           offlineReady={offlineReady}
+          initialExplore={atlasExplore}
+          onMonth={(c, m) => {
+            commitCase(c);
+            setView("calendar");
+            setMonth(m);
+            setDay(null);
+          }}
           onNavigate={navigate}
           onCase={commitCase}
         />
@@ -400,92 +410,24 @@ export default function App() {
       <a className="skip-link" href="#main-content">
         Skip to the observatory
       </a>
-      <aside className="rail">
-        <button
-          className="rail-logo"
-          onClick={toGlobal}
-          aria-label="PyroBridge home"
-        >
-          <Brand />
-        </button>
-        <div className="rail-nav">
-          {[
-            { id: "explore" as View, icon: Globe2, label: "Explore Earth" },
-            {
-              id: "calendar" as View,
-              icon: CalendarDays,
-              label: "Fire calendar",
-            },
-            {
-              id: "methods" as View,
-              icon: FlaskConical,
-              label: "Methods and validation",
-            },
-            {
-              id: "sources" as View,
-              icon: Database,
-              label: "Data and provenance",
-            },
-          ].map((n) => (
-            <button
-              className={view === n.id ? "active" : ""}
-              key={n.id}
-              onClick={() => navigate(n.id)}
-              title={n.label}
-              aria-label={n.label}
-              aria-current={view === n.id ? "page" : undefined}
-            >
-              <n.icon size={21} />
-            </button>
-          ))}
-        </div>
-        <a
-          className="rail-nasa"
-          href="https://www.spaceappschallenge.org/2026/challenges/modis-and-viirs-hot-spots/"
-          target="_blank"
-          rel="noreferrer"
-          title="NASA Space Apps Challenge"
-        >
-          NASA
-          <small>
-            SPACE
-            <br />
-            APPS
-          </small>
-        </a>
-      </aside>
-      <main className="app-main" id="main-content" tabIndex={-1}>
-        <header className="topbar">
-          <button className="wordmark" onClick={toGlobal}>
-            <Brand />
-          </button>
-          <nav aria-label="Main navigation">
-            <button
-              className={view === "explore" ? "active" : ""}
-              onClick={() => navigate("explore")}
-            >
-              Explore
-            </button>
-            <button
-              className={view === "calendar" ? "active" : ""}
-              onClick={() => navigate("calendar")}
-            >
-              Fire calendar
-            </button>
-            <button
-              className={view === "methods" ? "active" : ""}
-              onClick={() => navigate("methods")}
-            >
-              The science
-            </button>
-          </nav>
-          <div className="topbar-right">
-            <span className="snapshot-status">
-              <i />
-              {online ? "OBSERVATION SNAPSHOT" : "OFFLINE SNAPSHOT"}
-            </span>
-          </div>
-        </header>
+      <main
+        className="app-main scientific-workspace"
+        id="main-content"
+        tabIndex={-1}
+      >
+        <Navigation
+          online={online}
+          active={view === "explore" ? "investigations" : view}
+          onNavigate={(next) => {
+            if (next === "dashboard" || next === "explore") {
+              toGlobal();
+              setAtlasExplore(next === "explore");
+            } else navigate(next);
+          }}
+        />
+        {view === "investigations" && (
+          <Investigations cases={manifest.cases} onCase={commitCase} />
+        )}
         {view === "explore" && (
           <div className="explore-view">
             <div className="explore-toolbar">
@@ -629,7 +571,7 @@ export default function App() {
                       </div>
                       <div className="global-source">
                         <i className="dot fire" />
-                        NOAA-20 VIIRS <span>375 m at nadir</span>
+                        {manifest.globalSensor}
                       </div>
                     </div>
                     <Suspense
