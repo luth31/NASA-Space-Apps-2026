@@ -849,6 +849,7 @@ export default function App() {
                     }
                     reset={reset}
                     wide={wide}
+                    sensor={sensor}
                   />
                 ) : (
                   <>

@@ -1,8 +1,8 @@
 # Local handoff — 15 November 2026
 
-The latest app is on **`experience/continuous-earth`**. The original globe now continuously unfolds into realistic NASA terrain with labelled red geographic contours; Calendar uses an interactive seasonal wheel; Report has seasonal ridgelines, year/place comparisons and dated evidence. The provisional identity remains **PyroBridge**. Everything remains local.
+The latest app is on **`experience/fire-mesh`**. Case investigations now use transparent nominal-resolution meshes and gently animated sensor-coloured flame markers. The original globe now continuously unfolds into realistic NASA terrain with labelled red geographic contours; Calendar uses an interactive seasonal wheel; Report has seasonal ridgelines, year/place comparisons and dated evidence. The provisional identity remains **PyroBridge**. Everything remains local.
 
-The [current visual verification](docs/continuous-earth-verification.md) records the redesign, browser observations, captures and limits. The deck, PDF and video below were preserved from the earlier overnight revision; they do not depict this latest redesign.
+The [current case-map verification](docs/fire-mesh-verification.md) and [continuous Earth verification](docs/continuous-earth-verification.md) records the redesign, browser observations, captures and limits. The deck, PDF and video below were preserved from the earlier overnight revision; they do not depict this latest redesign.
 
 ## Open the working preview
 
@@ -62,7 +62,7 @@ The scientific bundle remains `20261114T172758Z`, observations-only. The global 
 
 ## Validation and known limits
 
-- **63 frontend tests passed**, 14 files; TypeScript and the final production build passed. The offline core contains 118 files / 24.7 MB.
+- **65 frontend tests passed**, 15 files; TypeScript and the final production build passed. The offline core contains 118 files / 24.7 MB.
 - Native Firefox checked the original globe, contour hierarchy, fitted Greece islands, Calendar playback/missing/zero/context, Report year/place comparison and dated evidence. The production preview displayed **OFFLINE BUNDLE READY** and was left on the globe.
 - At 390×844 phone emulation, fixed Report page overflow and verified calendar/map layouts. No physical iPhone, Safari, multi-touch pinch or screen-reader session is claimed.
 - Greece's generalized parent count is 86; the finer administrative polygons assign 83 of those observations, with 3 unmatched disclosed. Country borders and whole-country continent grouping are generalized.
@@ -102,3 +102,8 @@ The redesign builds on the preserved overnight checkout. Integrated commits incl
 
 
 The latest follow-up replaces the abrupt Globe/atlas swap with a reversible geographic mesh transition, adds detailed NASA terrain and 1:50m display outlines, and replaces Across years tiles with interactive seasonal ridgelines. See [continuous Earth verification](docs/continuous-earth-verification.md).
+
+
+## Fire mesh follow-up
+
+Open http://127.0.0.1:4173/?tab=explore&case=evros&month=2023-08&sensor=all for the newest case view. The reference mesh illustrates nominal 1 km / 375 m resolution; flame motion is illustrative. The controls can hide the mesh, pause motion and compare sensors. See [validation and captures](docs/fire-mesh-verification.md).
