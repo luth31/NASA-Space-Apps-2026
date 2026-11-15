@@ -94,9 +94,19 @@ export default function Sources({ manifest }: { manifest: Manifest }) {
             <dt>Imagery</dt>
             <dd>
               Regional scenes are dated Aqua MODIS daily composites from NASA
-              GIBS. The globe uses NASA’s August 2004 Blue Marble composite.
-              Background imagery does not establish exact acquisition-time
-              alignment.
+              GIBS. The globe uses NASA GIBS Blue Marble background imagery.
+              Dated scenes are reprojected to Web Mercator for the continuous
+              map. Background imagery does not establish exact acquisition-time
+              alignment.{" "}
+              <a
+                href="/assets/map-context/provenance.json"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Map asset checksums and sources
+              </a>{" "}
+              include the pinned NASA tiles and public-domain Natural Earth
+              place labels.
             </dd>
           </div>
           <div>

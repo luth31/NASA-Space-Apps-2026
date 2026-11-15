@@ -1,8 +1,8 @@
-# PyroBridge v0.2 · Orbital Atlas
+# PyroBridge · Mission dashboard
 
 A NASA Space Apps fire observatory with a separate, reproducible MODIS-to-VIIRS modeling pipeline.
 
-Orbital Atlas is the main experience: a photographic NASA globe, direct region selection, shaded area exploration, and individual satellite readings. Flame symbols group nearby heat detections. A short optional introduction uses the same interactive views. The menu opens three dated investigations, satellite comparisons, raw-count calendars, measured model diagnostics, and source manifests. The design comparison has been retired.
+The dashboard introduces the sensor difference, overlap-based calibration, held-out evidence, and intended historical calendar. One persistent MapLibre globe/map supports Earth → region → area → observation, with smooth camera flights, place labels, country locators and original satellite metadata. Visible navigation opens global exploration, three dated investigations, the raw-count calendar, model diagnostics, and source manifests. A pausable introduction follows the same ordinary controls.
 
 **Scientific release status:** observations are available; harmonized historical estimates and investigation exports are gated off. Ten candidate satellite-pass pairs produced 48 eligible cell-pass examples across Evia and Evros. That selected sample cannot validate a monthly historical calendar. The app makes this limitation explicit and never publishes a generic accuracy percentage.
 
@@ -23,11 +23,11 @@ npm run build
 npm run preview -- --port 4173
 ```
 
-Open http://127.0.0.1:4173/ while online. The menu reports **Ready to explore offline** once the rehearsal cache is saved. It includes the global snapshot, atlas geography, featured month for all three cases, complete calendar summaries, imagery, and science reports; the build prints its measured size. Other monthly point partitions are cached after viewing them online. A browser hard reload deliberately bypasses its offline cache; use normal navigation/reload when rehearsing offline.
+Open http://127.0.0.1:4173/ while online. The dashboard reports **Core data saved on this device** once the rehearsal cache is saved. It includes the global snapshot, atlas geography, featured month for all three cases, complete calendar summaries, imagery, and science reports; the build prints its measured size. Other monthly point partitions are cached after viewing them online. A browser hard reload deliberately bypasses its offline cache; use normal navigation/reload when rehearsing offline.
 
 ### Phone preview on Tailscale
 
-Keep a private Serve mapping on your development machine so the production preview is also available from your phone. Find your hostname in `Self.DNSName` from `tailscale status --json` and drop the trailing dot. Use `tailscale serve status` to check existing mappings, then choose an unused local preview port and an unused Serve HTTPS port. The ports below are examples. [Tailscale Serve reference](https://tailscale.com/docs/reference/tailscale-cli/serve)
+Keep the private Tailscale preview enabled alongside localhost during development. Maintain a Serve mapping on your development machine so the production preview is also available from your phone. Find your hostname in `Self.DNSName` from `tailscale status --json` and drop the trailing dot. Use `tailscale serve status` to check existing mappings, then choose an unused local preview port and an unused Serve HTTPS port. The ports below are examples. [Tailscale Serve reference](https://tailscale.com/docs/reference/tailscale-cli/serve)
 
 From `web/`, build and start the preview with your device's full DNS name as the allowed host. Use the hostname alone, without a scheme or port. [Vite host settings](https://vite.dev/config/server-options.html#server-allowedhosts)
 
@@ -82,6 +82,14 @@ uv run --no-project --with shapely python web/scripts/build-geography.py
 
 The generator pins Natural Earth v5.1.2, assigns observations using full map-unit polygons, and simplifies geometry only for display. The frontend build rejects geography generated for a different snapshot. Points outside mapped land remain available and counted.
 
+## Reproduce map context
+
+```sh
+uv run --with pillow python web/scripts/build-map-context.py
+```
+
+This resamples the dated NASA browse scenes from EPSG:4326 to Web Mercator, pins 340 GIBS background tiles (3.4 MB), and records Natural Earth v5.1.2 place labels. Checksums, source URLs, bounds and resampling details are in `web/public/assets/map-context/provenance.json`. The global low-resolution base and backgrounds around the three cases are available offline. More detailed global background tiles require a connection. Enlarging context imagery does not create finer source resolution.
+
 ## Checks
 
 ```sh
@@ -98,7 +106,7 @@ Use Chrome DevTools MCP for browser interactions and app testing, as requested f
 - `pipeline/`: public ingestion, authenticated swath acquisition, mask coverage, training, saved-model inference, release decisions, and batch measurements.
 - `config/`: pinned NASA inputs and explicit coverage/release policies.
 - `models/`: reproducible candidate artifacts, held-out predictions, scorecard, and release assessment.
-- `web/src/orbital/`: selected release experience, Three.js photographic globe, canvas atlas, precomputed geography, and accessible place selection.
+- `web/src/orbital/`: persistent MapLibre globe/map, geographic context, dashboard story, precomputed geography, and keyboard-accessible place selection.
 - `web/src/`: React dashboard and scientific views; sensor-preserving clusters, local fonts, and animations.
 - `web/public/data/`: versioned, precomputed dashboard inputs. `schema.json` defines compact observation tuples.
 - `web/public/assets/`: dated NASA imagery and attribution manifest.
