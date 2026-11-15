@@ -58,9 +58,9 @@ export default function Methods({
         </div>
         <div className="method-numbers">
           <div>
-            <span className="mono">TRAINING ROWS</span>
+            <span className="mono">SAMPLED CELL-PASSES</span>
             <strong>{report ? integer(report.totalRows) : "—"}</strong>
-            <small>{report?.label ?? "Coverage preparation pending"}</small>
+            <small>{report ? "Coverage-eligible 0.25° cells and paired passes" : "Coverage preparation pending"}</small>
           </div>
           <div>
             <span className="mono">TRAINING & EVALUATION</span>
@@ -68,7 +68,7 @@ export default function Methods({
               {report ? number(report.seconds) : "—"}
               <em>s</em>
             </strong>
-            <small>Measured on this machine · CPU</small>
+            <small>Pinned feasibility run · CPU</small>
           </div>
           <div>
             <span className="mono">RELEASED ACCURACY CLAIM</span>
@@ -322,7 +322,7 @@ function Benchmark({ report }: { report: ModelReport }) {
             : "Entire case regions were withheld; all candidates used the same eligible rows."}
         </p>
         <span className="mono">
-          {integer(report.totalRows)} ELIGIBLE CELLS ·{" "}
+          {integer(report.totalRows)} ELIGIBLE CELL-PASSES ·{" "}
           {report.independentRegions} REGIONS
         </span>
       </div>

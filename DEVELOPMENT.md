@@ -72,7 +72,7 @@ Run `cd web && npm test` and `npm run build`. Browser acceptance includes year â
 
 ### Report concept previews
 
-The Report tab now opens a gallery of **nine independently previewable experiments**. Start the existing Vite app and open `http://127.0.0.1:5173/?tab=report&concept=gallery`. Each card has a same-tab preview, a new-tab link, strengths/tradeoffs, and a picker for the whole idea or individual parts (visuals, layout, motion, storytelling), with private browser-local notes. Picks synchronize between same-origin tabs through storage events. Nothing applies a final choice automatically. The concept switcher preserves the current time, geography, and satellite selection; separate preview tabs start with the same 2023 annual overview.
+The quiet Report playground preserves **nine independently previewable experiments**; the normal Report tab opens A Year in Fire. Start the existing Vite app and open `http://127.0.0.1:5173/?tab=report&concept=gallery`. Each card has a same-tab preview, a new-tab link, strengths/tradeoffs, and a picker for the whole idea or individual parts (visuals, layout, motion, storytelling), with private browser-local notes. Picks synchronize between same-origin tabs through storage events. Nothing applies a final choice automatically. The concept switcher preserves the current time, geography, and satellite selection; separate preview tabs start with the same 2023 annual overview.
 
 | `concept` parameter | Experience | Distinct interaction |
 | --- | --- | --- |

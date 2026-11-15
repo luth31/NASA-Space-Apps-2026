@@ -122,6 +122,22 @@ export default function App() {
     [offlineReady, setOfflineReady] = useState(false);
   const reduced = useReducedMotion();
   const [destination, setDestination] = useState<CaseStudy | null>(null);
+  useEffect(() => {
+    const suspend = () => {
+      if (document.hidden) {
+        setPlaying(false);
+        setDemoPlaying(false);
+      }
+    };
+    document.addEventListener("visibilitychange", suspend);
+    return () => document.removeEventListener("visibilitychange", suspend);
+  }, []);
+  useEffect(() => {
+    if (reduced) {
+      setPlaying(false);
+      setDemoPlaying(false);
+    }
+  }, [reduced]);
   const flightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!manifest) return;
@@ -1013,6 +1029,7 @@ export default function App() {
               <div className="timeline" aria-busy={loading}>
                 <button
                   className="playback-button"
+                  disabled={loading || Boolean(partitionError) || monthlyAvailability(study, month, sensor) === "missing"}
                   aria-label={
                     playing ? "Pause time playback" : "Play time playback"
                   }
@@ -1066,7 +1083,7 @@ export default function App() {
                             "missing"
                         }
                         aria-label={`${dates[i]}, ${loading || partitionError ? "observations unavailable" : n + " reported detections"}`}
-                        title={`${dateLabel(dates[i])} · ${integer(n)} detections`}
+                        title={`${dateLabel(dates[i])} · ${loading || partitionError || monthlyAvailability(study, month, sensor) === "missing" ? "observations unavailable" : integer(n) + " detections"}`}
                         className={day === dates[i] ? "selected" : ""}
                         onClick={() => {
                           setDay(dates[i]);
@@ -1229,6 +1246,7 @@ export default function App() {
             GLOBAL SNAPSHOT {dateLabel(manifest.snapshotEnd).toUpperCase()} ·{" "}
             {timeLabel(manifest.snapshotEnd)}
           </button>
+          <a href="/playground.html">Playground & brand ideas</a>
           <span>
             BUILT FOR NASA SPACE APPS <span className="footer-year">2026</span>
           </span>

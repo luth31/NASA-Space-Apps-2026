@@ -195,13 +195,6 @@ export default function YearInFire({
   const signature = `${s.record}:${s.year}:${s.month}:${s.day}:${s.hour}:${s.geo}:${s.sensor}`;
 
   useEffect(() => {
-    const original = document.title;
-    document.title = "A Year in Fire — PyroBridge";
-    return () => {
-      document.title = original;
-    };
-  }, []);
-  useEffect(() => {
     setHovered(null);
     if (pendingFocus.current && !model.busy) {
       heading.current?.focus({ preventScroll: true });
@@ -995,8 +988,8 @@ export default function YearInFire({
               <span>Stories & research</span>
               <b>{reading.length}</b>
             </button>
-            <a href="?tab=report&concept=gallery">
-              Prototype gallery <ArrowRight size={12} />
+            <a href="/playground.html">
+              Playground <ArrowRight size={12} />
             </a>
             <button
               className="jy-icon"
