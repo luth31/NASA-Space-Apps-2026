@@ -35,6 +35,7 @@ const urls = [
   "/data/manifest.json",
   "/data/global.json",
   "/data/models.json",
+  "/data/held-out-predictions.json",
   "/data/coverage.json",
   "/data/release.json",
   "/data/schema.json",

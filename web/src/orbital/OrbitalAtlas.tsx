@@ -75,10 +75,10 @@ const headlines = [
   </>,
 ];
 const descriptions = [
-  "Satellites got better at seeing fire. PyroBridge learns how to make their records comparable, so we can investigate change over time.",
-  "MODIS and VIIRS observe fire at different resolutions and times. Explore what each sensor recorded over Evros, Greece.",
-  "Train with overlapping satellite observations. Withhold an entire region, then compare the model’s estimates with the VIIRS readings there.",
-  "A comparable fire calendar could reveal unusual seasons across decades. Explore the observed record while monthly calibration is being validated.",
+  "Newer satellites detect smaller hotspots. PyroBridge learns from overlapping MODIS and VIIRS records to make decades of fire observations comparable.",
+  "Same landscape and day. Different satellite counts. A higher count does not automatically mean more fire.",
+  "Hide a whole region. Train elsewhere. Test estimates against the unseen VIIRS observations. Repeat for each region.",
+  "Explore decades of observed fire activity. A harmonized calendar needs broader validation before we publish estimates.",
 ];
 
 export default function OrbitalAtlas(props: Props) {

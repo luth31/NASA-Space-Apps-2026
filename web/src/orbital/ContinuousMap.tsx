@@ -86,6 +86,7 @@ export default function ContinuousMap(props: Props) {
   latest.current = props;
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [layerBusy, setLayerBusy] = useState(true);
   const [imageryError, setImageryError] = useState(false);
   const [hover, setHover] = useState<{
     area?: Area;
@@ -126,7 +127,10 @@ export default function ContinuousMap(props: Props) {
         container: host.current!,
         center: [20, 15],
         zoom: Math.log2(
-          (Math.min(host.current!.clientWidth, host.current!.clientHeight) *
+          (Math.min(
+            host.current!.parentElement!.clientWidth,
+            host.current!.parentElement!.clientHeight,
+          ) *
             0.78) /
             145,
         ),
@@ -189,6 +193,10 @@ export default function ContinuousMap(props: Props) {
       return;
     }
     mapRef.current = map;
+    map.on("sourcedata", (event) => {
+      if (event.sourceId === "observations" && event.isSourceLoaded)
+        setLayerBusy(false);
+    });
     map.on("error", (event) => {
       if (
         "sourceId" in event &&
@@ -204,7 +212,7 @@ export default function ContinuousMap(props: Props) {
     map.on("load", () => {
       map.addSource("observations", {
         type: "geojson",
-        data: features(latest.current.rows),
+        data: { type: "FeatureCollection", features: [] },
         cluster: true,
         clusterRadius: 22,
         clusterMaxZoom: 6,
@@ -398,7 +406,11 @@ export default function ContinuousMap(props: Props) {
         }
       }
     });
-    const resize = new ResizeObserver(() => map.resize());
+    const resize = new ResizeObserver(() => {
+      map.resize();
+      if (latest.current.camera.id === "earth")
+        map.jumpTo({ zoom: worldZoom(map) });
+    });
     resize.observe(host.current!);
     return () => {
       resize.disconnect();
@@ -470,6 +482,7 @@ export default function ContinuousMap(props: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
+    setLayerBusy(true);
     (map.getSource("observations") as GeoJSONSource).setData(
       features(
         props.rows.filter(
@@ -583,6 +596,11 @@ export default function ContinuousMap(props: Props) {
   }, [area]);
   return (
     <div className="mission-map" ref={host}>
+      {layerBusy && !failed && (
+        <div className="mission-layer-status" role="status">
+          Preparing observation layer…
+        </div>
+      )}
       {failed && (
         <div className="map-failure">
           The interactive map could not start. Use the place list or open a
