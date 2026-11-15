@@ -354,6 +354,15 @@ export function ReadingCards({
             </h3>
             <span className="jy-reading-publisher">{r.publisher}</span>
             <p>{r.summary}</p>
+            {r.conditions && (
+              <p className="jy-reading-conditions">
+                <strong>
+                  Reported conditions · {r.publisher}, {r.date}
+                </strong>
+                <br />
+                {r.conditions}
+              </p>
+            )}
             <p className="jy-reading-why">{r.why}</p>
             {r.contextFrom && r.contextTo && (
               <p className="jy-reading-dates">

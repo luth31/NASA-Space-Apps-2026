@@ -56,6 +56,7 @@ import { useChartZoom } from "./use-chart-zoom";
 import "./journey.css";
 import "./patterns.css";
 import PeriodComparison from "./PeriodComparison";
+import DiscoveryWorkbench, { EvidenceTrail } from "./DiscoveryWorkbench";
 import { exploreContextForSelection } from "./report-context";
 import type { ReportContext } from "./report-context";
 
@@ -149,7 +150,9 @@ export default function YearInFire({
   const reduced = prefersReduced || reduceMotion;
   const [paused, setPaused] = useState(false);
   const [drawer, setDrawer] = useState<Drawer>(null);
-  const [lens, setLens] = useState<"season" | "satellites">("season");
+  const [lens, setLens] = useState<"season" | "satellites" | "compare">(
+    "season",
+  );
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const lastTap = useRef({ key: "", at: 0 });
   const [hovered, setHovered] = useState<string | null>(null);
@@ -158,6 +161,7 @@ export default function YearInFire({
   const [notice, setNotice] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
   const pendingFocus = useRef(false);
+  const pendingScroll = useRef(false);
   const plot = useRef<HTMLDivElement>(null);
   const lastBuckets = useRef<Bucket[]>([]);
   if (!model.busy && !model.failed) lastBuckets.current = model.buckets;
@@ -189,7 +193,7 @@ export default function YearInFire({
           true,
         );
   const sensorRatio = comparableSensorRatio(model);
-  const mode = s.record ? "rhythm" : lens;
+  const mode = lens === "compare" ? "compare" : s.record ? "rhythm" : lens;
   const yearList = [...new Set([...model.years, s.year])].sort((a, b) => a - b);
   const yearSpan = `${model.years[0]}–${model.years.at(-1)}`;
   const signature = `${s.record}:${s.year}:${s.month}:${s.day}:${s.hour}:${s.geo}:${s.sensor}`;
@@ -198,13 +202,18 @@ export default function YearInFire({
     setHovered(null);
     if (pendingFocus.current && !model.busy) {
       heading.current?.focus({ preventScroll: true });
-      if (window.matchMedia("(max-width: 760px)").matches) {
+      if (
+        lens === "compare" ||
+        pendingScroll.current ||
+        window.matchMedia("(max-width: 760px)").matches
+      ) {
         heading.current?.closest(".fire-journey")?.scrollIntoView({
           block: "start",
           behavior: reduced ? "instant" : "smooth",
         });
       }
       pendingFocus.current = false;
+      pendingScroll.current = false;
     }
   }, [signature, model.busy, lens, reduced]);
 
@@ -235,14 +244,35 @@ export default function YearInFire({
     setNotice(`Showing ${placeLabels[geo]}. Your time selection is unchanged.`);
     setDrawer(null);
   }
-  function setMode(next: "season" | "rhythm" | "satellites") {
+  function setMode(next: "season" | "rhythm" | "satellites" | "compare") {
     if (next === mode) return;
     pendingFocus.current = true;
-    if (next === "rhythm") navigate({ type: "archive" });
-    else {
+    if (next === "rhythm") {
+      setLens("season");
+      navigate({ type: "archive" });
+    } else {
       setLens(next);
-      if (s.record) navigate({ type: "year", year: s.year });
+      if (s.record && next !== "compare")
+        navigate({ type: "year", year: s.year });
     }
+  }
+  function focusDiscovery(geo: Geography, month: string) {
+    setLens("season");
+    setFocusedKey(null);
+    setHovered(null);
+    pendingFocus.current = true;
+    pendingScroll.current = true;
+    model.update({
+      geo,
+      year: Number(month.slice(0, 4)),
+      record: false,
+      month,
+      day: null,
+      hour: null,
+    });
+    setNotice(
+      `Opened ${monthName(month, true)} ${month.slice(0, 4)} in ${placeLabels[geo]}.`,
+    );
   }
   function zoom(direction: number, fraction = -1) {
     if (model.busy) return;
@@ -339,7 +369,7 @@ export default function YearInFire({
   return (
     <MotionConfig reducedMotion={reduced ? "always" : "user"}>
       <section
-        className={`fire-journey ${paused ? "jy-paused" : ""}`}
+        className={`fire-journey jy-discovery ${paused ? "jy-paused" : ""}`}
         aria-label="A Year in Fire interactive report"
         data-pattern={mode}
         data-reduced-motion={reduced ? "true" : "false"}
@@ -445,13 +475,14 @@ export default function YearInFire({
           </div>
         </div>
 
-        <div className="jy-scene" aria-busy={model.busy}>
+        <div className="jy-scene" aria-busy={mode !== "compare" && model.busy}>
           <nav className="jy-lenses" aria-label="Report pattern lenses">
             {(
               [
                 { id: "season", label: "The season", icon: Flame },
                 { id: "rhythm", label: "Across years", icon: Repeat2 },
                 { id: "satellites", label: "Two satellites", icon: ScanLine },
+                { id: "compare", label: "Compare", icon: GitCompareArrows },
               ] as const
             ).map((item) => (
               <button
@@ -477,496 +508,543 @@ export default function YearInFire({
               <CircleHelp size={16} />
             </button>
           </nav>
-          <div className="jy-storyline">
-            <div className="jy-story">
-              <span className="jy-eyebrow">
-                <i />
-                {context}
-              </span>
-              <h1 ref={heading} tabIndex={-1}>
-                {title}
-              </h1>
-              <p className="jy-takeaway" aria-live="polite">
-                {takeaway}
-              </p>
-            </div>
-            <div className="jy-kpi jy-pattern-kpi">
-              <div className="jy-pattern-value">
-                {s.record ? (
-                  <>
-                    {patterns.eligible >= 2 ? (
+          {mode === "compare" ? (
+            <DiscoveryWorkbench
+              manifest={manifest}
+              selection={s}
+              onFocus={focusDiscovery}
+              onSensor={(sensor) => model.update({ sensor })}
+              onPeriods={() => setDrawer("compare")}
+              headingRef={heading}
+            />
+          ) : (
+            <>
+              <div className="jy-storyline">
+                <div className="jy-story">
+                  <span className="jy-eyebrow">
+                    <i />
+                    {context}
+                  </span>
+                  <h1 ref={heading} tabIndex={-1}>
+                    {title}
+                  </h1>
+                  <p className="jy-takeaway" aria-live="polite">
+                    {takeaway}
+                  </p>
+                </div>
+                <div className="jy-kpi jy-pattern-kpi">
+                  <div className="jy-pattern-value">
+                    {s.record ? (
                       <>
-                        {patterns.frequency}
-                        <em>/{patterns.eligible}</em>
+                        {patterns.eligible >= 2 ? (
+                          <>
+                            {patterns.frequency}
+                            <em>/{patterns.eligible}</em>
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </>
+                    ) : lens === "satellites" ? (
+                      <>
+                        {sensorRatio === null ? "—" : sensorRatio.toFixed(1)}
+                        {sensorRatio !== null && <em>×</em>}
                       </>
                     ) : (
-                      "—"
+                      <>
+                        <Counter
+                          value={hasSource ? concentration : null}
+                          instant={reduced}
+                        />
+                        {hasSource && <em>%</em>}
+                      </>
                     )}
-                  </>
+                  </div>
+                  <span>
+                    {s.record
+                      ? patterns.eligible >= 2
+                        ? `years peak in ${patternMonth}`
+                        : "More history needed"
+                      : lens === "satellites"
+                        ? "VIIRS / MODIS detection count"
+                        : s.hour
+                          ? "of this day’s detections"
+                          : peak
+                            ? `concentrated in ${shortPeriod(peak.key)}`
+                            : "of available detections"}
+                  </span>
+                  <small className="jy-raw-total">
+                    {lens === "satellites" && !s.record
+                      ? "Raw observations · not harmonized"
+                      : model.count.value === null
+                        ? "Source unavailable"
+                        : `${integer(model.count.value)} recorded detections in view`}
+                  </small>
+                  {coveragePartial && (
+                    <button
+                      onClick={() => setDrawer("details")}
+                      className="jy-partial"
+                    >
+                      {lens === "satellites" && !s.record
+                        ? "Sensor coverage differs"
+                        : model.summary.available === 0
+                          ? "No source coverage"
+                          : "Partial source coverage"}
+                      <CircleHelp size={12} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div
+                ref={plot}
+                onPointerMove={(e) => {
+                  if (
+                    mode !== "season" ||
+                    (e.pointerType === "touch" && !e.buttons) ||
+                    (e.target as HTMLElement).closest(".jy-zoom-controls")
+                  )
+                    return;
+                  const r = e.currentTarget.getBoundingClientRect();
+                  const i = Math.floor(
+                    (((e.clientX - r.left) / r.width - 0.07) / 0.86) *
+                      buckets.length,
+                  );
+                  if (buckets[i]) setHovered(buckets[i].key);
+                }}
+                onPointerLeave={() => setHovered(null)}
+                className={`jy-plot ${model.busy || model.failed ? "jy-loading" : ""} ${noSource ? "jy-empty" : ""}`}
+              >
+                {s.record ? (
+                  <PatternWeave
+                    key={`${s.geo}:${s.sensor}`}
+                    rows={patterns.rows}
+                    selectedYear={s.year}
+                    onSelect={(key) => {
+                      setLens("season");
+                      navigate({ type: "period", key });
+                    }}
+                  />
                 ) : lens === "satellites" ? (
-                  <>
-                    {sensorRatio === null ? "—" : sensorRatio.toFixed(1)}
-                    {sensorRatio !== null && <em>×</em>}
-                  </>
+                  <SatelliteFlow
+                    model={model}
+                    reduced={!!reduced}
+                    onSelect={(key, sensor) => {
+                      navigate({ type: "period", key });
+                      model.update({ sensor });
+                    }}
+                  />
                 ) : (
                   <>
-                    <Counter
-                      value={hasSource ? concentration : null}
-                      instant={reduced}
-                    />
-                    {hasSource && <em>%</em>}
-                  </>
-                )}
-              </div>
-              <span>
-                {s.record
-                  ? patterns.eligible >= 2
-                    ? `years peak in ${patternMonth}`
-                    : "More history needed"
-                  : lens === "satellites"
-                    ? "VIIRS / MODIS detection count"
-                    : s.hour
-                      ? "of this day’s detections"
-                      : peak
-                        ? `concentrated in ${shortPeriod(peak.key)}`
-                        : "of available detections"}
-              </span>
-              <small className="jy-raw-total">
-                {lens === "satellites" && !s.record
-                  ? "Raw observations · not harmonized"
-                  : model.count.value === null
-                    ? "Source unavailable"
-                    : `${integer(model.count.value)} recorded detections in view`}
-              </small>
-              {coveragePartial && (
-                <button
-                  onClick={() => setDrawer("details")}
-                  className="jy-partial"
-                >
-                  {lens === "satellites" && !s.record
-                    ? "Sensor coverage differs"
-                    : model.summary.available === 0
-                      ? "No source coverage"
-                      : "Partial source coverage"}
-                  <CircleHelp size={12} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div
-            ref={plot}
-            onPointerMove={(e) => {
-              if (
-                mode !== "season" ||
-                (e.pointerType === "touch" && !e.buttons) ||
-                (e.target as HTMLElement).closest(".jy-zoom-controls")
-              )
-                return;
-              const r = e.currentTarget.getBoundingClientRect();
-              const i = Math.floor(
-                (((e.clientX - r.left) / r.width - 0.07) / 0.86) *
-                  buckets.length,
-              );
-              if (buckets[i]) setHovered(buckets[i].key);
-            }}
-            onPointerLeave={() => setHovered(null)}
-            className={`jy-plot ${model.busy || model.failed ? "jy-loading" : ""} ${noSource ? "jy-empty" : ""}`}
-          >
-            {s.record ? (
-              <PatternWeave
-                key={`${s.geo}:${s.sensor}`}
-                rows={patterns.rows}
-                selectedYear={s.year}
-                onSelect={(key) => {
-                  setLens("season");
-                  navigate({ type: "period", key });
-                }}
-              />
-            ) : lens === "satellites" ? (
-              <SatelliteFlow
-                model={model}
-                reduced={!!reduced}
-                onSelect={(key, sensor) => {
-                  navigate({ type: "period", key });
-                  model.update({ sensor });
-                }}
-              />
-            ) : (
-              <>
-                <div className="jy-plot-caption">
-                  <span>
-                    {s.hour
-                      ? `${shortPeriod(s.day!)} · 24 UTC HOURS`
-                      : `${unit} · INSPECT THE SIGNAL`}
-                  </span>
-                  <span>
-                    {buckets.some((b) => b.value === null)
-                      ? "— Missing source · "
-                      : ""}
-                    Height = detections · smooth visual guide
-                  </span>
-                </div>
-                <div className="jy-plot-art" aria-hidden="true">
-                  <svg
-                    className="jy-ribbon-svg"
-                    viewBox="0 0 1000 300"
-                    preserveAspectRatio="none"
-                  >
-                    <defs>
-                      <linearGradient id="jy-fill" x1="0" y1="0" x2="0" y2="1">
-                        <stop
-                          offset="0"
-                          stopColor="#f9bf79"
-                          stopOpacity=".27"
-                        />
-                        <stop
-                          offset="1"
-                          stopColor="#f9bf79"
-                          stopOpacity=".015"
-                        />
-                      </linearGradient>
-                      <linearGradient id="jy-line">
-                        <stop stopColor="#b3865c" stopOpacity=".25" />
-                        <stop offset=".6" stopColor="#f5c68c" />
-                        <stop offset="1" stopColor="#c5945f" stopOpacity=".4" />
-                      </linearGradient>
-                      <mask id="jy-source-mask">
-                        <rect width="1000" height="300" fill="white" />
-                        {buckets.map((b, i) =>
-                          b.value === null ? (
-                            <rect
-                              key={b.key}
-                              x={70 + (i / buckets.length) * 860}
-                              width={860 / buckets.length}
-                              height="300"
-                              fill="black"
-                            />
-                          ) : null,
-                        )}
-                      </mask>
-                      <clipPath
-                        id="jy-ribbon-clip"
-                        clipPathUnits="objectBoundingBox"
+                    <div className="jy-plot-caption">
+                      <span>
+                        {s.hour
+                          ? `${shortPeriod(s.day!)} · 24 UTC HOURS`
+                          : `${unit} · INSPECT THE SIGNAL`}
+                      </span>
+                      <span>
+                        {buckets.some((b) => b.value === null)
+                          ? "— Missing source · "
+                          : ""}
+                        Height = detections · smooth visual guide
+                      </span>
+                    </div>
+                    <div className="jy-plot-art" aria-hidden="true">
+                      <svg
+                        className="jy-ribbon-svg"
+                        viewBox="0 0 1000 300"
+                        preserveAspectRatio="none"
                       >
+                        <defs>
+                          <linearGradient
+                            id="jy-fill"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="0"
+                              stopColor="#f9bf79"
+                              stopOpacity=".27"
+                            />
+                            <stop
+                              offset="1"
+                              stopColor="#f9bf79"
+                              stopOpacity=".015"
+                            />
+                          </linearGradient>
+                          <linearGradient id="jy-line">
+                            <stop stopColor="#b3865c" stopOpacity=".25" />
+                            <stop offset=".6" stopColor="#f5c68c" />
+                            <stop
+                              offset="1"
+                              stopColor="#c5945f"
+                              stopOpacity=".4"
+                            />
+                          </linearGradient>
+                          <mask id="jy-source-mask">
+                            <rect width="1000" height="300" fill="white" />
+                            {buckets.map((b, i) =>
+                              b.value === null ? (
+                                <rect
+                                  key={b.key}
+                                  x={70 + (i / buckets.length) * 860}
+                                  width={860 / buckets.length}
+                                  height="300"
+                                  fill="black"
+                                />
+                              ) : null,
+                            )}
+                          </mask>
+                          <clipPath
+                            id="jy-ribbon-clip"
+                            clipPathUnits="objectBoundingBox"
+                          >
+                            <motion.path
+                              initial={false}
+                              animate={{ d: geometry.area }}
+                              transition={{
+                                duration,
+                                ease: [0.2, 0.8, 0.2, 1],
+                              }}
+                              transform="scale(.001 .0033333333)"
+                            />
+                          </clipPath>
+                        </defs>
+                        {[0, 1, 2, 3].map((n) => (
+                          <line
+                            key={n}
+                            x1="70"
+                            x2="930"
+                            y1={54 + n * 65}
+                            y2={54 + n * 65}
+                            stroke="#d9e0c9"
+                            strokeOpacity={n === 3 ? ".18" : ".045"}
+                            strokeDasharray={n === 3 ? undefined : "2 7"}
+                          />
+                        ))}
                         <motion.path
                           initial={false}
-                          animate={{ d: geometry.area }}
+                          animate={{
+                            d: geometry.area,
+                            opacity: hasSource ? 1 : 0,
+                          }}
                           transition={{ duration, ease: [0.2, 0.8, 0.2, 1] }}
-                          transform="scale(.001 .0033333333)"
+                          fill="url(#jy-fill)"
+                          mask="url(#jy-source-mask)"
                         />
-                      </clipPath>
-                    </defs>
-                    {[0, 1, 2, 3].map((n) => (
-                      <line
-                        key={n}
-                        x1="70"
-                        x2="930"
-                        y1={54 + n * 65}
-                        y2={54 + n * 65}
-                        stroke="#d9e0c9"
-                        strokeOpacity={n === 3 ? ".18" : ".045"}
-                        strokeDasharray={n === 3 ? undefined : "2 7"}
+                        <motion.path
+                          initial={false}
+                          animate={{
+                            d: geometry.line,
+                            opacity: hasSource ? 1 : 0,
+                          }}
+                          transition={{ duration, ease: [0.2, 0.8, 0.2, 1] }}
+                          fill="none"
+                          stroke="url(#jy-line)"
+                          strokeWidth="1.3"
+                          vectorEffect="non-scaling-stroke"
+                          mask="url(#jy-source-mask)"
+                        />
+                      </svg>
+                      <JourneyRibbon
+                        buckets={buckets}
+                        paused={paused || model.busy || model.failed}
+                        active={activeIndex}
+                        origin={origin}
+                        reduceMotion={!!reduced}
                       />
-                    ))}
-                    <motion.path
-                      initial={false}
-                      animate={{ d: geometry.area, opacity: hasSource ? 1 : 0 }}
-                      transition={{ duration, ease: [0.2, 0.8, 0.2, 1] }}
-                      fill="url(#jy-fill)"
-                      mask="url(#jy-source-mask)"
-                    />
-                    <motion.path
-                      initial={false}
-                      animate={{ d: geometry.line, opacity: hasSource ? 1 : 0 }}
-                      transition={{ duration, ease: [0.2, 0.8, 0.2, 1] }}
-                      fill="none"
-                      stroke="url(#jy-line)"
-                      strokeWidth="1.3"
-                      vectorEffect="non-scaling-stroke"
-                      mask="url(#jy-source-mask)"
-                    />
-                  </svg>
-                  <JourneyRibbon
-                    buckets={buckets}
-                    paused={paused || model.busy || model.failed}
-                    active={activeIndex}
-                    origin={origin}
-                    reduceMotion={!!reduced}
-                  />
-                </div>
-                {!noSource && (
-                  <>
-                    <span className="jy-axis jy-axis-top">
-                      {integer(geometry.max)}
-                    </span>
-                    <span className="jy-axis jy-axis-zero">0</span>
+                    </div>
+                    {!noSource && (
+                      <>
+                        <span className="jy-axis jy-axis-top">
+                          {integer(geometry.max)}
+                        </span>
+                        <span className="jy-axis jy-axis-zero">0</span>
+                      </>
+                    )}
+                    <div
+                      className="jy-bin-layer"
+                      role="group"
+                      aria-label={`${unit.toLowerCase()} in the current report`}
+                      onPointerLeave={() => setHovered(null)}
+                    >
+                      {buckets.map((b, i) => (
+                        <button
+                          key={b.key}
+                          className={`jy-bin ${b.key === s.hour ? "jy-selected" : ""} ${b.key === inspected?.key ? "jy-inspected" : ""} ${b.value === null ? "jy-missing" : ""}`}
+                          style={{
+                            left: `${7 + (i / buckets.length) * 86}%`,
+                            width: `${86 / buckets.length}%`,
+                          }}
+                          disabled={
+                            b.value === null || model.busy || model.failed
+                          }
+                          aria-label={`${bucketName(b)}: ${b.value === null ? "source data unavailable" : `${integer(b.value)} satellite detections`}${b.value !== null ? ". Double-click, scroll up, or press Enter to zoom" : ""}`}
+                          aria-pressed={b.key === s.hour}
+                          onPointerEnter={() => setHovered(b.key)}
+                          onFocus={() => setHovered(b.key)}
+                          onBlur={() => setHovered(null)}
+                          onClick={(e) => {
+                            const now = performance.now();
+                            if (
+                              e.detail === 0 ||
+                              e.detail >= 2 ||
+                              (lastTap.current.key === b.key &&
+                                now - lastTap.current.at < 360)
+                            ) {
+                              lastTap.current = { key: "", at: 0 };
+                              navigate({ type: "period", key: b.key });
+                            } else {
+                              setFocusedKey(b.key);
+                              lastTap.current = { key: b.key, at: now };
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (
+                              ![
+                                "ArrowLeft",
+                                "ArrowRight",
+                                "Home",
+                                "End",
+                              ].includes(e.key)
+                            )
+                              return;
+                            e.preventDefault();
+                            const enabled = [
+                              ...(plot.current?.querySelectorAll<HTMLButtonElement>(
+                                ".jy-bin:not(:disabled)",
+                              ) ?? []),
+                            ];
+                            const current = enabled.indexOf(e.currentTarget);
+                            const index =
+                              e.key === "Home"
+                                ? 0
+                                : e.key === "End"
+                                  ? enabled.length - 1
+                                  : (current +
+                                      (e.key === "ArrowRight" ? 1 : -1) +
+                                      enabled.length) %
+                                    enabled.length;
+                            enabled[index]?.focus();
+                          }}
+                        >
+                          <span className="jy-bin-guide" />
+                          <span
+                            className={`jy-bin-label ${buckets.length > 20 && i % (model.resolution === "year" ? 4 : 5) !== 0 && i !== buckets.length - 1 ? "jy-minor-label" : ""}`}
+                          >
+                            {b.label}
+                            {b.value === null && <small>—</small>}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    <AnimatePresence>
+                      {origin && !model.busy && !reduced && !paused && (
+                        <motion.div
+                          key={origin.serial}
+                          className="jy-zoom-wash"
+                          style={{
+                            transformOrigin: `${origin.fraction * 100}% 80%`,
+                          }}
+                          initial={{ scaleX: 0.03, opacity: 0.65 }}
+                          animate={{ scaleX: 1, opacity: 0 }}
+                          transition={{ duration: 1, ease: [0.2, 0.8, 0.2, 1] }}
+                          aria-hidden="true"
+                        />
+                      )}
+                    </AnimatePresence>
+                    {inspected && !model.busy && !model.failed && !noSource && (
+                      <div
+                        className="jy-inspect"
+                        style={{
+                          left: `${Math.max(14, Math.min(86, 7 + ((buckets.indexOf(inspected) + 0.5) / buckets.length) * 86))}%`,
+                        }}
+                        aria-hidden="true"
+                      >
+                        <span>
+                          {shortPeriod(inspected.key)}
+                          {inspected.key === peak?.key && !s.hour
+                            ? " · peak"
+                            : ""}
+                        </span>
+                        <strong>
+                          {inspected.value === null
+                            ? "No source"
+                            : integer(inspected.value)}
+                        </strong>
+                      </div>
+                    )}
+                    <div className="jy-gesture-help">
+                      <MoveHorizontal size={13} />
+                      <span className="jy-mouse-help">
+                        Hover or drag to inspect · Double-click or scroll to
+                        zoom
+                      </span>
+                      <span className="jy-touch-help">
+                        Tap or slide to inspect · Pinch out to zoom
+                      </span>
+                    </div>
+                    <div className="jy-zoom-controls">
+                      <button
+                        className="jy-icon"
+                        aria-label="Zoom out of the chart"
+                        onClick={() => zoom(-1)}
+                      >
+                        <ZoomOut size={18} />
+                      </button>
+                      <button
+                        className="jy-icon"
+                        aria-label="Zoom into the inspected period"
+                        disabled={!hasSource || model.busy}
+                        onClick={() => zoom(1)}
+                      >
+                        <ZoomIn size={18} />
+                      </button>
+                    </div>
                   </>
                 )}
-                <div
-                  className="jy-bin-layer"
-                  role="group"
-                  aria-label={`${unit.toLowerCase()} in the current report`}
-                  onPointerLeave={() => setHovered(null)}
-                >
-                  {buckets.map((b, i) => (
-                    <button
-                      key={b.key}
-                      className={`jy-bin ${b.key === s.hour ? "jy-selected" : ""} ${b.key === inspected?.key ? "jy-inspected" : ""} ${b.value === null ? "jy-missing" : ""}`}
-                      style={{
-                        left: `${7 + (i / buckets.length) * 86}%`,
-                        width: `${86 / buckets.length}%`,
-                      }}
-                      disabled={b.value === null || model.busy || model.failed}
-                      aria-label={`${bucketName(b)}: ${b.value === null ? "source data unavailable" : `${integer(b.value)} satellite detections`}${b.value !== null ? ". Double-click, scroll up, or press Enter to zoom" : ""}`}
-                      aria-pressed={b.key === s.hour}
-                      onPointerEnter={() => setHovered(b.key)}
-                      onFocus={() => setHovered(b.key)}
-                      onBlur={() => setHovered(null)}
-                      onClick={(e) => {
-                        const now = performance.now();
-                        if (
-                          e.detail === 0 ||
-                          e.detail >= 2 ||
-                          (lastTap.current.key === b.key &&
-                            now - lastTap.current.at < 360)
-                        ) {
-                          lastTap.current = { key: "", at: 0 };
-                          navigate({ type: "period", key: b.key });
-                        } else {
-                          setFocusedKey(b.key);
-                          lastTap.current = { key: b.key, at: now };
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (
-                          !["ArrowLeft", "ArrowRight", "Home", "End"].includes(
-                            e.key,
-                          )
-                        )
-                          return;
-                        e.preventDefault();
-                        const enabled = [
-                          ...(plot.current?.querySelectorAll<HTMLButtonElement>(
-                            ".jy-bin:not(:disabled)",
-                          ) ?? []),
-                        ];
-                        const current = enabled.indexOf(e.currentTarget);
-                        const index =
-                          e.key === "Home"
-                            ? 0
-                            : e.key === "End"
-                              ? enabled.length - 1
-                              : (current +
-                                  (e.key === "ArrowRight" ? 1 : -1) +
-                                  enabled.length) %
-                                enabled.length;
-                        enabled[index]?.focus();
-                      }}
-                    >
-                      <span className="jy-bin-guide" />
-                      <span
-                        className={`jy-bin-label ${buckets.length > 20 && i % (model.resolution === "year" ? 4 : 5) !== 0 && i !== buckets.length - 1 ? "jy-minor-label" : ""}`}
-                      >
-                        {b.label}
-                        {b.value === null && <small>—</small>}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <AnimatePresence>
-                  {origin && !model.busy && !reduced && !paused && (
-                    <motion.div
-                      key={origin.serial}
-                      className="jy-zoom-wash"
-                      style={{
-                        transformOrigin: `${origin.fraction * 100}% 80%`,
-                      }}
-                      initial={{ scaleX: 0.03, opacity: 0.65 }}
-                      animate={{ scaleX: 1, opacity: 0 }}
-                      transition={{ duration: 1, ease: [0.2, 0.8, 0.2, 1] }}
-                      aria-hidden="true"
-                    />
-                  )}
-                </AnimatePresence>
-                {inspected && !model.busy && !model.failed && !noSource && (
-                  <div
-                    className="jy-inspect"
-                    style={{
-                      left: `${Math.max(14, Math.min(86, 7 + ((buckets.indexOf(inspected) + 0.5) / buckets.length) * 86))}%`,
-                    }}
-                    aria-hidden="true"
-                  >
-                    <span>
-                      {shortPeriod(inspected.key)}
-                      {inspected.key === peak?.key && !s.hour ? " · peak" : ""}
+                {(model.busy || model.failed || noSource) && (
+                  <div className="jy-plot-state" role="status">
+                    <span className="jy-state-symbol">
+                      {model.failed ? "!" : model.busy ? "↗" : "—"}
                     </span>
                     <strong>
-                      {inspected.value === null
-                        ? "No source"
-                        : integer(inspected.value)}
+                      {model.failed
+                        ? "Let’s try that again."
+                        : model.busy
+                          ? `Opening ${s.month ? monthName(s.month, true) : "observations"}…`
+                          : "An honest gap in the record."}
                     </strong>
-                  </div>
-                )}
-                <div className="jy-gesture-help">
-                  <MoveHorizontal size={13} />
-                  <span className="jy-mouse-help">
-                    Hover or drag to inspect · Double-click or scroll to zoom
-                  </span>
-                  <span className="jy-touch-help">
-                    Tap or slide to inspect · Pinch out to zoom
-                  </span>
-                </div>
-                <div className="jy-zoom-controls">
-                  <button
-                    className="jy-icon"
-                    aria-label="Zoom out of the chart"
-                    onClick={() => zoom(-1)}
-                  >
-                    <ZoomOut size={18} />
-                  </button>
-                  <button
-                    className="jy-icon"
-                    aria-label="Zoom into the inspected period"
-                    disabled={!hasSource || model.busy}
-                    onClick={() => zoom(1)}
-                  >
-                    <ZoomIn size={18} />
-                  </button>
-                </div>
-              </>
-            )}
-            {(model.busy || model.failed || noSource) && (
-              <div className="jy-plot-state" role="status">
-                <span className="jy-state-symbol">
-                  {model.failed ? "!" : model.busy ? "↗" : "—"}
-                </span>
-                <strong>
-                  {model.failed
-                    ? "Let’s try that again."
-                    : model.busy
-                      ? `Opening ${s.month ? monthName(s.month, true) : "observations"}…`
-                      : "An honest gap in the record."}
-                </strong>
-                <p>
-                  {model.failed
-                    ? "The source file is unavailable right now."
-                    : model.busy
-                      ? "Moving from monthly summaries to original observations."
-                      : `Available years for this area: ${yearSpan}. Missing data is never counted as zero.`}
-                </p>
-                {model.failed ? (
-                  <button className="jy-text-action" onClick={model.retry}>
-                    Retry observations <ArrowRight size={15} />
-                  </button>
-                ) : noSource &&
-                  (!model.years.includes(s.year) ||
-                    (s.sensor === "viirs" && s.year < 2012)) ? (
-                  <button
-                    className="jy-text-action"
-                    onClick={() => {
-                      if (
-                        s.sensor === "viirs" &&
+                    <p>
+                      {model.failed
+                        ? "The source file is unavailable right now."
+                        : model.busy
+                          ? "Moving from monthly summaries to original observations."
+                          : `Available years for this area: ${yearSpan}. Missing data is never counted as zero.`}
+                    </p>
+                    {model.failed ? (
+                      <button className="jy-text-action" onClick={model.retry}>
+                        Retry observations <ArrowRight size={15} />
+                      </button>
+                    ) : noSource &&
+                      (!model.years.includes(s.year) ||
+                        (s.sensor === "viirs" && s.year < 2012)) ? (
+                      <button
+                        className="jy-text-action"
+                        onClick={() => {
+                          if (
+                            s.sensor === "viirs" &&
+                            s.year < 2012 &&
+                            model.years.includes(s.year)
+                          )
+                            model.update({ sensor: "modis" });
+                          else
+                            navigate({
+                              type: "year",
+                              year: model.years.at(-1)!,
+                            });
+                        }}
+                      >
+                        {s.sensor === "viirs" &&
                         s.year < 2012 &&
                         model.years.includes(s.year)
-                      )
-                        model.update({ sensor: "modis" });
-                      else
-                        navigate({ type: "year", year: model.years.at(-1)! });
+                          ? "View MODIS for this year"
+                          : `View ${model.years.at(-1)}`}{" "}
+                        <ArrowRight size={15} />
+                      </button>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+
+              <div className="jy-next">
+                <div className="jy-insights">
+                  <button
+                    onClick={() => {
+                      setMode("season");
+                      if (peak) setFocusedKey(peak.key);
                     }}
                   >
-                    {s.sensor === "viirs" &&
-                    s.year < 2012 &&
-                    model.years.includes(s.year)
-                      ? "View MODIS for this year"
-                      : `View ${model.years.at(-1)}`}{" "}
-                    <ArrowRight size={15} />
+                    <Flame size={16} />
+                    <span>
+                      <small>CONCENTRATION</small>
+                      <strong>
+                        {peak
+                          ? `${model.share}% in ${shortPeriod(peak.key)}`
+                          : "No peak available"}
+                      </strong>
+                    </span>
                   </button>
-                ) : null}
+                  <button onClick={() => setMode("rhythm")}>
+                    <Repeat2 size={16} />
+                    <span>
+                      <small>REPEATING RHYTHM</small>
+                      <strong>
+                        {patterns.eligible >= 2
+                          ? `${patternMonth} · ${patterns.frequency}/${patterns.eligible} years`
+                          : "More history needed"}
+                      </strong>
+                    </span>
+                  </button>
+                  <button onClick={() => setMode("satellites")}>
+                    <ScanLine size={16} />
+                    <span>
+                      <small>DIFFERENT EYES</small>
+                      <strong>
+                        {sensorRatio === null
+                          ? "Compare the sources"
+                          : `${sensorRatio.toFixed(1)}× VIIRS / MODIS`}
+                      </strong>
+                    </span>
+                  </button>
+                </div>
+                <div className="jy-next-actions">
+                  <button
+                    className="jy-compare-trigger"
+                    onClick={() => setMode("compare")}
+                  >
+                    <GitCompareArrows size={16} /> Compare places & years
+                  </button>
+                  <button
+                    className="jy-wider"
+                    onClick={() =>
+                      navigate(
+                        s.record
+                          ? { type: "year", year: s.year }
+                          : { type: "archive" },
+                      )
+                    }
+                  >
+                    {s.record ? <ArrowLeft size={15} /> : <Clock3 size={15} />}
+                    {s.record ? `Return to ${s.year}` : "Across years"}
+                  </button>
+                  {primary && hasSource && !model.failed && (
+                    <button
+                      className="jy-primary"
+                      disabled={model.busy}
+                      onClick={() =>
+                        s.hour
+                          ? setDrawer("observations")
+                          : inspected &&
+                            navigate({ type: "period", key: inspected.key })
+                      }
+                    >
+                      {primary}
+                      <ArrowDownRight size={19} />
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-
-          <div className="jy-next">
-            <div className="jy-insights">
-              <button
-                onClick={() => {
-                  setMode("season");
-                  if (peak) setFocusedKey(peak.key);
-                }}
-              >
-                <Flame size={16} />
-                <span>
-                  <small>CONCENTRATION</small>
-                  <strong>
-                    {peak
-                      ? `${model.share}% in ${shortPeriod(peak.key)}`
-                      : "No peak available"}
-                  </strong>
-                </span>
-              </button>
-              <button onClick={() => setMode("rhythm")}>
-                <Repeat2 size={16} />
-                <span>
-                  <small>REPEATING RHYTHM</small>
-                  <strong>
-                    {patterns.eligible >= 2
-                      ? `${patternMonth} · ${patterns.frequency}/${patterns.eligible} years`
-                      : "More history needed"}
-                  </strong>
-                </span>
-              </button>
-              <button onClick={() => setMode("satellites")}>
-                <ScanLine size={16} />
-                <span>
-                  <small>DIFFERENT EYES</small>
-                  <strong>
-                    {sensorRatio === null
-                      ? "Compare the sources"
-                      : `${sensorRatio.toFixed(1)}× VIIRS / MODIS`}
-                  </strong>
-                </span>
-              </button>
-            </div>
-            <div className="jy-next-actions">
-              <button
-                className="jy-compare-trigger"
-                onClick={() => setDrawer("compare")}
-                aria-haspopup="dialog"
-              >
-                <GitCompareArrows size={16} /> Compare periods
-              </button>
-              <button
-                className="jy-wider"
-                onClick={() =>
-                  navigate(
-                    s.record
-                      ? { type: "year", year: s.year }
-                      : { type: "archive" },
-                  )
-                }
-              >
-                {s.record ? <ArrowLeft size={15} /> : <Clock3 size={15} />}
-                {s.record ? `Return to ${s.year}` : "Across years"}
-              </button>
-              {primary && hasSource && !model.failed && (
-                <button
-                  className="jy-primary"
-                  disabled={model.busy}
-                  onClick={() =>
-                    s.hour
-                      ? setDrawer("observations")
-                      : inspected &&
-                        navigate({ type: "period", key: inspected.key })
-                  }
-                >
-                  {primary}
-                  <ArrowDownRight size={19} />
-                </button>
-              )}
-            </div>
-          </div>
+            </>
+          )}
         </div>
+        <EvidenceTrail
+          selection={s}
+          onFocus={focusDiscovery}
+          onCompare={() => setMode("compare")}
+        />
 
         <footer className="jy-footer">
           <button className="jy-source" onClick={() => setDrawer("details")}>

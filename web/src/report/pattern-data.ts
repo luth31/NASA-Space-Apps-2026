@@ -81,6 +81,8 @@ export interface Reading {
   url: string;
   summary: string;
   why: string;
+  /** Attributed regional conditions reported by the source, never an ignition assignment. */
+  conditions?: string;
   year?: number;
   month?: number;
   regions?: string[];
@@ -107,6 +109,8 @@ export const readings: Reading[] = [
     summary:
       "Satellite imagery documents the smoke plume from northeastern Greece on 22 August 2023.",
     why: "Adds regional context to the August peak. The article covers a wider area than our study boundaries.",
+    conditions:
+      "NASA's 24 August report describes a forecast of hot, dry and windy weather for 23 August. These are regional conditions, not a finding about what ignited a particular fire.",
     image: "/assets/evros-2023-08-22.jpg",
     imageDate: "Local context image · 22 Aug 2023 · NASA GIBS / Aqua MODIS",
   },
@@ -125,6 +129,8 @@ export const readings: Reading[] = [
     summary:
       "CAMS describes the August fires, smoke transport, and atmospheric monitoring in Greece.",
     why: "Emissions and smoke are separate measurements; this report’s detection counts do not estimate either.",
+    conditions:
+      "CAMS reported on 23 August that high winds and temperatures above 40°C in several places during the third week of August were conducive to increased fire activity. This does not identify the cause of any individual detection.",
   },
   {
     id: "evia-2021",
@@ -141,6 +147,8 @@ export const readings: Reading[] = [
     summary:
       "NASA’s imagery and reporting document the fires on Evia in August 2021.",
     why: "A historical counterpart for exploring the timing of the recorded activity.",
+    conditions:
+      "NASA's 12 August report places the fires after a severe heatwave that reduced moisture. It provides regional background, not an attribution of an individual ignition.",
     image: "/assets/evia-2021-08-10.jpg",
     imageDate: "Local context image · 10 Aug 2021 · NASA GIBS / Aqua MODIS",
   },
