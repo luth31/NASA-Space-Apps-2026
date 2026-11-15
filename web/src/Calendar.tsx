@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { CaseStudy } from "./data";
 import { dateLabel, number } from "./data";
+import SeasonWheel from "./calendar/SeasonWheel";
 import {
   downloadMonthly,
   monthlyModels,
@@ -103,6 +104,10 @@ export default function Calendar({
   onMethods,
 }: Props) {
   const [model, setModel] = useState<MonthlyModel>("Seasonal scaling");
+  const [seasonView, setSeasonView] = useState(false);
+  const [seasonField, setSeasonField] = useState<
+    "modis" | "viirs" | "estimate"
+  >("viirs");
   const { data: calibration, failed } = useMonthlyCalibration();
   const monthly = calibration?.cases[study.id];
   const months = useMemo(() => {
@@ -183,6 +188,13 @@ export default function Calendar({
           <p>One month. Three counts. The difference is visible.</p>
         </div>
         <div className="calendar-controls">
+          <button
+            className="calendar-export"
+            aria-pressed={seasonView}
+            onClick={() => setSeasonView((value) => !value)}
+          >
+            {seasonView ? "Monthly comparison" : "Seasonal wheel"}
+          </button>
           <select
             aria-label="Calendar investigation"
             value={study.id}
@@ -276,155 +288,174 @@ export default function Calendar({
           </small>
         </div>
       </section>
-      <div className="calendar-history-workspace">
-        <aside className="calendar-years" aria-label="All archive years">
-          <div className="calendar-years-heading">
-            <h2>Full history</h2>
-            <span>
-              {years[0]}–{years[years.length - 1]}
-            </span>
-          </div>
-          <div className="calendar-year-buttons">
-            {totals.map((entry) => (
-              <button
-                className={entry.year === year ? "selected" : ""}
-                key={entry.year}
-                aria-label={`View ${entry.year}; annual totals: ${series.map((sensor, index) => `${sensor.short} ${number(entry.values[index])}`).join(", ")}`}
-                aria-pressed={entry.year === year}
-                onClick={() => chooseYear(entry.year)}
-              >
-                <strong>{entry.year}</strong>
-                <span className="calendar-year-mini" aria-hidden="true">
-                  {entry.values.map((value, index) => (
-                    <i
-                      key={series[index].key}
-                      style={{
-                        background:
-                          value == null ? "transparent" : series[index].color,
-                        height:
-                          value == null
-                            ? "2px"
-                            : `${2 + (Math.log1p(value) / Math.log1p(annualMax)) * 14}px`,
-                      }}
-                    />
-                  ))}
-                </span>
-              </button>
-            ))}
-          </div>
-          <p>Select a year to compare all 12 months.</p>
-        </aside>
-        <section
-          className="calendar-year-detail"
-          aria-label={`${year} monthly comparison`}
-        >
-          <div className="calendar-year-heading">
-            <div className="calendar-year-switch">
-              <button
-                aria-label="Previous calendar year"
-                disabled={yearIndex <= 0}
-                onClick={() => chooseYear(years[yearIndex - 1])}
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <h2>{year}</h2>
-              <button
-                aria-label="Next calendar year"
-                disabled={yearIndex === years.length - 1}
-                onClick={() => chooseYear(years[yearIndex + 1])}
-              >
-                <ChevronRight size={18} />
-              </button>
+      {seasonView ? (
+        <div className="calendar-season-container">
+          <SeasonWheel
+            key={study.id}
+            study={study}
+            months={months}
+            field={seasonField}
+            model={model}
+            selectedMonth={selectedKey}
+            onMonth={onMonth}
+            onField={setSeasonField}
+            onExplore={onExplore}
+          />
+        </div>
+      ) : (
+        <div className="calendar-history-workspace">
+          <aside className="calendar-years" aria-label="All archive years">
+            <div className="calendar-years-heading">
+              <h2>Full history</h2>
+              <span>
+                {years[0]}–{years[years.length - 1]}
+              </span>
             </div>
-            <div className="calendar-legend">
-              {series.map((sensor) => (
-                <span key={sensor.key} style={{ color: sensor.color }}>
-                  <i />
-                  {sensor.short}
-                </span>
-              ))}
-            </div>
-            <span
-              className="calendar-scale-note"
-              title="Flame height uses one logarithmic scale across the selected year. Exact monthly counts appear below each flame."
-            >
-              Shared flame scale <Info size={13} />
-            </span>
-          </div>
-          <div
-            className="calendar-month-cards"
-            role="grid"
-            aria-label={`${year} monthly fire counts`}
-          >
-            {names.map((name, index) => {
-              const key = `${year}-${String(index + 1).padStart(2, "0")}`;
-              const row = byMonth.get(key);
-              return (
+            <div className="calendar-year-buttons">
+              {totals.map((entry) => (
                 <button
-                  role="gridcell"
-                  className={`calendar-month-card ${key === selectedKey ? "selected" : ""}`}
-                  key={key}
-                  data-month={key}
-                  aria-selected={key === selectedKey}
-                  aria-label={describeMonth(key)}
-                  title={describeMonth(key)}
-                  tabIndex={key === selectedKey ? 0 : -1}
-                  onClick={() => onMonth(key)}
-                  onKeyDown={(event) => {
-                    const offset =
-                      event.key === "ArrowLeft"
-                        ? -1
-                        : event.key === "ArrowRight"
-                          ? 1
-                          : event.key === "ArrowUp"
-                            ? -6
-                            : event.key === "ArrowDown"
-                              ? 6
-                              : event.key === "Home"
-                                ? -index
-                                : event.key === "End"
-                                  ? 11 - index
-                                  : undefined;
-                    if (offset === undefined) return;
-                    event.preventDefault();
-                    const nextIndex = Math.max(0, Math.min(11, index + offset));
-                    const next = `${year}-${String(nextIndex + 1).padStart(2, "0")}`;
-                    onMonth(next);
-                    document
-                      .querySelector<HTMLButtonElement>(
-                        `.calendar-month-card[data-month="${next}"]`,
-                      )
-                      ?.focus();
-                  }}
+                  className={entry.year === year ? "selected" : ""}
+                  key={entry.year}
+                  aria-label={`View ${entry.year}; annual totals: ${series.map((sensor, index) => `${sensor.short} ${number(entry.values[index])}`).join(", ")}`}
+                  aria-pressed={entry.year === year}
+                  onClick={() => chooseYear(entry.year)}
                 >
-                  <span className="calendar-month-name">
-                    {name}
-                    <span>{key === selectedKey ? "SELECTED" : ""}</span>
-                  </span>
-                  <span className="calendar-month-flames" aria-hidden="true">
-                    {series.map((sensor) => (
-                      <span key={sensor.key} style={{ color: sensor.color }}>
-                        <Flame
-                          count={row?.[sensor.key] ?? null}
-                          maximum={maximum}
-                        />
-                      </span>
-                    ))}
-                  </span>
-                  <span className="calendar-month-values">
-                    {series.map((sensor) => (
-                      <span key={sensor.key} style={{ color: sensor.color }}>
-                        <span>{sensor.short}</span>
-                        <strong>{number(row?.[sensor.key])}</strong>
-                      </span>
+                  <strong>{entry.year}</strong>
+                  <span className="calendar-year-mini" aria-hidden="true">
+                    {entry.values.map((value, index) => (
+                      <i
+                        key={series[index].key}
+                        style={{
+                          background:
+                            value == null ? "transparent" : series[index].color,
+                          height:
+                            value == null
+                              ? "2px"
+                              : `${2 + (Math.log1p(value) / Math.log1p(annualMax)) * 14}px`,
+                        }}
+                      />
                     ))}
                   </span>
                 </button>
-              );
-            })}
-          </div>
-        </section>
-      </div>
+              ))}
+            </div>
+            <p>Select a year to compare all 12 months.</p>
+          </aside>
+          <section
+            className="calendar-year-detail"
+            aria-label={`${year} monthly comparison`}
+          >
+            <div className="calendar-year-heading">
+              <div className="calendar-year-switch">
+                <button
+                  aria-label="Previous calendar year"
+                  disabled={yearIndex <= 0}
+                  onClick={() => chooseYear(years[yearIndex - 1])}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <h2>{year}</h2>
+                <button
+                  aria-label="Next calendar year"
+                  disabled={yearIndex === years.length - 1}
+                  onClick={() => chooseYear(years[yearIndex + 1])}
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+              <div className="calendar-legend">
+                {series.map((sensor) => (
+                  <span key={sensor.key} style={{ color: sensor.color }}>
+                    <i />
+                    {sensor.short}
+                  </span>
+                ))}
+              </div>
+              <span
+                className="calendar-scale-note"
+                title="Flame height uses one logarithmic scale across the selected year. Exact monthly counts appear below each flame."
+              >
+                Shared flame scale <Info size={13} />
+              </span>
+            </div>
+            <div
+              className="calendar-month-cards"
+              role="grid"
+              aria-label={`${year} monthly fire counts`}
+            >
+              {names.map((name, index) => {
+                const key = `${year}-${String(index + 1).padStart(2, "0")}`;
+                const row = byMonth.get(key);
+                return (
+                  <button
+                    role="gridcell"
+                    className={`calendar-month-card ${key === selectedKey ? "selected" : ""}`}
+                    key={key}
+                    data-month={key}
+                    aria-selected={key === selectedKey}
+                    aria-label={describeMonth(key)}
+                    title={describeMonth(key)}
+                    tabIndex={key === selectedKey ? 0 : -1}
+                    onClick={() => onMonth(key)}
+                    onKeyDown={(event) => {
+                      const offset =
+                        event.key === "ArrowLeft"
+                          ? -1
+                          : event.key === "ArrowRight"
+                            ? 1
+                            : event.key === "ArrowUp"
+                              ? -6
+                              : event.key === "ArrowDown"
+                                ? 6
+                                : event.key === "Home"
+                                  ? -index
+                                  : event.key === "End"
+                                    ? 11 - index
+                                    : undefined;
+                      if (offset === undefined) return;
+                      event.preventDefault();
+                      const nextIndex = Math.max(
+                        0,
+                        Math.min(11, index + offset),
+                      );
+                      const next = `${year}-${String(nextIndex + 1).padStart(2, "0")}`;
+                      onMonth(next);
+                      document
+                        .querySelector<HTMLButtonElement>(
+                          `.calendar-month-card[data-month="${next}"]`,
+                        )
+                        ?.focus();
+                    }}
+                  >
+                    <span className="calendar-month-name">
+                      {name}
+                      <span>{key === selectedKey ? "SELECTED" : ""}</span>
+                    </span>
+                    <span className="calendar-month-flames" aria-hidden="true">
+                      {series.map((sensor) => (
+                        <span key={sensor.key} style={{ color: sensor.color }}>
+                          <Flame
+                            count={row?.[sensor.key] ?? null}
+                            maximum={maximum}
+                          />
+                        </span>
+                      ))}
+                    </span>
+                    <span className="calendar-month-values">
+                      {series.map((sensor) => (
+                        <span key={sensor.key} style={{ color: sensor.color }}>
+                          <span>{sensor.short}</span>
+                          <strong>{number(row?.[sensor.key])}</strong>
+                        </span>
+                      ))}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      )}
       <footer className="calendar-evidence">
         <span className="calendar-missing-key">
           <b>0</b> no detections <b>—</b> unavailable

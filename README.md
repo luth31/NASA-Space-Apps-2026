@@ -8,6 +8,12 @@ Models & validation contains the interactive MODIS → estimated VIIRS → obser
 
 **Scientific scope:** the harmonized calendar is an experimental transfer of monthly reported counts, trained separately from the matched-pass experiment. It includes 648 overlapping region-months, 13 whole-year holdouts, two saved models, and measured regional errors. Cloud and overpass effort are not normalized; estimates do not reconstruct missing fire locations. The existing gate for a validated, coverage-normalized monthly product remains unchanged. There is no generic accuracy percentage.
 
+## Showcase and presentation
+
+Investigations opens with a MODIS/VIIRS comparison divider over the nominal 1 km / 375 m reference meshes. Calendar has a **Seasonal wheel** switch while retaining the monthly comparison. The original sensor records and cursor-anchored zoom remain available.
+
+The [presentation package](deliverables/README.md) includes English/Romanian pitches, the demo runbook, seven-slide source, imported media and [submission copy](docs/submission-copy.md). Imported binary media are marked legacy. Recompute the verified August and October findings with `python3 deliverables/scripts/verify-claims.py`. See the [integration record](docs/showcase-integration.md).
+
 ## Run the dashboard
 
 Use Node.js 24 LTS and npm. The included public bundle is sufficient; Earthdata credentials are not needed for frontend work.

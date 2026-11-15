@@ -1,0 +1,41 @@
+[
+  {
+    "clip": "clip1_explore.mp4",
+    "seconds": 7.4,
+    "resolution": "1920x1080",
+    "codec": "H264",
+    "pixelFormat": "yuv420p",
+    "fps": 30,
+    "audio": false,
+    "fastStart": true,
+    "fullyDecoded": true,
+    "poster": "poster1_explore.png",
+    "sha256": "94e5dad840a00e7035ff17c25b7b5f51ddb2f75111e25dcdbc769d62534d03f3"
+  },
+  {
+    "clip": "clip2_fire_mesh.mp4",
+    "seconds": 7.4,
+    "resolution": "1920x1080",
+    "codec": "H264",
+    "pixelFormat": "yuv420p",
+    "fps": 30,
+    "audio": false,
+    "fastStart": true,
+    "fullyDecoded": true,
+    "poster": "poster2_fire_mesh.png",
+    "sha256": "377b62056e822fe8954a021f80ff0c65388ff908665469f6a6407bea5af480d9"
+  },
+  {
+    "clip": "clip3_calibration_wheel.mp4",
+    "seconds": 7.4,
+    "resolution": "1920x1080",
+    "codec": "H264",
+    "pixelFormat": "yuv420p",
+    "fps": 30,
+    "audio": false,
+    "fastStart": true,
+    "fullyDecoded": true,
+    "poster": "poster3_calibration_wheel.png",
+    "sha256": "36632347f0ab3841b7b33f8bb94b1367391c8115cd733017be4137cd1333c704"
+  }
+]

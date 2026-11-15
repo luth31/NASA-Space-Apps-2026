@@ -295,3 +295,91 @@
     font-size: 8px;
   }
 }
+
+.sensor-mesh-map .sensor-compare-toggle {
+  position: absolute;
+  top: 62px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 35px;
+  padding: 7px 11px;
+  color: #f1d2bd;
+  font-size: 11px;
+  background: #102318ed;
+  border: 1px solid #d5a89770;
+  border-radius: 7px;
+}
+.sensor-compare-labels {
+  position: absolute;
+  top: 106px;
+  left: 22px;
+  right: 22px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  font-size: 12px;
+  text-shadow: 0 1px 5px #000;
+  color: #ffaaa0;
+}
+.sensor-compare-labels span:last-child {
+  color: #ff8992;
+}
+.sensor-compare-line {
+  position: absolute;
+  top: 135px;
+  bottom: 190px;
+  width: 1px;
+  background: #fff3dbad;
+  pointer-events: none;
+}
+.sensor-compare-line > span {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid #f0d6b9;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #fff3db;
+  background: #102318ed;
+}
+.sensor-compare-slider {
+  position: absolute;
+  bottom: 152px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(290px, calc(100% - 40px));
+  display: grid;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #a7bfaa55;
+  border-radius: 8px;
+  background: #102318ed;
+  color: #f4dfc8;
+  font-size: 10px;
+  text-align: center;
+}
+.sensor-compare-slider input {
+  width: 100%;
+  accent-color: #ffaaa0;
+}
+@media (max-width: 760px) {
+  .sensor-mesh-map .sensor-compare-toggle {
+    right: 12px;
+    top: 57px;
+    font-size: 10px;
+  }
+  .sensor-compare-slider {
+    bottom: 168px;
+    left: 12px;
+    transform: none;
+    width: calc(100% - 141px);
+  }
+  .sensor-compare-line {
+    bottom: 220px;
+  }
+}

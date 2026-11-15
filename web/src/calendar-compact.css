@@ -571,3 +571,37 @@
     font-size: 11px;
   }
 }
+
+.calendar-readable .calendar-season-container {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.calendar-readable .calendar-controls {
+  flex-wrap: wrap;
+}
+.calendar-readable .calendar-season-container .fire-mesh-season-wheel {
+  margin-bottom: 0;
+}
+.calendar-readable .calendar-season-container .sc-unified-heading {
+  padding: 14px 18px;
+}
+.calendar-readable .calendar-season-container .sc-unified-heading h2 {
+  font:
+    24px/1.2 "DM Sans",
+    sans-serif;
+}
+.calendar-readable .calendar-season-container .sc-wheel-wrap {
+  max-width: min(100%, clamp(240px, 32dvh, 340px));
+}
+.calendar-readable .calendar-season-container .sc-wheel-panel,
+.calendar-readable .calendar-season-container .sc-insight-panel {
+  padding: 16px 22px;
+}
+.calendar-readable .calendar-season-container .sc-insight-panel > h2 {
+  margin: 10px 0;
+  font-size: 28px;
+}
+.calendar-readable .calendar-season-container .sc-unified-heading .sc-kicker {
+  display: none;
+}

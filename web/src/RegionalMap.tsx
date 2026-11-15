@@ -7,7 +7,8 @@ import {
   type CSSProperties,
 } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { Crosshair, Grid2X2, Minus, Plus } from "lucide-react";
+import { Columns2, Crosshair, Grid2X2, Minus, Plus } from "lucide-react";
+import { resolutionMesh } from "./fire-mesh/resolution-mesh";
 import LocationInset, {
   viewportCountry,
   type Viewport,
@@ -69,6 +70,8 @@ export default function RegionalMap({
   observations,
   selected,
   onSelect,
+  compare,
+  onCompare,
   period,
   reset,
 }: Props) {
@@ -78,6 +81,7 @@ export default function RegionalMap({
     pan: { x: 0, y: 0 },
   });
   const [mesh, setMesh] = useState(true);
+  const [split, setSplit] = useState(50);
   const [size, setSize] = useState({ width: 1000, height: 500 });
   const [hover, setHover] = useState<{
     o: Observation;
@@ -101,13 +105,12 @@ export default function RegionalMap({
   const scale = Math.max(size.width / 1000, size.height / h);
   // The raster is geographic, so x/y distances differ away from the equator.
   // This is a nominal nadir illustration at the case latitude, not a swath grid.
-  const kmAcross =
-    111.32 *
-    Math.cos((study.center[1] * Math.PI) / 180) *
-    (study.sceneBounds[2] - study.sceneBounds[0]);
-  const kmDown = 111.32 * (study.sceneBounds[3] - study.sceneBounds[1]);
-  const unitX = 1000 / kmAcross;
-  const unitY = h / kmDown;
+  const referenceGrid = resolutionMesh(study.bbox, study.sceneBounds, 1000);
+  const unitX = referenceGrid.cellWidth;
+  const unitY = referenceGrid.cellHeight;
+  const viewportLeft = (1000 - size.width / scale) / 2;
+  const viewportTop = (h - size.height / scale) / 2;
+  const splitX = viewportLeft + ((size.width / scale) * split) / 100;
   const xy = (lon: number, lat: number) => {
     const point = project(lon, lat, study.sceneBounds);
     return [point[0], point[1] * ratio];
@@ -387,7 +390,10 @@ export default function RegionalMap({
     );
   };
   const renderedMarks = useMemo(
-    () => markerItems.map((item, index) => mark(item, index)),
+    () => ({
+      modis: markerItems.filter((item) => item.o.sensor === "MODIS").map(mark),
+      viirs: markerItems.filter((item) => item.o.sensor !== "MODIS").map(mark),
+    }),
     [markerItems, selected?.id, zoom, scale, reduced, onSelect],
   );
   const pinnedOutside =
@@ -437,6 +443,22 @@ export default function RegionalMap({
         }}
       >
         <defs>
+          <clipPath id={`${meshId}-left`} clipPathUnits="userSpaceOnUse">
+            <rect
+              x={viewportLeft}
+              y={viewportTop}
+              width={splitX - viewportLeft}
+              height={size.height / scale}
+            />
+          </clipPath>
+          <clipPath id={`${meshId}-right`} clipPathUnits="userSpaceOnUse">
+            <rect
+              x={splitX}
+              y={viewportTop}
+              width={viewportLeft + size.width / scale - splitX}
+              height={size.height / scale}
+            />
+          </clipPath>
           {meshLayers.map((layer) => (
             <pattern
               key={layer.name}
@@ -472,37 +494,48 @@ export default function RegionalMap({
             preserveAspectRatio="none"
           />
           <rect width="1000" height={h} fill="#071b0f" opacity=".17" />
-          {mesh && (
-            <g className="sensor-resolution-mesh" pointerEvents="none">
-              {meshLayers
-                .filter((layer) => layer.visible)
-                .map((layer) => (
-                  <rect
-                    key={layer.name}
-                    width="1000"
-                    height={h}
-                    fill={`url(#${meshId}-${layer.name})`}
-                    opacity={
-                      meshOpacity(layer.size) *
-                      (layer.name === "modis" ? 0.55 : 0.34)
-                    }
-                  />
-                ))}
-            </g>
-          )}
-          <g aria-hidden="true">
-            {renderedMarks}
-            {pinnedOutside &&
-              selected &&
-              mark({
-                key: selected.id,
-                o: selected,
-                x: xy(selected.lon, selected.lat)[0],
-                y: xy(selected.lon, selected.lat)[1],
-                count: 1,
-              })}
-          </g>
         </g>
+        {meshLayers.map((layer) => (
+          <g
+            key={layer.name}
+            data-sensor-layer={layer.name}
+            clipPath={
+              compare
+                ? `url(#${meshId}-${layer.name === "modis" ? "left" : "right"})`
+                : undefined
+            }
+          >
+            <g transform={transform}>
+              {mesh && layer.visible && (
+                <rect
+                  className="sensor-resolution-mesh"
+                  pointerEvents="none"
+                  width="1000"
+                  height={h}
+                  fill={`url(#${meshId}-${layer.name})`}
+                  opacity={
+                    meshOpacity(layer.size) *
+                    (layer.name === "modis" ? 0.55 : 0.34)
+                  }
+                />
+              )}
+              <g aria-hidden="true">
+                {renderedMarks[layer.name as "modis" | "viirs"]}
+                {pinnedOutside &&
+                  selected &&
+                  (selected.sensor === "MODIS" ? "modis" : "viirs") ===
+                    layer.name &&
+                  mark({
+                    key: selected.id,
+                    o: selected,
+                    x: xy(selected.lon, selected.lat)[0],
+                    y: xy(selected.lon, selected.lat)[1],
+                    count: 1,
+                  })}
+              </g>
+            </g>
+          </g>
+        ))}
       </motion.svg>
       <div className="map-shading" />
       <div className="sensor-map-heading">
@@ -513,6 +546,13 @@ export default function RegionalMap({
         </strong>
       </div>
       <button
+        className={`sensor-compare-toggle ${compare ? "active" : ""}`}
+        aria-pressed={compare}
+        onClick={onCompare}
+      >
+        <Columns2 size={15} /> {compare ? "Overlay sensors" : "Compare sensors"}
+      </button>
+      <button
         className={`sensor-mesh-toggle ${mesh ? "active" : ""}`}
         aria-pressed={mesh}
         onClick={() => setMesh((value) => !value)}
@@ -520,6 +560,35 @@ export default function RegionalMap({
       >
         <Grid2X2 size={15} /> Resolution mesh
       </button>
+      {compare && (
+        <>
+          <div className="sensor-compare-labels" aria-hidden="true">
+            <span>MODIS · 1 km</span>
+            <span>VIIRS · 375 m</span>
+          </div>
+          <div
+            className="sensor-compare-line"
+            style={{ left: `${split}%` }}
+            aria-hidden="true"
+          >
+            <span>↔</span>
+          </div>
+          <label className="sensor-compare-slider">
+            <span>MODIS ← Compare → VIIRS</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={split}
+              aria-label="MODIS and VIIRS comparison divider"
+              onChange={(event) => {
+                setSplit(Number(event.target.value));
+                setHover(null);
+              }}
+            />
+          </label>
+        </>
+      )}
       {insetCountry && (
         <LocationInset
           country={insetCountry}
@@ -549,7 +618,10 @@ export default function RegionalMap({
           </div>
         </div>
         <span className="sensor-legend-note">
-          Detections in view · hover a flame for grouped counts
+          {compare
+            ? "Viewport totals before divider clipping"
+            : "Detections in view"}{" "}
+          · hover a flame for grouped counts
         </span>
         <details className="sensor-resolution-help">
           <summary>About the resolution mesh</summary>

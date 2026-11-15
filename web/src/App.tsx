@@ -286,7 +286,7 @@ export default function App() {
     setBrowseGlobal(false);
     setMonth(c.date.slice(0, 7));
     setDay(c.date);
-    setCompare(false);
+    setCompare(true);
     setSensor("all");
     setDaynight("all");
     setWide(false);

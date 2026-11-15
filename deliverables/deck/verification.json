@@ -1,0 +1,65 @@
+{
+  "checked": "2026-11-15",
+  "files": {
+    "pyrobridge-seven-slides.pptx": {
+      "sha256": "f04e83ba689d8a7497459cee2f27f402672354439ff745de6c9d59641b84d468",
+      "bytes": 4895563
+    },
+    "pyrobridge-seven-slides.pdf": {
+      "sha256": "e77ae871c3f77cb27ac271f8422378affc77dc5234a5e25d3603a9bc421d617a",
+      "bytes": 6936691
+    }
+  },
+  "pptx": {
+    "slides": 7,
+    "speakerNotes": 7,
+    "nativeTableSlide": 2,
+    "nativeChartSlide": 5,
+    "embeddedChartWorkbooks": 1,
+    "chartValues": [
+      4.125,
+      2.62,
+      5.924,
+      11.221
+    ],
+    "packageIntegrity": "pass",
+    "layoutFindings": 0,
+    "layoutWarnings": 0,
+    "font": "Avenir Next",
+    "firstPartyImport": "pass"
+  },
+  "pdf": {
+    "pages": 7,
+    "pageSizePoints": [
+      960,
+      540
+    ],
+    "format": "Raster render of finalized editable PPTX"
+  },
+  "visualReview": {
+    "slidePNGPages": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "renderedPDFPages": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "result": "All inspected individually; no clipping or overlap observed in the slide content."
+  },
+  "limits": [
+    "Microsoft PowerPoint native application rendering was not tested.",
+    "The PDF is a rendered companion, not an editable or tagged document.",
+    "Scientific claim checks and limits are in docs/science-audit.md."
+  ]
+}
