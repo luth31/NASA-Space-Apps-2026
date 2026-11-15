@@ -36,7 +36,7 @@ type Props = {
   offlineReady: boolean;
   initialExplore: boolean;
   onNavigate: (
-    view: "calendar" | "methods" | "sources" | "investigations",
+    view: "calendar" | "methods" | "sources" | "investigations" | "report",
   ) => void;
   onMonth: (study: CaseStudy, month: string) => void;
   onCase: (study: CaseStudy) => void;

@@ -4,12 +4,14 @@ export type Destination =
   | "dashboard"
   | "explore"
   | "investigations"
+  | "report"
   | "calendar"
   | "methods"
   | "sources";
 const destinations: [Destination, string][] = [
   ["dashboard", "Dashboard"],
   ["investigations", "Investigations"],
+  ["report", "Report"],
   ["calendar", "Calendar"],
   ["methods", "Models"],
   ["sources", "Sources"],
