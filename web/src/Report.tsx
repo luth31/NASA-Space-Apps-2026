@@ -48,6 +48,7 @@ import { Counter, bucketName, readout } from "./report/primitives";
 import { useIdeaPicks } from "./report/use-idea-picks";
 import ReportGallery, { IdeaPicker } from "./report/ReportGallery";
 const Experiments = lazy(() => import("./report/Experiments"));
+const YearInFire = lazy(() => import("./report/YearInFire"));
 
 const sensors: Record<ReportSensor, string> = {
   viirs: "VIIRS",
@@ -545,6 +546,15 @@ function Wave({ buckets, active }: { buckets: Bucket[]; active: number }) {
 }
 
 export default function Report({ manifest }: { manifest: Manifest }) {
+  const concept = new URLSearchParams(location.search).get("concept");
+  return concept && concept !== "journey" ? (
+    <PrototypeReport manifest={manifest} />
+  ) : (
+    <YearInFire manifest={manifest} />
+  );
+}
+
+function PrototypeReport({ manifest }: { manifest: Manifest }) {
   const model = useReport(manifest);
   const [concept, setConcept] = useState<Concept>(() => {
     return parseConcept(new URLSearchParams(location.search).get("concept"));
@@ -1439,6 +1449,7 @@ export default function Report({ manifest }: { manifest: Manifest }) {
         <button onClick={() => switchConcept("gallery")}>
           All ideas & your picks <ArrowUpRight size={14} />
         </button>
+        <a href="?tab=report">A Year in Fire <ArrowUpRight size={14} /></a>
         <a href="#main-content">Back to top ↑</a>
       </footer>
       {modal && (

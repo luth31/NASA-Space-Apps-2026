@@ -1,0 +1,263 @@
+FULL OVERNIGHT PRODUCT BRIEF
+
+OBJECTIVE
+
+Turn our existing NASA Space Apps wildfire project into a memorable, coherent, competition-ready product, supported by a convincing presentation and reliable demonstration.
+
+Work autonomously through research, design exploration, implementation, integration, testing, and local Git commits. Produce concrete, reviewable results. Use creativity to make the scientific purpose easier to understand and the experience more captivating.
+
+PROJECT AND INTENT
+
+Project directory:
+/Users/andramariasmarandache/Documents/Nasa Space Apps/NASA-Space-Apps-2026
+
+The current working name is PyroBridge. The final name, logo, and brand are undecided.
+
+The project investigates satellite observations of burning activity and differences between MODIS and VIIRS records. Explain why observations from different instruments need careful interpretation and how the application helps people investigate geography and time.
+
+A first-time visitor should feel curious and oriented. A judge should quickly understand who the product helps, its problem, why NASA data matters, the team's contribution, what works today, and what requires scientific validation.
+
+This goal explicitly includes Explore as well as Report, superseding the earlier Report-only scope. A colleague has been developing the map. Protect their work through isolated branches, clear ownership, and careful integration.
+
+START WITH THE CURRENT PROJECT
+
+Read applicable AGENTS.md instructions, README.md, CONTEXT.md, DEVELOPMENT.md, PLAN.md, RESEARCH.md, and relevant application/data files.
+
+Inspect the actual Git branch, working tree, active worktrees, architecture, data bundle, integrations, and scientific release status. Do not assume the tree is clean or that planning documents describe implemented capabilities.
+
+Preserve the existing Report experiments and recent uncommitted improvements. Inspect their rendered behavior before deciding what to reuse or replace.
+
+The user supplied two Greece-map references:
+- An administrative map with readable geographic regions.
+- An illustrated tourist map with recognizable locations, selective landmarks, and a tangible atlas aesthetic.
+
+Use those ideas as inspiration. Obtain appropriate boundaries and licensed assets independently; do not copy the reference artwork.
+
+1. RESEARCH THE COMPETITION AND PRODUCT OPPORTUNITY
+
+Browse current primary sources for NASA Space Apps 2026, the actual Craiova local event and organizer, the selected Harmonization of MODIS and VIIRS Hot Spots challenge, submission requirements, judging criteria, deadlines, attribution, AI disclosure, and local presentation rules.
+
+Distinguish global submission rules from local judging. Do not confuse NASA Space Apps Craiova with unrelated Craiova hackathons or treat an older organizer page as current.
+
+Published participant clarifications describe a demonstration video of up to 30 seconds OR a deck of up to seven slides, including title and closing slides. Reverify the current guide. Treat a 3-5 minute local live pitch as a working assumption until confirmed. Do not assume a 30-minute submission video is required.
+
+Use Europe/Bucharest for planning and verify the registered event's deadline/timezone, including earlier local cutoffs.
+
+Record sources, dates checked, confirmed requirements, conflicts, and unresolved assumptions. When a page is unavailable, seek authoritative alternatives and state the verification limit. Relevant starting links already exist in RESEARCH.md.
+
+Research a small number of excellent interactive atlases, scientific visualizations, data stories, and report interfaces. Identify concrete interactions that would improve this product. Explain each reference's contribution.
+
+Keep research focused. Move into working prototypes early and spend most effort implementing and verifying.
+
+2. USE SUBAGENTS AND WORK IN PARALLEL
+
+You are explicitly authorized to spawn subagents.
+
+Use the available concurrency intelligently. A useful initial division is:
+- Explore agent: globe unfolding, geographic hierarchy, spatial interaction.
+- Report agent: pattern discovery, temporal interaction, contextual information.
+- Research/design agent: competition evidence, branding, presentation narrative.
+
+The lead must also work directly: own the shared experience contract, navigation, integration, scientific claim review, and final quality.
+
+Reuse agents for presentation and QA as initial tasks finish. Give bounded deliverables, file ownership, acceptance criteria, and safe branches/worktrees.
+
+Share findings. Avoid multiple agents independently editing shared navigation, global CSS, data schemas, or dependencies. If delegation tools are unavailable, continue with a documented fallback; never claim agents were started when they were not.
+
+3. USE GIT CAREFULLY
+
+Create a recoverable baseline before substantial work.
+
+Inspect and checkpoint in-scope Report improvements with deliberate staging. Preserve unrelated edits and untracked files. Never use blanket cleanup, destructive resets, or automatic stashing that hides the colleague's work.
+
+Create a local integration branch and separate feature branches/worktrees. Prefer provided worktree tooling where appropriate. Agents must not switch branches underneath one another in a shared checkout.
+
+Make meaningful local commits for working milestones: baseline preservation, Explore unfolding, Report discovery, branding assets, integrated experience, and presentation/demo assets.
+
+The lead reviews and integrates commits, resolves conflicts, and runs appropriate checks. Record branches, commits, and validation.
+
+Keep work local unless publishing, pushing, or submission has already been explicitly authorized. Prepare all local deliverables without making publication approval a dependency of the overnight work.
+
+4. DESIGN ONE COHERENT APPLICATION JOURNEY
+
+Review Explore, Report, Fire Calendar, Science, and Sources as a connected product.
+
+Define each section's purpose in one sentence. Improve navigation and hierarchy when justified, preserving useful functionality and routes.
+
+Keep one primary question, one dominant visualization, and few useful metrics per scene. Reveal secondary information when relevant. Keep time, geography, sensor, and metric understandable. Provide Back, breadcrumbs, and Reset.
+
+Aim for screen-sized desktop scenes. Permit necessary scrolling on phones, short windows, and enlarged text.
+
+Keep experiments behind a quiet playground entry. Do not expose many competing prototypes in normal product navigation.
+
+Carry context between Explore and Report where supported. Explain unsupported dates, places, or resolutions and offer an explicit next action.
+
+5. EXPLORE: A GLOBE THAT UNFOLDS INTO UNDERSTANDING
+
+Develop the graphics mentor's idea:
+Globe -> unfolding ellipsoid/projected atlas -> continents -> countries/regions -> locations -> grid/sectors -> individual observations.
+
+The signature moment is the globe visibly opening or unfolding into a readable geographic view. Preserve geographic anchors so users understand where their selected place went.
+
+Prototype a small number of promising transitions, compare them, and integrate the strongest feasible direction. Retain alternatives for review.
+
+Requirements:
+- A compelling, responsive initial globe.
+- Readable geographic shapes and concise broad-scale summaries.
+- Progressively revealed detail as users zoom or select.
+- Actual boundaries where available.
+- Clear distinction between administrative regions, study rectangles, and analytical grids.
+- Dense individual detections appear only when useful at the selected scale.
+- Hover, selection, drag/pan, wheel zoom, and appropriate touch gestures.
+- Accessible buttons and keyboard alternatives.
+- Natural restoration of wider context on zoom-out.
+- Preservation of useful existing map functionality.
+
+If color represents detections per area, calculate and label the quantity and unit, for example detections per 10,000 square kilometres over the selected observation window. Use appropriate area calculations and a consistent legend. Explain observation coverage limits. Raw detection density is not fire risk or probability.
+
+Do not present a few study areas as complete continental or national totals. Keep the global snapshot separate from historical regional records.
+
+Use selective location icons, labels, and subtle cartographic detail for recognition while preserving legibility and geographic accuracy.
+
+6. REPORT: DISCOVER WHAT THE OBSERVATIONS REVEAL
+
+Critically assess and improve the current Report.
+
+Help users investigate concentration, recurring timing, selected-period differences, satellite measurement differences, geographic contributions, and relevant reporting/research.
+
+Start with an annual or multi-year overview. Reveal month -> day -> hour only where supported.
+
+Make the visual itself interactive through hover/touch inspection, useful scrubbing/dragging, direct zoom gestures, selection of meaningful features, and smooth transformations into detail. A single Explore button must not be the only way deeper.
+
+The earlier triangular peak and rectangular particle columns were visually disconnected. Keep data encoding and visual treatment coherent. If using light/particles, make them belong to the same shape and explain their illustrative role.
+
+Use animation to show relationships and preserve orientation. Keep raw counts available for interpretation while emphasizing concentration, recurring timing, and sensor differences.
+
+Use concise explanations and purposeful icons. Reveal methodology and detailed evidence on demand.
+
+Contextual research or reporting must use real verified sources, honest geographic/time matching, original article/imagery dates, and clear distinction between curated content and a live feed. Do not imply an article identifies a specific detection or proves its cause. Show an explicit empty state when no reporting matches.
+
+Do not label descriptive differences as calibrated anomalies, predictions, or causal findings without validation.
+
+7. RESEARCH USEFUL TECHNOLOGY AND INTEGRATIONS
+
+Explore APIs, libraries, and techniques that materially improve the experience. Candidates include existing Three.js/Motion capabilities, geographic projections and morphing, D3 geographic utilities, suitable vector-map/GPU tools, NASA GIBS/Worldview, FIRMS, EONET, Copernicus context, and lightweight interaction/accessibility techniques.
+
+These are candidates, not a mandatory dependency list. Prefer existing integrations when sufficient. Evaluate additions by user benefit, effort, performance, licensing, offline behavior, and maintenance.
+
+Prototype uncertain technical ideas before committing the architecture to them.
+
+Use configured credentials where authorized. When access is unavailable, continue with honest fallbacks and record the remaining need. Never expose credentials in frontend code or logs. Never invent API responses or scientific data.
+
+8. BRANDING IS STILL OPEN
+
+Desired naming character:
+- Short and easy to pronounce.
+- A useful first impression.
+- A second meaning that rewards discovery.
+- Suitable for Romanian speakers and international judges.
+- Connections to observation, nature, fire, time, memory, or understanding.
+
+Ashkey and its possible Romanian association with "aschii"/"așchii" are promising starting points. Ashchron and related compact sounds are also worth investigating. They are candidates, not decisions.
+
+Research meanings, pronunciation, and existing uses. Independently verify earlier brainstorming claims. Distinguish real etymology from a product metaphor.
+
+Explore genuinely different names rather than arbitrary "Ash + word" combinations.
+
+Produce approximately four to six shortlisted names and three developed visual identity directions. For each developed direction provide:
+- Name, pronunciation, meaning, and product story.
+- Existing-use findings and practical concerns.
+- Tagline and clear product descriptor.
+- Wordmark and symbol.
+- Light/dark and monochrome variants.
+- Small-size favicon/icon test.
+- Application-header and pitch-cover previews.
+
+Prefer editable vector logos. Test small sizes and actual interfaces.
+
+Recommend a direction while leaving the final brand choice open. Continue with a documented provisional identity and easy-to-change brand configuration. Do not block on my choice.
+
+9. SCIENTIFIC CONTRIBUTION
+
+Read current manifests, model reports, and release assessment.
+
+Distinguish thermal detections, unique fire events, burned area, fire radiative power, raw comparisons, harmonized estimates, and predictions.
+
+Respect release gates. Do not unlock unvalidated outputs to improve the appearance of completeness.
+
+Complete monthly source records do not establish complete observing effort. Missing data is not zero; acquisition time is not ignition time.
+
+Assess how the implementation addresses the selected challenge. Demonstrate the working method and measured evidence with its true scope. Identify the next validation milestone where evidence is insufficient.
+
+Do not invent accuracy, operational readiness, forecasting performance, testimonials, or impact measurements.
+
+Explain the scientific purpose in plain language for non-specialist judges.
+
+10. PRESENTATION AND DEMONSTRATION
+
+Produce:
+- An editable seven-slide presentation and rendered PDF.
+- A concise three-minute pitch and five-minute expanded version.
+- English presentation text, plus Romanian notes or pitch variant where appropriate locally.
+- A short-demo script/storyboard targeting about 29 seconds.
+- A finished short video when supported capture/rendering tools allow it.
+- An exact live-demo runbook and a fallback using verified captures.
+
+If video capture is unavailable, deliver the complete capture-ready package and valid seven-slide alternative, stating the limitation.
+
+Keep longer technical walkthroughs separate. Prepare an extended outline only if useful or locally required.
+
+Suggested seven-slide story:
+1. User, problem, memorable opening.
+2. Why different satellite records create a difficult historical question.
+3. Unfolding Explore journey.
+4. A real Report finding.
+5. Team contribution, method, NASA data, and scoped evidence.
+6. Practical usefulness, current limitations, next validation milestone.
+7. Strong closing and clear invitation to explore.
+
+Improve the story if research suggests a stronger structure. Keep the submission deck inside the verified slide limit, including cover/closing; put technical appendices in separate notes.
+
+Use actual application screenshots and captures. The short demo should work without sound. Claims must match the implementation.
+
+Render and inspect presentation files for layout, contrast, labels, timing, credits, and provisional-brand consistency.
+
+Prepare submission copy and required data/tool/AI credits. Do not publish or submit without authorization.
+
+11. VERIFY THE EXPERIENCE
+
+Run appropriate project tests and production build. Inspect the running interface using supported browser/computer tools.
+
+Verify spatial transitions and return navigation; boundaries/aggregation/density units/coverage; temporal drilldown and findings; cross-section context and unsupported selections; hover/selection/direct zoom/keyboard/reset; available touch testing; reduced motion/pause/contrast/dropdowns; responsive desktop, compact-window, and narrow-phone layouts; loading/failure/retry/zero/missing states; real-data performance; and preservation of existing useful features and experiment routes.
+
+Bound expensive rendering and pause hidden/offscreen animation. Target ordinary laptops and phones.
+
+Do not claim physical-device gesture testing unless it occurred. State verification limits.
+
+12. MORNING HANDOFF
+
+Deliver:
+- Integrated working app on an identified local branch.
+- Preserved baseline and meaningful commits.
+- Working Explore unfolding and Report discovery.
+- Quiet comparison space for retained experiments and brand alternatives.
+- Brand shortlist and three visual identity directions.
+- Presentation, scripts, storyboard, captures, and demo runbook.
+- Concise research document with sources and verified competition requirements.
+- Handoff describing design decisions, validation results, limitations, and decisions reserved for me.
+
+Include branch names, commit references, exact startup steps, and useful preview links.
+
+For a phone, provide a reachable same-Wi-Fi URL where possible; 127.0.0.1 is not an iPhone-accessible link to the Mac. Explain the need to keep the development computer awake.
+
+Keep the preview available for review and preserve local-only handling unless publication is explicitly authorized.
+
+WORKING STANDARD
+
+Move from research to prototypes, integration, and refinement. Do not stop at a plan, recommendations, or mockups.
+
+Finish core experiences and presentation before optional embellishments. Suggest extra improvements when they strengthen the purpose and can be delivered reliably.
+
+Make routine reversible decisions autonomously. Record assumptions and continue independent work when one detail needs clarification.
+
+The result should be memorable, intuitive, scientifically credible, and persuasive. Final branding can remain my decision; the product, evidence, and presentation assets should be ready for it.

@@ -1,0 +1,18 @@
+/goal Make our existing NASA Space Apps wildfire project competition-ready: captivating Explore and Report experiences, clear scientific contribution, brand options, and a persuasive pitch/demo.
+
+First read the complete specification at:
+/Users/andramariasmarandache/Documents/Nasa Space Apps/NASA-Space-Apps-2026/OVERNIGHT_BRIEF.txt
+
+That file defines the full scope and acceptance requirements. Also inspect AGENTS.md where present, README.md, CONTEXT.md, DEVELOPMENT.md, PLAN.md, RESEARCH.md, current code/data, and Git state.
+
+Explicitly use subagents and parallel work. The lead must also implement and integrate. This goal authorizes Explore changes as well as Report. Protect the colleague's map work and all existing uncommitted improvements through careful checkpoints, separate branches/worktrees, deliberate staging, reviewed integration, and meaningful local commits.
+
+Research current NASA/Craiova rules, strong visualization references, and useful APIs/libraries. Build the globe-to-unfolded-atlas geographic journey and a Report centered on concentration, recurring timing, sensor differences, and verified contextual reading. Use direct zoom/hover/touch interactions, progressive disclosure, clear context, and purposeful animation.
+
+Develop the brand shortlist and three identity directions without finalizing my name choice. Deliver the editable seven-slide deck/PDF, 3- and 5-minute pitch versions, short-demo assets, and tested runbook specified in the brief. Verify the short-demo rules; do not assume a 30-minute submission video.
+
+Keep data units, sources, coverage, and model validation honest. Preserve release gates, accessibility, reduced motion, responsive layouts, and useful existing features.
+
+Continue through working implementation, appropriate tests, production build, rendered/browser verification, local commits, and a complete morning handoff. Use a provisional brand so my later choice does not block progress. Keep the preview available, including a reachable same-Wi-Fi phone URL where possible.
+
+Keep everything local; do not publish, push, or submit without authorization. Document unresolved facts and unavailable tools accurately. Do not stop after research or a plan.

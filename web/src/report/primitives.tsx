@@ -18,9 +18,11 @@ export function readout(b: Bucket) {
 export function Counter({
   value,
   className = "",
+  instant = false,
 }: {
   value: number | null;
   className?: string;
+  instant?: boolean;
 }) {
   const ref = useRef<HTMLSpanElement>(null),
     previous = useRef(0),
@@ -32,7 +34,7 @@ export function Counter({
       node.textContent = "—";
       return;
     }
-    if (reduced) {
+    if (reduced || instant) {
       node.textContent = integer(value);
       previous.current = value;
       return;
@@ -46,7 +48,7 @@ export function Counter({
       },
     });
     return () => control.stop();
-  }, [value, reduced]);
+  }, [value, reduced, instant]);
   return (
     <span
       className={`x-counter ${className}`}

@@ -16,8 +16,11 @@ import {
 } from "./report-data";
 import type { Count, Geography, Selection } from "./report-data";
 
-export function useReport(manifest: Manifest) {
-  const [selection, setSelection] = useState<Selection>(initialSelection);
+export function useReport(
+  manifest: Manifest,
+  initial: Selection = initialSelection,
+) {
+  const [selection, setSelection] = useState<Selection>(initial);
   const [retry, setRetry] = useState(0);
   const [detail, setDetail] = useState<{
     key: string;
@@ -220,7 +223,7 @@ export function useReport(manifest: Manifest) {
     back,
     selectGeo,
     geoCount,
-    reset: () => setSelection({ ...initialSelection }),
+    reset: () => setSelection({ ...initial }),
     retry: () => setRetry((v) => v + 1),
     years,
     cases,

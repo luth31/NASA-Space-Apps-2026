@@ -134,13 +134,18 @@
   font-size: 9px;
 }
 .x-filters select {
-  background: transparent;
+  background: #1b231a;
   color: #dfe5d6;
+  color-scheme: dark;
   font-size: 10px;
   cursor: pointer;
   min-height: 32px;
   padding-right: 18px;
   max-width: 185px;
+}
+.x-filters select option {
+  background: #1b231a;
+  color: #f0f1e7;
 }
 .x-filters label > svg:last-child {
   position: absolute;
