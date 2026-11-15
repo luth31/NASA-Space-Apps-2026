@@ -1,0 +1,28 @@
+# Visualization and integration decisions
+
+Checked 15 November 2026. These are focused design references and engineering choices, not claims that every candidate is installed.
+
+## Four references worth borrowing from
+
+| Reference | Useful interaction | Application here |
+| --- | --- | --- |
+| [D3 / Mike Bostock: Projection Transitions](https://observablehq.com/@d3/projection-transitions) and [projection API](https://d3js.org/d3-geo/projection) | Geometry remains recognizable while projection changes. | Interpolate the same geographic vertices from a sphere into an atlas; keep a selected place anchored. Compare a continuous unfold with a simpler flatten transition. Use broad geographic silhouettes before dense points. |
+| [NASA Worldview](https://worldview.earthdata.nasa.gov/) and [GIBS access documentation](https://nasa-gibs.github.io/gibs-api-docs/access-basics/) | Explicit date, layer and projection belong to the map; imagery and observation overlays remain distinct. | Retain dated imagery, synchronized sensor comparison and visible acquisition labels. A historical case and a newer global snapshot must never appear to be one dataset. |
+| [Earth / Nullschool](https://earth.nullschool.net/about.html) | One dominant globe, direct inspection, units/source disclosure close to the scene. | Keep the opening calm and explorable. Use purposeful motion to invite interaction, then reveal details on selection. Its weather particles encode movement; our light particles must be labeled illustrative and never imply fire spread. |
+| [Google Earth Timelapse](https://earthengine.google.com/timelapse/) | A stable geographic camera provides context for time navigation. | Keep the Report's time axis and geographic scope stable while drilling into a peak. Scrubbing, pause, return and a visible period are more useful than autonomous decoration. Do not import or redistribute Timelapse imagery. |
+
+These pages/documentation were inspected as design references; no artwork or implementation was copied. Some apps expose little content to text retrieval, so this is not a claim of full interactive browser testing of the reference products.
+
+## Technology tradeoffs
+
+| Candidate | Benefit / effort | Performance, licensing, offline behavior | Decision |
+| --- | --- | --- | --- |
+| Existing Three.js + Motion | Reuse current globe and transition infrastructure; low integration cost. | Bound geometry/points, pause offscreen and when hidden. Three.js is [MIT](https://github.com/mrdoob/three.js/blob/dev/LICENSE). Bundled assets work offline. | Prefer existing dependencies; preserve the colleague's map renderer and normal controls. |
+| D3 geographic projection utilities | Correct spherical projection/clipping and area utilities; moderate integration/testing cost. | [D3 geo's permissive license](https://github.com/d3/d3-geo/blob/main/LICENSE) requires retained notices. Local code/data can be offline. Projection clipping and antimeridian behavior need tests. | Use as reference or add only if it materially reduces implementation risk. Do not call projected screen area geographic area. |
+| Natural Earth boundaries | Readable countries/coasts at broad scales, with selectable geography. | [Public-domain vector/raster data](https://www.naturalearthdata.com/about/terms-of-use/); can ship a simplified, attributed local asset. Small islands disappear at coarse scales. | Good fit for atlas context. Study rectangles and analytical cells remain separate overlays; boundaries are not precise cadastral truth. |
+| GIBS / Worldview | Dated real imagery through public WMTS/WMS/XYZ services; useful optional detail. | [Documented endpoints](https://nasa-gibs.github.io/gibs-api-docs/access-basics/) have different projections/resolutions and time dimensions. Live tiles need network; imagery credit depends on product. | Keep existing local, credited scenes for reliable rehearsal. A live imagery fetch is optional and must expose its date/error state. |
+| FIRMS and EONET | FIRMS supplies detections; EONET supplies curated event context with geometry and dates. | [FIRMS Area API](https://firms.modaps.eosdis.nasa.gov/api/area/) requires a map key; never put credentials in frontend code. [EONET v3](https://eonet.gsfc.nasa.gov/docs/v3) links source reports; event times can be approximate. Cached results need retrieval timestamps. | Existing pinned FIRMS bundle is sufficient. Prefer verified curated context now; a future EONET adapter must explain match uncertainty and unmatched periods. No live feed is claimed. |
+| MapLibre GL JS | Mature pan, zoom, touch and tiled layers. | [Official API](https://maplibre.org/maplibre-gl-js/docs/) includes WebGL, workers, sources and gestures. Adds bundle/integration cost; tiles/styles/fonts have separate licenses and offline needs. | Defer a renderer migration. It would put the preserved colleague work and short deadline at risk without solving the scientific coverage problem. |
+| Motion reduced-motion + native controls | Accessible transitions and non-gesture alternatives; low effort. | [Motion hook](https://motion.dev/docs/react-use-reduced-motion) responds to device preferences. [W3C interaction animation guidance](https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html) motivates disabling unnecessary movement. | Keep zoom/back/reset buttons, keyboard inspection and pause. Reduced motion changes transition style, not data or available actions. |
+
+No credential, API subscription or additional remote service is required for the core local demonstration. Technology does not replace validation: counts per area are observation density, acquisition time is not ignition time, and complete monthly source records do not establish complete observing effort.
