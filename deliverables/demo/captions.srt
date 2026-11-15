@@ -1,0 +1,29 @@
+1
+00:00:00,000 --> 00:00:04,000
+Read the fire record
+PyroBridge · NASA FIRMS observations
+
+2
+00:00:04,000 --> 00:00:09,000
+Open a place. Keep the context.
+Global snapshot and historical studies are separate
+
+3
+00:00:09,000 --> 00:00:14,000
+Two sensors. Different observations.
+Detections are thermal pixels, not individual fires
+
+4
+00:00:14,000 --> 00:00:21,000
+89% concentrated in August
+4,178 / 4,685 VIIRS detections · Greek studies · 2023
+
+5
+00:00:21,000 --> 00:00:26,000
+Test the bridge before trusting it
+48 sampled cell-passes · Monthly estimates remain gated
+
+6
+00:00:26,000 --> 00:00:29,000
+Choose a place. Follow a season.
+PyroBridge · Read the fire record
